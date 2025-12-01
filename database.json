@@ -1,0 +1,89 @@
+{
+  "agencies": [
+    {
+      "id": 1,
+      "name": "Creative Agency Ltd",
+      "email": "info@creativeagency.com",
+      "phone": "+1-555-0101",
+      "address": "123 Business Ave, Suite 100",
+      "is_active": 1,
+      "created_at": "2025-12-01T18:38:26.496Z"
+    },
+    {
+      "id": 2,
+      "name": "Digital Solutions Inc",
+      "email": "contact@digitalsolutions.com",
+      "phone": "+1-555-0102",
+      "address": "456 Tech Plaza, Floor 5",
+      "is_active": 1,
+      "created_at": "2025-12-01T18:38:26.496Z"
+    },
+    {
+      "id": 3,
+      "name": "Marketing Pro Agency",
+      "email": "hello@marketingpro.com",
+      "phone": "+1-555-0103",
+      "address": "789 Marketing Street",
+      "is_active": 1,
+      "created_at": "2025-12-01T18:38:26.496Z"
+    }
+  ],
+  "customers": [
+    {
+      "id": 1,
+      "name": "John Smith",
+      "email": "john.smith@example.com",
+      "phone": "+1-555-1001",
+      "company": "Smith Enterprises",
+      "created_at": "2025-12-01T18:38:26.496Z"
+    },
+    {
+      "id": 2,
+      "name": "Sarah Johnson",
+      "email": "sarah.j@techcorp.com",
+      "phone": "+1-555-1002",
+      "company": "TechCorp LLC",
+      "created_at": "2025-12-01T18:38:26.496Z"
+    },
+    {
+      "id": 3,
+      "name": "Michael Brown",
+      "email": "mbrown@retailco.com",
+      "phone": "+1-555-1003",
+      "company": "RetailCo",
+      "created_at": "2025-12-01T18:38:26.496Z"
+    }
+  ],
+  "templates": [
+    {
+      "id": 1,
+      "name": "Standard Service Agreement",
+      "description": "Basic service agreement template",
+      "content": "This agreement is entered into between {{AGENCY_NAME}} (hereinafter \"Agency\") and {{CUSTOMER_NAME}} (hereinafter \"Client\").\n\nSERVICES: The Agency agrees to provide the following services:\n{{SERVICES}}\n\nPAYMENT TERMS: The Client agrees to pay {{MONTHLY_PAYMENT}} per month, due on the {{PAYMENT_DAY}} day of each month.\n\nTERM: This agreement shall commence on {{START_DATE}} and continue until {{END_DATE}} unless terminated earlier.",
+      "created_at": "2025-12-01T18:38:26.496Z"
+    },
+    {
+      "id": 2,
+      "name": "Digital Marketing Agreement",
+      "description": "Agreement for digital marketing services",
+      "content": "DIGITAL MARKETING SERVICES AGREEMENT\n\nBetween: {{AGENCY_NAME}}\nAnd: {{CUSTOMER_NAME}}\n\nThe Agency will provide comprehensive digital marketing services including:\n{{SERVICES}}\n\nMonthly Investment: {{MONTHLY_PAYMENT}}\nPayment Schedule: {{PAYMENT_DAY}} of each month\nContract Period: {{START_DATE}} to {{END_DATE}}",
+      "created_at": "2025-12-01T18:38:26.496Z"
+    },
+    {
+      "id": 3,
+      "name": "Web Development Agreement",
+      "description": "Website development and maintenance agreement",
+      "content": "WEB DEVELOPMENT & MAINTENANCE AGREEMENT\n\nAgency: {{AGENCY_NAME}}\nClient: {{CUSTOMER_NAME}}\n\nSCOPE OF WORK:\n{{SERVICES}}\n\nMONTHLY MAINTENANCE FEE: {{MONTHLY_PAYMENT}}\nDue Date: {{PAYMENT_DAY}} of each month\nAgreement Duration: {{START_DATE}} - {{END_DATE}}",
+      "created_at": "2025-12-01T18:38:26.496Z"
+    }
+  ],
+  "agreements": [],
+  "reminders": [],
+  "emailSettings": {
+    "provider": "sendgrid",
+    "api_key": "",
+    "from_email": "noreply@yourcompany.com",
+    "from_name": "Agreement System",
+    "reminder_days_before": 3
+  }
+}
