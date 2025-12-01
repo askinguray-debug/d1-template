@@ -1,0 +1,856 @@
+import { Hono } from 'hono'
+import { cors } from 'hono/cors'
+import { serveStatic } from 'hono/cloudflare-workers'
+import type { Bindings } from './types'
+
+const app = new Hono<{ Bindings: Bindings }>()
+
+// Enable CORS
+app.use('/api/*', cors())
+
+// Serve static files
+app.use('/static/*', serveStatic({ root: './public' }))
+
+// ======================
+// AGENCIES API
+// ======================
+app.get('/api/agencies', async (c) => {
+  const { DB } = c.env
+  const result = await DB.prepare('SELECT * FROM agencies ORDER BY name').all()
+  return c.json(result.results || [])
+})
+
+app.get('/api/agencies/active', async (c) => {
+  const { DB } = c.env
+  const result = await DB.prepare('SELECT * FROM agencies WHERE is_active = 1 ORDER BY name').all()
+  return c.json(result.results || [])
+})
+
+app.get('/api/agencies/:id', async (c) => {
+  const { DB } = c.env
+  const id = c.req.param('id')
+  const result = await DB.prepare('SELECT * FROM agencies WHERE id = ?').bind(id).first()
+  return c.json(result || {})
+})
+
+app.post('/api/agencies', async (c) => {
+  const { DB } = c.env
+  const data = await c.req.json()
+  const result = await DB.prepare(
+    'INSERT INTO agencies (name, email, phone, address, logo_url, is_active) VALUES (?, ?, ?, ?, ?, ?)'
+  ).bind(
+    data.name,
+    data.email || null,
+    data.phone || null,
+    data.address || null,
+    data.logo_url || null,
+    data.is_active !== undefined ? data.is_active : 1
+  ).run()
+  return c.json({ id: result.meta.last_row_id, ...data })
+})
+
+app.put('/api/agencies/:id', async (c) => {
+  const { DB } = c.env
+  const id = c.req.param('id')
+  const data = await c.req.json()
+  await DB.prepare(
+    'UPDATE agencies SET name = ?, email = ?, phone = ?, address = ?, logo_url = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
+  ).bind(
+    data.name,
+    data.email || null,
+    data.phone || null,
+    data.address || null,
+    data.logo_url || null,
+    data.is_active !== undefined ? data.is_active : 1,
+    id
+  ).run()
+  return c.json({ id, ...data })
+})
+
+app.delete('/api/agencies/:id', async (c) => {
+  const { DB } = c.env
+  const id = c.req.param('id')
+  await DB.prepare('DELETE FROM agencies WHERE id = ?').bind(id).run()
+  return c.json({ success: true })
+})
+
+// ======================
+// CUSTOMERS API
+// ======================
+app.get('/api/customers', async (c) => {
+  const { DB } = c.env
+  const result = await DB.prepare('SELECT * FROM customers ORDER BY name').all()
+  return c.json(result.results || [])
+})
+
+app.get('/api/customers/:id', async (c) => {
+  const { DB } = c.env
+  const id = c.req.param('id')
+  const result = await DB.prepare('SELECT * FROM customers WHERE id = ?').bind(id).first()
+  return c.json(result || {})
+})
+
+app.post('/api/customers', async (c) => {
+  const { DB } = c.env
+  const data = await c.req.json()
+  const result = await DB.prepare(
+    'INSERT INTO customers (name, email, phone, address, company, tax_id) VALUES (?, ?, ?, ?, ?, ?)'
+  ).bind(
+    data.name,
+    data.email,
+    data.phone || null,
+    data.address || null,
+    data.company || null,
+    data.tax_id || null
+  ).run()
+  return c.json({ id: result.meta.last_row_id, ...data })
+})
+
+app.put('/api/customers/:id', async (c) => {
+  const { DB } = c.env
+  const id = c.req.param('id')
+  const data = await c.req.json()
+  await DB.prepare(
+    'UPDATE customers SET name = ?, email = ?, phone = ?, address = ?, company = ?, tax_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
+  ).bind(
+    data.name,
+    data.email,
+    data.phone || null,
+    data.address || null,
+    data.company || null,
+    data.tax_id || null,
+    id
+  ).run()
+  return c.json({ id, ...data })
+})
+
+app.delete('/api/customers/:id', async (c) => {
+  const { DB } = c.env
+  const id = c.req.param('id')
+  await DB.prepare('DELETE FROM customers WHERE id = ?').bind(id).run()
+  return c.json({ success: true })
+})
+
+// ======================
+// TEMPLATES API
+// ======================
+app.get('/api/templates', async (c) => {
+  const { DB } = c.env
+  const result = await DB.prepare('SELECT * FROM agreement_templates ORDER BY name').all()
+  return c.json(result.results || [])
+})
+
+app.get('/api/templates/:id', async (c) => {
+  const { DB } = c.env
+  const id = c.req.param('id')
+  const result = await DB.prepare('SELECT * FROM agreement_templates WHERE id = ?').bind(id).first()
+  return c.json(result || {})
+})
+
+app.post('/api/templates', async (c) => {
+  const { DB } = c.env
+  const data = await c.req.json()
+  const result = await DB.prepare(
+    'INSERT INTO agreement_templates (name, description, content, signature_required) VALUES (?, ?, ?, ?)'
+  ).bind(
+    data.name,
+    data.description || null,
+    data.content,
+    data.signature_required !== undefined ? data.signature_required : 1
+  ).run()
+  return c.json({ id: result.meta.last_row_id, ...data })
+})
+
+app.put('/api/templates/:id', async (c) => {
+  const { DB } = c.env
+  const id = c.req.param('id')
+  const data = await c.req.json()
+  await DB.prepare(
+    'UPDATE agreement_templates SET name = ?, description = ?, content = ?, signature_required = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
+  ).bind(
+    data.name,
+    data.description || null,
+    data.content,
+    data.signature_required !== undefined ? data.signature_required : 1,
+    id
+  ).run()
+  return c.json({ id, ...data })
+})
+
+app.delete('/api/templates/:id', async (c) => {
+  const { DB } = c.env
+  const id = c.req.param('id')
+  await DB.prepare('DELETE FROM agreement_templates WHERE id = ?').bind(id).run()
+  return c.json({ success: true })
+})
+
+// ======================
+// AGREEMENTS API
+// ======================
+app.get('/api/agreements', async (c) => {
+  const { DB } = c.env
+  const result = await DB.prepare(`
+    SELECT a.*, ag.name as agency_name, c.name as customer_name, c.email as customer_email
+    FROM agreements a
+    LEFT JOIN agencies ag ON a.agency_id = ag.id
+    LEFT JOIN customers c ON a.customer_id = c.id
+    ORDER BY a.created_at DESC
+  `).all()
+  return c.json(result.results || [])
+})
+
+app.get('/api/agreements/:id', async (c) => {
+  const { DB } = c.env
+  const id = c.req.param('id')
+  const agreement = await DB.prepare(`
+    SELECT a.*, ag.name as agency_name, ag.email as agency_email, ag.address as agency_address,
+           c.name as customer_name, c.email as customer_email, c.company as customer_company
+    FROM agreements a
+    LEFT JOIN agencies ag ON a.agency_id = ag.id
+    LEFT JOIN customers c ON a.customer_id = c.id
+    WHERE a.id = ?
+  `).bind(id).first()
+  
+  if (!agreement) {
+    return c.json({})
+  }
+  
+  const services = await DB.prepare(
+    'SELECT * FROM service_sections WHERE agreement_id = ? ORDER BY sort_order'
+  ).bind(id).all()
+  
+  return c.json({ ...agreement, services: services.results || [] })
+})
+
+app.post('/api/agreements', async (c) => {
+  const { DB } = c.env
+  const data = await c.req.json()
+  
+  // Generate agreement number
+  const agreementNumber = `AGR-${Date.now()}-${Math.floor(Math.random() * 1000)}`
+  
+  const result = await DB.prepare(`
+    INSERT INTO agreements (
+      agreement_number, agency_id, customer_id, template_id, title, content,
+      monthly_payment, payment_day, start_date, end_date, status
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).bind(
+    agreementNumber,
+    data.agency_id,
+    data.customer_id,
+    data.template_id || null,
+    data.title,
+    data.content,
+    data.monthly_payment || null,
+    data.payment_day || 1,
+    data.start_date,
+    data.end_date || null,
+    data.status || 'draft'
+  ).run()
+  
+  const agreementId = result.meta.last_row_id
+  
+  // Add service sections if provided
+  if (data.services && Array.isArray(data.services)) {
+    for (let i = 0; i < data.services.length; i++) {
+      const service = data.services[i]
+      await DB.prepare(
+        'INSERT INTO service_sections (agreement_id, title, description, price, sort_order) VALUES (?, ?, ?, ?, ?)'
+      ).bind(
+        agreementId,
+        service.title,
+        service.description || null,
+        service.price || null,
+        i
+      ).run()
+    }
+  }
+  
+  return c.json({ id: agreementId, agreement_number: agreementNumber, ...data })
+})
+
+app.put('/api/agreements/:id', async (c) => {
+  const { DB } = c.env
+  const id = c.req.param('id')
+  const data = await c.req.json()
+  
+  await DB.prepare(`
+    UPDATE agreements SET
+      agency_id = ?, customer_id = ?, template_id = ?, title = ?, content = ?,
+      monthly_payment = ?, payment_day = ?, start_date = ?, end_date = ?, status = ?,
+      updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `).bind(
+    data.agency_id,
+    data.customer_id,
+    data.template_id || null,
+    data.title,
+    data.content,
+    data.monthly_payment || null,
+    data.payment_day || 1,
+    data.start_date,
+    data.end_date || null,
+    data.status || 'draft',
+    id
+  ).run()
+  
+  // Update service sections
+  if (data.services && Array.isArray(data.services)) {
+    await DB.prepare('DELETE FROM service_sections WHERE agreement_id = ?').bind(id).run()
+    for (let i = 0; i < data.services.length; i++) {
+      const service = data.services[i]
+      await DB.prepare(
+        'INSERT INTO service_sections (agreement_id, title, description, price, sort_order) VALUES (?, ?, ?, ?, ?)'
+      ).bind(
+        id,
+        service.title,
+        service.description || null,
+        service.price || null,
+        i
+      ).run()
+    }
+  }
+  
+  return c.json({ id, ...data })
+})
+
+app.post('/api/agreements/:id/sign', async (c) => {
+  const { DB } = c.env
+  const id = c.req.param('id')
+  const data = await c.req.json()
+  
+  if (data.party === 'agency') {
+    await DB.prepare(
+      'UPDATE agreements SET agency_signed = 1, agency_signature = ?, agency_signed_at = CURRENT_TIMESTAMP WHERE id = ?'
+    ).bind(data.signature, id).run()
+  } else if (data.party === 'customer') {
+    await DB.prepare(
+      'UPDATE agreements SET customer_signed = 1, customer_signature = ?, customer_signed_at = CURRENT_TIMESTAMP WHERE id = ?'
+    ).bind(data.signature, id).run()
+    
+    // Update status to active if both signed
+    const agreement = await DB.prepare('SELECT * FROM agreements WHERE id = ?').bind(id).first()
+    if (agreement && agreement.agency_signed === 1) {
+      await DB.prepare('UPDATE agreements SET status = ? WHERE id = ?').bind('active', id).run()
+    }
+  }
+  
+  return c.json({ success: true })
+})
+
+app.delete('/api/agreements/:id', async (c) => {
+  const { DB } = c.env
+  const id = c.req.param('id')
+  await DB.prepare('DELETE FROM service_sections WHERE agreement_id = ?').bind(id).run()
+  await DB.prepare('DELETE FROM payment_reminders WHERE agreement_id = ?').bind(id).run()
+  await DB.prepare('DELETE FROM agreements WHERE id = ?').bind(id).run()
+  return c.json({ success: true })
+})
+
+// ======================
+// PAYMENT REMINDERS API
+// ======================
+app.get('/api/reminders', async (c) => {
+  const { DB } = c.env
+  const result = await DB.prepare(`
+    SELECT pr.*, a.title as agreement_title, a.agreement_number, c.name as customer_name, c.email as customer_email
+    FROM payment_reminders pr
+    LEFT JOIN agreements a ON pr.agreement_id = a.id
+    LEFT JOIN customers c ON a.customer_id = c.id
+    ORDER BY pr.due_date DESC
+  `).all()
+  return c.json(result.results || [])
+})
+
+app.get('/api/reminders/pending', async (c) => {
+  const { DB } = c.env
+  const result = await DB.prepare(`
+    SELECT pr.*, a.title as agreement_title, a.agreement_number, c.name as customer_name, c.email as customer_email
+    FROM payment_reminders pr
+    LEFT JOIN agreements a ON pr.agreement_id = a.id
+    LEFT JOIN customers c ON a.customer_id = c.id
+    WHERE pr.status = 'pending'
+    ORDER BY pr.due_date ASC
+  `).all()
+  return c.json(result.results || [])
+})
+
+app.post('/api/reminders', async (c) => {
+  const { DB } = c.env
+  const data = await c.req.json()
+  const result = await DB.prepare(
+    'INSERT INTO payment_reminders (agreement_id, due_date, amount, status) VALUES (?, ?, ?, ?)'
+  ).bind(
+    data.agreement_id,
+    data.due_date,
+    data.amount,
+    data.status || 'pending'
+  ).run()
+  return c.json({ id: result.meta.last_row_id, ...data })
+})
+
+app.put('/api/reminders/:id/mark-paid', async (c) => {
+  const { DB } = c.env
+  const id = c.req.param('id')
+  await DB.prepare(
+    'UPDATE payment_reminders SET status = ?, paid_at = CURRENT_TIMESTAMP WHERE id = ?'
+  ).bind('paid', id).run()
+  return c.json({ success: true })
+})
+
+app.put('/api/reminders/:id/mark-sent', async (c) => {
+  const { DB } = c.env
+  const id = c.req.param('id')
+  await DB.prepare(
+    'UPDATE payment_reminders SET sent_at = CURRENT_TIMESTAMP WHERE id = ?'
+  ).bind(id).run()
+  return c.json({ success: true })
+})
+
+// ======================
+// EMAIL SETTINGS API
+// ======================
+app.get('/api/email-settings', async (c) => {
+  const { DB } = c.env
+  const result = await DB.prepare('SELECT * FROM email_settings WHERE is_active = 1 LIMIT 1').first()
+  return c.json(result || {})
+})
+
+app.post('/api/email-settings', async (c) => {
+  const { DB } = c.env
+  const data = await c.req.json()
+  
+  // Deactivate all existing settings
+  await DB.prepare('UPDATE email_settings SET is_active = 0').run()
+  
+  // Insert new settings
+  const result = await DB.prepare(
+    'INSERT INTO email_settings (provider, api_key, from_email, from_name, reminder_days_before, is_active) VALUES (?, ?, ?, ?, ?, 1)'
+  ).bind(
+    data.provider,
+    data.api_key,
+    data.from_email,
+    data.from_name || null,
+    data.reminder_days_before || 3
+  ).run()
+  
+  return c.json({ id: result.meta.last_row_id, ...data })
+})
+
+app.put('/api/email-settings/:id', async (c) => {
+  const { DB } = c.env
+  const id = c.req.param('id')
+  const data = await c.req.json()
+  
+  await DB.prepare(
+    'UPDATE email_settings SET provider = ?, api_key = ?, from_email = ?, from_name = ?, reminder_days_before = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
+  ).bind(
+    data.provider,
+    data.api_key,
+    data.from_email,
+    data.from_name || null,
+    data.reminder_days_before || 3,
+    id
+  ).run()
+  
+  return c.json({ id, ...data })
+})
+
+// ======================
+// MAIN PAGE
+// ======================
+app.get('/', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Agreement Management System</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+        <style>
+            .signature-pad { border: 2px solid #e5e7eb; border-radius: 8px; }
+            .tab-content { display: none; }
+            .tab-content.active { display: block; }
+            .nav-tab.active { background-color: #3b82f6; color: white; }
+        </style>
+    </head>
+    <body class="bg-gray-50">
+        <div class="min-h-screen">
+            <!-- Header -->
+            <header class="bg-white shadow-sm border-b border-gray-200">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h1 class="text-2xl font-bold text-gray-900">
+                                <i class="fas fa-file-contract mr-2 text-blue-600"></i>
+                                Agreement Management
+                            </h1>
+                            <p class="text-sm text-gray-600 mt-1">Manage agencies, customers, and agreements</p>
+                        </div>
+                        <button onclick="showTab('new-agreement')" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
+                            <i class="fas fa-plus mr-2"></i>New Agreement
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Navigation Tabs -->
+            <div class="bg-white border-b border-gray-200">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <nav class="flex space-x-4 py-4">
+                        <button onclick="showTab('dashboard')" class="nav-tab px-4 py-2 rounded-lg font-medium transition-colors active">
+                            <i class="fas fa-home mr-2"></i>Dashboard
+                        </button>
+                        <button onclick="showTab('agreements')" class="nav-tab px-4 py-2 rounded-lg font-medium transition-colors hover:bg-gray-100">
+                            <i class="fas fa-file-contract mr-2"></i>Agreements
+                        </button>
+                        <button onclick="showTab('customers')" class="nav-tab px-4 py-2 rounded-lg font-medium transition-colors hover:bg-gray-100">
+                            <i class="fas fa-users mr-2"></i>Customers
+                        </button>
+                        <button onclick="showTab('templates')" class="nav-tab px-4 py-2 rounded-lg font-medium transition-colors hover:bg-gray-100">
+                            <i class="fas fa-file-alt mr-2"></i>Templates
+                        </button>
+                        <button onclick="showTab('reminders')" class="nav-tab px-4 py-2 rounded-lg font-medium transition-colors hover:bg-gray-100">
+                            <i class="fas fa-bell mr-2"></i>Reminders
+                        </button>
+                        <button onclick="showTab('settings')" class="nav-tab px-4 py-2 rounded-lg font-medium transition-colors hover:bg-gray-100">
+                            <i class="fas fa-cog mr-2"></i>Settings
+                        </button>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <!-- Dashboard Tab -->
+                <div id="dashboard" class="tab-content active">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-gray-600">Active Agreements</p>
+                                    <p id="stat-active" class="text-3xl font-bold text-gray-900 mt-2">0</p>
+                                </div>
+                                <div class="bg-blue-100 p-3 rounded-full">
+                                    <i class="fas fa-file-contract text-2xl text-blue-600"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-gray-600">Total Customers</p>
+                                    <p id="stat-customers" class="text-3xl font-bold text-gray-900 mt-2">0</p>
+                                </div>
+                                <div class="bg-green-100 p-3 rounded-full">
+                                    <i class="fas fa-users text-2xl text-green-600"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-gray-600">Pending Reminders</p>
+                                    <p id="stat-reminders" class="text-3xl font-bold text-gray-900 mt-2">0</p>
+                                </div>
+                                <div class="bg-yellow-100 p-3 rounded-full">
+                                    <i class="fas fa-bell text-2xl text-yellow-600"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-gray-600">Monthly Revenue</p>
+                                    <p id="stat-revenue" class="text-3xl font-bold text-gray-900 mt-2">$0</p>
+                                </div>
+                                <div class="bg-purple-100 p-3 rounded-full">
+                                    <i class="fas fa-dollar-sign text-2xl text-purple-600"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h2 class="text-xl font-bold text-gray-900 mb-4">Recent Agreements</h2>
+                        <div id="recent-agreements" class="space-y-4"></div>
+                    </div>
+                </div>
+
+                <!-- Agreements Tab -->
+                <div id="agreements" class="tab-content">
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h2 class="text-xl font-bold text-gray-900 mb-4">All Agreements</h2>
+                        <div id="agreements-list" class="space-y-4"></div>
+                    </div>
+                </div>
+
+                <!-- Customers Tab -->
+                <div id="customers" class="tab-content">
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-xl font-bold text-gray-900">Customers</h2>
+                            <button onclick="showCustomerForm()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                                <i class="fas fa-plus mr-2"></i>Add Customer
+                            </button>
+                        </div>
+                        <div id="customers-list" class="space-y-4"></div>
+                    </div>
+                    <div id="customer-form-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div class="bg-white rounded-lg p-6 w-full max-w-2xl">
+                            <h3 class="text-xl font-bold mb-4">Customer Information</h3>
+                            <form id="customer-form" class="space-y-4">
+                                <input type="hidden" id="customer-id">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+                                        <input type="text" id="customer-name" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                                        <input type="email" id="customer-email" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                                        <input type="tel" id="customer-phone" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Company</label>
+                                        <input type="text" id="customer-company" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Tax ID</label>
+                                        <input type="text" id="customer-tax-id" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                    </div>
+                                    <div class="col-span-2">
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                                        <textarea id="customer-address" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg"></textarea>
+                                    </div>
+                                </div>
+                                <div class="flex justify-end space-x-3 mt-6">
+                                    <button type="button" onclick="closeCustomerForm()" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+                                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Save</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Templates Tab -->
+                <div id="templates" class="tab-content">
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-xl font-bold text-gray-900">Agreement Templates</h2>
+                            <button onclick="showTemplateForm()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                                <i class="fas fa-plus mr-2"></i>Add Template
+                            </button>
+                        </div>
+                        <div id="templates-list" class="space-y-4"></div>
+                    </div>
+                    <div id="template-form-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div class="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+                            <h3 class="text-xl font-bold mb-4">Template Information</h3>
+                            <form id="template-form" class="space-y-4">
+                                <input type="hidden" id="template-id">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Template Name *</label>
+                                    <input type="text" id="template-name" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                                    <input type="text" id="template-description" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Content *</label>
+                                    <textarea id="template-content" rows="15" required class="w-full px-3 py-2 border border-gray-300 rounded-lg font-mono text-sm"></textarea>
+                                    <p class="text-xs text-gray-500 mt-1">Available placeholders: {{AGENCY_NAME}}, {{CUSTOMER_NAME}}, {{SERVICES}}, {{MONTHLY_PAYMENT}}, {{PAYMENT_DAY}}, {{START_DATE}}, {{END_DATE}}</p>
+                                </div>
+                                <div class="flex justify-end space-x-3">
+                                    <button type="button" onclick="closeTemplateForm()" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+                                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Save</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reminders Tab -->
+                <div id="reminders" class="tab-content">
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h2 class="text-xl font-bold text-gray-900 mb-4">Payment Reminders</h2>
+                        <div id="reminders-list" class="space-y-4"></div>
+                    </div>
+                </div>
+
+                <!-- Settings Tab -->
+                <div id="settings" class="tab-content">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Agencies Section -->
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <div class="flex justify-between items-center mb-4">
+                                <h2 class="text-xl font-bold text-gray-900">Agencies</h2>
+                                <button onclick="showAgencyForm()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm">
+                                    <i class="fas fa-plus mr-2"></i>Add Agency
+                                </button>
+                            </div>
+                            <div id="agencies-list" class="space-y-3"></div>
+                        </div>
+
+                        <!-- Email Settings Section -->
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <h2 class="text-xl font-bold text-gray-900 mb-4">Email Settings</h2>
+                            <form id="email-settings-form" class="space-y-4">
+                                <input type="hidden" id="email-settings-id">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Email Provider</label>
+                                    <select id="email-provider" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                        <option value="sendgrid">SendGrid</option>
+                                        <option value="mailgun">Mailgun</option>
+                                        <option value="ses">Amazon SES</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">API Key</label>
+                                    <input type="password" id="email-api-key" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">From Email</label>
+                                    <input type="email" id="email-from" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">From Name</label>
+                                    <input type="text" id="email-from-name" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Days Before Due Date</label>
+                                    <input type="number" id="email-reminder-days" min="1" max="30" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                </div>
+                                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                                    Save Email Settings
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Agency Form Modal -->
+                    <div id="agency-form-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div class="bg-white rounded-lg p-6 w-full max-w-2xl">
+                            <h3 class="text-xl font-bold mb-4">Agency Information</h3>
+                            <form id="agency-form" class="space-y-4">
+                                <input type="hidden" id="agency-id">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+                                        <input type="text" id="agency-name" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                        <input type="email" id="agency-email" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                                        <input type="tel" id="agency-phone" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                                        <select id="agency-active" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                            <option value="1">Active</option>
+                                            <option value="0">Inactive</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-span-2">
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                                        <textarea id="agency-address" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg"></textarea>
+                                    </div>
+                                </div>
+                                <div class="flex justify-end space-x-3 mt-6">
+                                    <button type="button" onclick="closeAgencyForm()" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+                                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Save</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- New Agreement Tab -->
+                <div id="new-agreement" class="tab-content">
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h2 class="text-xl font-bold text-gray-900 mb-6">Create New Agreement</h2>
+                        <form id="new-agreement-form" class="space-y-6">
+                            <div class="grid grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Agency *</label>
+                                    <select id="agreement-agency" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                        <option value="">Select Agency</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Customer *</label>
+                                    <select id="agreement-customer" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                        <option value="">Select Customer</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Template</label>
+                                    <select id="agreement-template" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                        <option value="">No Template</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Title *</label>
+                                    <input type="text" id="agreement-title" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Monthly Payment</label>
+                                    <input type="number" id="agreement-payment" step="0.01" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Payment Day</label>
+                                    <input type="number" id="agreement-payment-day" min="1" max="31" value="1" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Start Date *</label>
+                                    <input type="date" id="agreement-start-date" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                                    <input type="date" id="agreement-end-date" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="flex justify-between items-center mb-2">
+                                    <label class="block text-sm font-medium text-gray-700">Service Sections</label>
+                                    <button type="button" onclick="addServiceSection()" class="text-blue-600 hover:text-blue-700 text-sm">
+                                        <i class="fas fa-plus mr-1"></i>Add Service
+                                    </button>
+                                </div>
+                                <div id="service-sections" class="space-y-3"></div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Agreement Content *</label>
+                                <textarea id="agreement-content" rows="15" required class="w-full px-3 py-2 border border-gray-300 rounded-lg font-mono text-sm"></textarea>
+                            </div>
+
+                            <div class="flex justify-end space-x-3">
+                                <button type="button" onclick="showTab('agreements')" class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+                                <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Create Agreement</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <script src="/static/app.js"></script>
+    </body>
+    </html>
+  `)
+})
+
+export default app
