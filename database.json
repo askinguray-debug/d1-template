@@ -277,5 +277,31 @@
       "default_price": 400,
       "category": "Design"
     }
+  ],
+  "modelAgreements": [
+    {
+      "id": 1,
+      "agreement_number": "MODEL-1764789350449-294",
+      "agency_id": 1,
+      "customer_id": 4,
+      "title": "Cast & Modeling Agreement",
+      "content": "CAST & MODELING AGREEMENT\n\nThis agreement (\"Agreement\") is entered into as of 12/1/2025 between:\n\nAGENCY: FCA\nAddress: Symrna TR FOLKART TOWERS\nEmail: info@fashioncast.ageency\nPhone: +9050787522228\n\nMODEL: Kalo\nCompany: The nest\nEmail: Georgiev.kalojan@gmail.com\nPhone: 000\n\n1. PURPOSE\nThe Agency agrees to represent the Model for casting and modeling opportunities in accordance with the terms set forth in this Agreement.\n\n2. SCOPE OF REPRESENTATION\nThe Agency shall use reasonable efforts to secure casting and modeling opportunities for the Model including but not limited to:\n- Fashion shows and runway modeling\n- Print advertising and editorial work\n- Commercial appearances and brand endorsements\n- Television and digital media appearances\n\n3. TERM\nThis Agreement shall commence on 12/1/2025 and continue until 12/3/2030, unless terminated earlier in accordance with the provisions herein.\n\n4. MODEL OBLIGATIONS\nThe Model agrees to:\n- Maintain professional appearance and conduct\n- Attend all scheduled castings, fittings, and bookings\n- Provide accurate measurements and portfolio materials\n- Notify Agency promptly of any changes to availability or contact information\n\n5. AGENCY OBLIGATIONS\nThe Agency agrees to:\n- Actively promote the Model to potential clients\n- Provide professional guidance and career development support\n- Handle negotiations and contracts on behalf of the Model\n- Maintain the Model's portfolio and promotional materials\n\n6. EXCLUSIVITY\nThis is a non-exclusive representation agreement. The Model may seek additional representation provided there is no conflict with Agency bookings.\n\n7. TERMINATION\nEither party may terminate this Agreement with thirty (30) days written notice to the other party.\n\n8. CONFIDENTIALITY\nBoth parties agree to maintain confidentiality of proprietary information shared during the course of this Agreement.\n\n9. GENERAL PROVISIONS\nThis Agreement constitutes the entire agreement between the parties and supersedes all prior understandings. This Agreement shall be governed by the laws of the applicable jurisdiction.\n\n\nADDITIONAL NOTES:\nJkcjkzcjkxz\n\nBy signing below, both parties acknowledge they have read, understood, and agree to be bound by the terms of this Agreement.",
+      "start_date": "2025-12-01",
+      "end_date": "2030-12-03",
+      "status": "draft",
+      "agency_signed": 0,
+      "customer_signed": 0,
+      "created_at": "2025-12-03T19:15:50.449Z",
+      "updated_at": "2025-12-03T19:15:50.449Z",
+      "shareTokens": {
+        "agency": {
+          "token": "bdc9729534b5120bcb54598d6557ff5515926938e70204fc70d50ade186cc0a5",
+          "party": "agency",
+          "used": false,
+          "createdAt": "2025-12-03T19:23:52.768Z",
+          "expiresAt": "2026-01-02T19:23:52.769Z"
+        }
+      }
+    }
   ]
 }

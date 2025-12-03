@@ -410,9 +410,14 @@ ${agreement.content}
                                             <img src="${agreement.agency_signature}" style="max-height: 50px; border: 1px solid #e5e7eb; padding: 4px;" alt="Agency Signature" />
                                             <p class="text-sm text-gray-600 mt-2">Signed: ${formatDate(agreement.agency_signed_at)}</p>
                                           </div>`
-                                        : `<button onclick="openSignaturePad(${id}, 'agency', 'model')" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">
-                                            <i class="fas fa-pen mr-2"></i>Sign Now
-                                          </button>`
+                                        : `<div class="space-y-2">
+                                            <button onclick="openSignaturePad(${id}, 'agency', 'model')" class="w-full bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">
+                                                <i class="fas fa-pen mr-2"></i>Sign Now
+                                            </button>
+                                            <button onclick="generateShareLink(${id}, 'agency', 'model')" class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm">
+                                                <i class="fas fa-link mr-2"></i>Get Share Link
+                                            </button>
+                                          </div>`
                                     }
                                 </div>
                                 <div class="border border-gray-200 rounded-lg p-4">
@@ -422,9 +427,14 @@ ${agreement.content}
                                             <img src="${agreement.customer_signature}" style="max-height: 50px; border: 1px solid #e5e7eb; padding: 4px;" alt="Model Signature" />
                                             <p class="text-sm text-gray-600 mt-2">Signed: ${formatDate(agreement.customer_signed_at)}</p>
                                           </div>`
-                                        : `<button onclick="openSignaturePad(${id}, 'customer', 'model')" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">
-                                            <i class="fas fa-pen mr-2"></i>Sign Now
-                                          </button>`
+                                        : `<div class="space-y-2">
+                                            <button onclick="openSignaturePad(${id}, 'customer', 'model')" class="w-full bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">
+                                                <i class="fas fa-pen mr-2"></i>Sign Now
+                                            </button>
+                                            <button onclick="generateShareLink(${id}, 'customer', 'model')" class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm">
+                                                <i class="fas fa-link mr-2"></i>Get Share Link
+                                            </button>
+                                          </div>`
                                     }
                                 </div>
                             </div>
@@ -1153,12 +1163,17 @@ async function viewAgreement(id) {
                             </div>
                             <p class="text-xs text-gray-600 mt-2">Signed on ${formatDate(agreement.agency_signed_at)}</p>
                         ` : `
-                            <div class="text-center py-8 bg-gray-50 rounded">
-                                <i class="fas fa-signature text-4xl text-gray-400 mb-3"></i>
-                                <p class="text-sm text-gray-600">Not signed yet</p>
-                                <button onclick="openSignaturePad(${id}, 'agency')" class="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
-                                    <i class="fas fa-pen mr-2"></i>Sign Now
-                                </button>
+                            <div class="text-center py-6 bg-gray-50 rounded">
+                                <i class="fas fa-signature text-3xl text-gray-400 mb-2"></i>
+                                <p class="text-sm text-gray-600 mb-3">Not signed yet</p>
+                                <div class="space-y-2">
+                                    <button onclick="openSignaturePad(${id}, 'agency')" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
+                                        <i class="fas fa-pen mr-2"></i>Sign Now
+                                    </button>
+                                    <button onclick="generateShareLink(${id}, 'agency', 'regular')" class="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm">
+                                        <i class="fas fa-link mr-2"></i>Get Share Link
+                                    </button>
+                                </div>
                             </div>
                         `}
                     </div>
@@ -1173,12 +1188,17 @@ async function viewAgreement(id) {
                             </div>
                             <p class="text-xs text-gray-600 mt-2">Signed on ${formatDate(agreement.customer_signed_at)}</p>
                         ` : `
-                            <div class="text-center py-8 bg-gray-50 rounded">
-                                <i class="fas fa-signature text-4xl text-gray-400 mb-3"></i>
-                                <p class="text-sm text-gray-600">Not signed yet</p>
-                                <button onclick="openSignaturePad(${id}, 'customer')" class="mt-3 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm">
-                                    <i class="fas fa-pen mr-2"></i>Sign Now
-                                </button>
+                            <div class="text-center py-6 bg-gray-50 rounded">
+                                <i class="fas fa-signature text-3xl text-gray-400 mb-2"></i>
+                                <p class="text-sm text-gray-600 mb-3">Not signed yet</p>
+                                <div class="space-y-2">
+                                    <button onclick="openSignaturePad(${id}, 'customer')" class="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm">
+                                        <i class="fas fa-pen mr-2"></i>Sign Now
+                                    </button>
+                                    <button onclick="generateShareLink(${id}, 'customer', 'regular')" class="w-full px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 text-sm">
+                                        <i class="fas fa-link mr-2"></i>Get Share Link
+                                    </button>
+                                </div>
                             </div>
                         `}
                     </div>
@@ -1695,4 +1715,102 @@ async function saveSignature() {
         const errorMsg = error.response?.data?.error || error.response?.data?.message || error.message || 'Unknown error';
         showNotification(`❌ Error saving signature: ${errorMsg}`, 'error');
     }
+}
+
+// Generate Share Link for Signature
+async function generateShareLink(agreementId, party, agreementType = 'regular') {
+    try {
+        showNotification('🔗 Generating share link...', 'info');
+        
+        const endpoint = agreementType === 'model' 
+            ? `/api/model-agreements/${agreementId}/generate-share-link`
+            : `/api/agreements/${agreementId}/generate-share-link`;
+        
+        const response = await axios.post(endpoint, { party });
+        const { shareUrl } = response.data;
+        
+        // Create modal to display the share link
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[70]';
+        modal.innerHTML = `
+            <div class="bg-white rounded-lg p-6 max-w-2xl w-full mx-4">
+                <div class="flex justify-between items-start mb-4">
+                    <h3 class="text-xl font-bold text-gray-900">
+                        <i class="fas fa-link mr-2 text-blue-600"></i>
+                        Share Link Generated
+                    </h3>
+                    <button onclick="this.closest('.fixed').remove()" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <div class="mb-6">
+                    <p class="text-sm text-gray-600 mb-4">
+                        Share this link with the ${party === 'agency' ? 'Agency Representative' : (agreementType === 'model' ? 'Model' : 'Customer')} to sign the agreement. 
+                        This link can only be used once and expires in 30 days.
+                    </p>
+                    
+                    <div class="bg-gray-50 border border-gray-300 rounded-lg p-4 break-all">
+                        <code class="text-sm text-blue-600">${shareUrl}</code>
+                    </div>
+                </div>
+                
+                <div class="flex gap-3">
+                    <button onclick="copyShareLink('${shareUrl}')" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                        <i class="fas fa-copy mr-2"></i>Copy Link
+                    </button>
+                    <button onclick="this.closest('.fixed').remove()" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+                        Close
+                    </button>
+                </div>
+                
+                <div class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p class="text-xs text-yellow-800">
+                        <i class="fas fa-exclamation-triangle mr-1"></i>
+                        <strong>Security Notice:</strong> This link allows one-time signing only. Once used, it cannot be used again. The recipient cannot edit or remove the signature.
+                    </p>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        showNotification('✅ Share link generated successfully!');
+        
+    } catch (error) {
+        console.error('Error generating share link:', error);
+        const errorMsg = error.response?.data?.error || error.message || 'Failed to generate share link';
+        showNotification(`❌ Error: ${errorMsg}`, 'error');
+    }
+}
+
+function copyShareLink(url) {
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(url).then(() => {
+            showNotification('✅ Link copied to clipboard!');
+        }).catch(err => {
+            console.error('Failed to copy:', err);
+            fallbackCopyShareLink(url);
+        });
+    } else {
+        fallbackCopyShareLink(url);
+    }
+}
+
+function fallbackCopyShareLink(url) {
+    const textarea = document.createElement('textarea');
+    textarea.value = url;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    
+    try {
+        document.execCommand('copy');
+        showNotification('✅ Link copied to clipboard!');
+    } catch (err) {
+        console.error('Failed to copy:', err);
+        showNotification('❌ Failed to copy link. Please copy manually.', 'error');
+    }
+    
+    document.body.removeChild(textarea);
 }

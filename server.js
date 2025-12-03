@@ -5,6 +5,7 @@ import { readFile, writeFile } from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import nodemailer from 'nodemailer';
+import crypto from 'crypto';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -536,6 +537,309 @@ app.post('/api/model-agreements/:id/send-email', async (req, res) => {
     res.json({ success: true, message: 'Email sent successfully' });
   } catch (error) {
     console.error('Email sending error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ======================
+// SHARE LINK API (Secure One-Time Signing)
+// ======================
+
+// Generate share link for model agreements
+app.post('/api/model-agreements/:id/generate-share-link', async (req, res) => {
+  try {
+    const db = await readDB();
+    if (!db.modelAgreements) db.modelAgreements = [];
+    const agreementIndex = db.modelAgreements.findIndex(a => a.id === parseInt(req.params.id));
+    
+    if (agreementIndex === -1) {
+      return res.status(404).json({ error: 'Model Agreement not found' });
+    }
+    
+    const { party } = req.body; // 'agency' or 'customer'
+    if (!party || (party !== 'agency' && party !== 'customer')) {
+      return res.status(400).json({ error: 'Invalid party. Must be "agency" or "customer"' });
+    }
+    
+    // Generate secure random token
+    const token = crypto.randomBytes(32).toString('hex');
+    
+    // Initialize share tokens object if it doesn't exist
+    if (!db.modelAgreements[agreementIndex].shareTokens) {
+      db.modelAgreements[agreementIndex].shareTokens = {};
+    }
+    
+    // Store token with metadata
+    db.modelAgreements[agreementIndex].shareTokens[party] = {
+      token: token,
+      party: party,
+      used: false,
+      createdAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days
+    };
+    
+    await writeDB(db);
+    
+    // Generate the share URL
+    const shareUrl = `${req.protocol}://${req.get('host')}/sign/${token}`;
+    
+    res.json({ 
+      success: true, 
+      shareUrl: shareUrl,
+      token: token,
+      party: party,
+      expiresAt: db.modelAgreements[agreementIndex].shareTokens[party].expiresAt
+    });
+  } catch (error) {
+    console.error('Error generating share link:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Generate share link for regular agreements
+app.post('/api/agreements/:id/generate-share-link', async (req, res) => {
+  try {
+    const db = await readDB();
+    const agreementIndex = db.agreements.findIndex(a => a.id === parseInt(req.params.id));
+    
+    if (agreementIndex === -1) {
+      return res.status(404).json({ error: 'Agreement not found' });
+    }
+    
+    const { party } = req.body; // 'agency' or 'customer'
+    if (!party || (party !== 'agency' && party !== 'customer')) {
+      return res.status(400).json({ error: 'Invalid party. Must be "agency" or "customer"' });
+    }
+    
+    // Generate secure random token
+    const token = crypto.randomBytes(32).toString('hex');
+    
+    // Initialize share tokens object if it doesn't exist
+    if (!db.agreements[agreementIndex].shareTokens) {
+      db.agreements[agreementIndex].shareTokens = {};
+    }
+    
+    // Store token with metadata
+    db.agreements[agreementIndex].shareTokens[party] = {
+      token: token,
+      party: party,
+      used: false,
+      createdAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days
+    };
+    
+    await writeDB(db);
+    
+    // Generate the share URL
+    const shareUrl = `${req.protocol}://${req.get('host')}/sign/${token}`;
+    
+    res.json({ 
+      success: true, 
+      shareUrl: shareUrl,
+      token: token,
+      party: party,
+      expiresAt: db.agreements[agreementIndex].shareTokens[party].expiresAt
+    });
+  } catch (error) {
+    console.error('Error generating share link:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get agreement by share token (public endpoint)
+app.get('/api/share/:token', async (req, res) => {
+  try {
+    const db = await readDB();
+    const { token } = req.params;
+    
+    // Search in model agreements
+    let agreement = null;
+    let party = null;
+    let agreementType = null;
+    let tokenData = null;
+    
+    // Check model agreements
+    if (db.modelAgreements) {
+      for (const modelAgreement of db.modelAgreements) {
+        if (modelAgreement.shareTokens) {
+          for (const [tokenParty, tokenInfo] of Object.entries(modelAgreement.shareTokens)) {
+            if (tokenInfo.token === token) {
+              agreement = modelAgreement;
+              party = tokenParty;
+              agreementType = 'model';
+              tokenData = tokenInfo;
+              break;
+            }
+          }
+        }
+        if (agreement) break;
+      }
+    }
+    
+    // Check regular agreements if not found
+    if (!agreement) {
+      for (const regularAgreement of db.agreements) {
+        if (regularAgreement.shareTokens) {
+          for (const [tokenParty, tokenInfo] of Object.entries(regularAgreement.shareTokens)) {
+            if (tokenInfo.token === token) {
+              agreement = regularAgreement;
+              party = tokenParty;
+              agreementType = 'regular';
+              tokenData = tokenInfo;
+              break;
+            }
+          }
+        }
+        if (agreement) break;
+      }
+    }
+    
+    if (!agreement) {
+      return res.status(404).json({ error: 'Invalid or expired share link' });
+    }
+    
+    // Check if token is expired
+    if (new Date(tokenData.expiresAt) < new Date()) {
+      return res.status(403).json({ error: 'This share link has expired' });
+    }
+    
+    // Check if already signed
+    const alreadySigned = party === 'agency' ? agreement.agency_signed : agreement.customer_signed;
+    
+    // Get agency and customer details
+    const agency = db.agencies.find(a => a.id === agreement.agency_id);
+    const customer = db.customers.find(c => c.id === agreement.customer_id);
+    
+    res.json({
+      agreement: {
+        ...agreement,
+        agency_name: agency?.name || '',
+        agency_email: agency?.email || '',
+        agency_address: agency?.address || '',
+        customer_name: customer?.name || '',
+        customer_email: customer?.email || '',
+        customer_company: customer?.company || ''
+      },
+      party: party,
+      agreementType: agreementType,
+      alreadySigned: alreadySigned,
+      tokenUsed: tokenData.used,
+      canSign: !tokenData.used && !alreadySigned
+    });
+  } catch (error) {
+    console.error('Error fetching agreement by token:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Sign agreement via share link (public endpoint)
+app.post('/api/share/:token/sign', async (req, res) => {
+  try {
+    const db = await readDB();
+    const { token } = req.params;
+    const { signature } = req.body;
+    
+    if (!signature) {
+      return res.status(400).json({ error: 'Signature is required' });
+    }
+    
+    // Find the agreement and token
+    let agreementIndex = -1;
+    let party = null;
+    let agreementType = null;
+    let tokenData = null;
+    let agreements = null;
+    
+    // Check model agreements
+    if (db.modelAgreements) {
+      for (let i = 0; i < db.modelAgreements.length; i++) {
+        if (db.modelAgreements[i].shareTokens) {
+          for (const [tokenParty, tokenInfo] of Object.entries(db.modelAgreements[i].shareTokens)) {
+            if (tokenInfo.token === token) {
+              agreementIndex = i;
+              party = tokenParty;
+              agreementType = 'model';
+              tokenData = tokenInfo;
+              agreements = db.modelAgreements;
+              break;
+            }
+          }
+        }
+        if (agreementIndex !== -1) break;
+      }
+    }
+    
+    // Check regular agreements if not found
+    if (agreementIndex === -1) {
+      for (let i = 0; i < db.agreements.length; i++) {
+        if (db.agreements[i].shareTokens) {
+          for (const [tokenParty, tokenInfo] of Object.entries(db.agreements[i].shareTokens)) {
+            if (tokenInfo.token === token) {
+              agreementIndex = i;
+              party = tokenParty;
+              agreementType = 'regular';
+              tokenData = tokenInfo;
+              agreements = db.agreements;
+              break;
+            }
+          }
+        }
+        if (agreementIndex !== -1) break;
+      }
+    }
+    
+    if (agreementIndex === -1) {
+      return res.status(404).json({ error: 'Invalid or expired share link' });
+    }
+    
+    // Check if token is expired
+    if (new Date(tokenData.expiresAt) < new Date()) {
+      return res.status(403).json({ error: 'This share link has expired' });
+    }
+    
+    // Check if token has already been used
+    if (tokenData.used) {
+      return res.status(403).json({ error: 'This share link has already been used' });
+    }
+    
+    // Check if already signed
+    const alreadySigned = party === 'agency' 
+      ? agreements[agreementIndex].agency_signed 
+      : agreements[agreementIndex].customer_signed;
+    
+    if (alreadySigned) {
+      return res.status(403).json({ error: 'This party has already signed this agreement' });
+    }
+    
+    // Apply signature
+    if (party === 'agency') {
+      agreements[agreementIndex].agency_signed = 1;
+      agreements[agreementIndex].agency_signature = signature;
+      agreements[agreementIndex].agency_signed_at = new Date().toISOString();
+    } else {
+      agreements[agreementIndex].customer_signed = 1;
+      agreements[agreementIndex].customer_signature = signature;
+      agreements[agreementIndex].customer_signed_at = new Date().toISOString();
+    }
+    
+    // Mark token as used
+    agreements[agreementIndex].shareTokens[party].used = true;
+    agreements[agreementIndex].shareTokens[party].usedAt = new Date().toISOString();
+    
+    // Update status if both parties signed
+    if (agreements[agreementIndex].agency_signed && agreements[agreementIndex].customer_signed) {
+      agreements[agreementIndex].status = 'active';
+    }
+    
+    await writeDB(db);
+    
+    res.json({ 
+      success: true, 
+      message: 'Signature saved successfully',
+      agreement: agreements[agreementIndex]
+    });
+  } catch (error) {
+    console.error('Error signing via share link:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -1402,6 +1706,11 @@ function generateAgreementHTML(agreement, agency, customer, printVersion = false
 // Serve index.html for root route
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Serve public signing page
+app.get('/sign/:token', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'sign.html'));
 });
 
 // Start server

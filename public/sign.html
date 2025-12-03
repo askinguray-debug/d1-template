@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Agreement</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+    <style>
+        .signature-pad { 
+            border: 2px solid #e5e7eb; 
+            border-radius: 8px;
+            background: white;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .status-active { background: #dcfce7; color: #166534; }
+        .status-draft { background: #fef3c7; color: #92400e; }
+        .status-pending { background: #dbeafe; color: #1e40af; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="max-w-4xl mx-auto px-4 py-8">
+        <!-- Loading State -->
+        <div id="loading" class="text-center py-12">
+            <i class="fas fa-spinner fa-spin text-4xl text-blue-600"></i>
+            <p class="mt-4 text-gray-600">Loading agreement...</p>
+        </div>
+
+        <!-- Error State -->
+        <div id="error" class="hidden">
+            <div class="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+                <i class="fas fa-exclamation-circle text-4xl text-red-600 mb-4"></i>
+                <h2 class="text-xl font-bold text-red-900 mb-2">Error</h2>
+                <p id="error-message" class="text-red-700"></p>
+                <p class="text-sm text-red-600 mt-4">Please contact the sender for a new link.</p>
+            </div>
+        </div>
+
+        <!-- Agreement Content -->
+        <div id="agreement-content" class="hidden">
+            <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+                <!-- Header -->
+                <div id="agreement-header" class="p-6 border-b border-gray-200"></div>
+                
+                <!-- Agreement Details -->
+                <div id="agreement-details" class="p-6"></div>
+                
+                <!-- Signature Section -->
+                <div id="signature-section" class="p-6 bg-gray-50 border-t border-gray-200"></div>
+                
+                <!-- Success Message -->
+                <div id="success-message" class="hidden p-6 bg-green-50 border-t border-green-200">
+                    <div class="text-center">
+                        <i class="fas fa-check-circle text-4xl text-green-600 mb-4"></i>
+                        <h3 class="text-xl font-bold text-green-900 mb-2">Signature Saved Successfully!</h3>
+                        <p class="text-green-700">Thank you for signing this agreement.</p>
+                        <p class="text-sm text-gray-600 mt-4">You can now close this window.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <script>
+        let signaturePad = null;
+        let currentToken = null;
+        let agreementData = null;
+
+        // Get token from URL
+        const pathParts = window.location.pathname.split('/');
+        currentToken = pathParts[pathParts.length - 1];
+
+        // Load agreement data
+        async function loadAgreement() {
+            try {
+                const response = await axios.get(`/api/share/${currentToken}`);
+                agreementData = response.data;
+                
+                displayAgreement();
+            } catch (error) {
+                console.error('Error loading agreement:', error);
+                const errorMsg = error.response?.data?.error || error.message || 'Failed to load agreement';
+                showError(errorMsg);
+            }
+        }
+
+        function displayAgreement() {
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('agreement-content').classList.remove('hidden');
+
+            const agreement = agreementData.agreement;
+            const party = agreementData.party;
+            const agreementType = agreementData.agreementType;
+            const alreadySigned = agreementData.alreadySigned;
+            const canSign = agreementData.canSign;
+
+            // Header
+            const headerColor = agreementType === 'model' ? '#8b5cf6' : '#2563eb';
+            const headerTitle = agreementType === 'model' ? 'Cast & Modeling Agreement' : 'Service Agreement';
+            
+            document.getElementById('agreement-header').innerHTML = `
+                <div class="text-center">
+                    <h1 class="text-3xl font-bold mb-2" style="color: ${headerColor}">
+                        <i class="fas fa-file-contract mr-2"></i>
+                        ${headerTitle}
+                    </h1>
+                    <p class="text-gray-600">${agreement.agreement_number}</p>
+                    <span class="status-badge status-${agreement.status} mt-2">
+                        ${agreement.status.toUpperCase()}
+                    </span>
+                </div>
+            `;
+
+            // Details
+            const detailsHtml = `
+                <div class="space-y-6">
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-900 mb-4">${agreement.title}</h2>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h3 class="font-semibold text-gray-700 mb-2">
+                                <i class="fas fa-building mr-2"></i>Agency
+                            </h3>
+                            <p class="font-semibold">${agreement.agency_name}</p>
+                            <p class="text-sm text-gray-600">${agreement.agency_email}</p>
+                            ${agreement.agency_address ? `<p class="text-sm text-gray-600">${agreement.agency_address}</p>` : ''}
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h3 class="font-semibold text-gray-700 mb-2">
+                                <i class="fas fa-user mr-2"></i>${agreementType === 'model' ? 'Model' : 'Customer'}
+                            </h3>
+                            <p class="font-semibold">${agreement.customer_name}</p>
+                            <p class="text-sm text-gray-600">${agreement.customer_email}</p>
+                            ${agreement.customer_company ? `<p class="text-sm text-gray-600">${agreement.customer_company}</p>` : ''}
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-sm text-gray-600">Start Date</p>
+                            <p class="font-semibold">${new Date(agreement.start_date).toLocaleDateString()}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-600">End Date</p>
+                            <p class="font-semibold">${new Date(agreement.end_date).toLocaleDateString()}</p>
+                        </div>
+                    </div>
+
+                    ${agreementType === 'regular' && agreement.monthly_payment ? `
+                    <div>
+                        <p class="text-sm text-gray-600">Monthly Payment</p>
+                        <p class="font-semibold text-lg">$${agreement.monthly_payment}</p>
+                    </div>
+                    ` : ''}
+
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <h3 class="font-semibold text-gray-900 mb-2">Agreement Content</h3>
+                        <div class="text-sm whitespace-pre-wrap text-gray-700 max-h-96 overflow-y-auto">${agreement.content}</div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="border border-gray-200 rounded-lg p-4">
+                            <h4 class="font-semibold mb-2">Agency Signature</h4>
+                            ${agreement.agency_signed 
+                                ? `<div>
+                                    <img src="${agreement.agency_signature}" style="max-height: 60px; border: 1px solid #e5e7eb; padding: 4px;" />
+                                    <p class="text-xs text-gray-600 mt-2">Signed: ${new Date(agreement.agency_signed_at).toLocaleDateString()}</p>
+                                   </div>`
+                                : '<p class="text-sm text-gray-500">Not signed yet</p>'}
+                        </div>
+                        <div class="border border-gray-200 rounded-lg p-4">
+                            <h4 class="font-semibold mb-2">${agreementType === 'model' ? 'Model' : 'Customer'} Signature</h4>
+                            ${agreement.customer_signed 
+                                ? `<div>
+                                    <img src="${agreement.customer_signature}" style="max-height: 60px; border: 1px solid #e5e7eb; padding: 4px;" />
+                                    <p class="text-xs text-gray-600 mt-2">Signed: ${new Date(agreement.customer_signed_at).toLocaleDateString()}</p>
+                                   </div>`
+                                : '<p class="text-sm text-gray-500">Not signed yet</p>'}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('agreement-details').innerHTML = detailsHtml;
+
+            // Signature Section
+            displaySignatureSection(party, canSign, alreadySigned);
+        }
+
+        function displaySignatureSection(party, canSign, alreadySigned) {
+            const signatureSection = document.getElementById('signature-section');
+            
+            if (alreadySigned) {
+                signatureSection.innerHTML = `
+                    <div class="text-center py-8">
+                        <i class="fas fa-check-circle text-5xl text-green-600 mb-4"></i>
+                        <h3 class="text-xl font-bold text-gray-900 mb-2">Already Signed</h3>
+                        <p class="text-gray-600">You have already signed this agreement.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            if (!canSign) {
+                signatureSection.innerHTML = `
+                    <div class="text-center py-8">
+                        <i class="fas fa-ban text-5xl text-red-600 mb-4"></i>
+                        <h3 class="text-xl font-bold text-gray-900 mb-2">Link Already Used</h3>
+                        <p class="text-gray-600">This signing link has already been used.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const partyColor = party === 'agency' ? '#2563eb' : '#059669';
+            const partyLabel = party === 'agency' ? 'Agency Representative' : (agreementData.agreementType === 'model' ? 'Model' : 'Customer');
+
+            signatureSection.innerHTML = `
+                <div>
+                    <div class="text-center mb-6">
+                        <h3 class="text-xl font-bold text-gray-900 mb-2">
+                            <i class="fas fa-pen-fancy mr-2" style="color: ${partyColor}"></i>
+                            Sign as ${partyLabel}
+                        </h3>
+                        <p class="text-sm text-gray-600">Draw your signature below</p>
+                    </div>
+
+                    <div class="max-w-2xl mx-auto">
+                        <div class="border-2 border-gray-300 rounded-lg bg-white mb-4">
+                            <canvas id="signature-canvas" width="700" height="200" class="w-full signature-pad" style="touch-action: none;"></canvas>
+                        </div>
+
+                        <div class="flex justify-between items-center">
+                            <button onclick="clearSignature()" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+                                <i class="fas fa-eraser mr-2"></i>Clear
+                            </button>
+                            <button onclick="saveSignature()" class="px-6 py-3 text-white rounded-lg font-semibold" style="background-color: ${partyColor}">
+                                <i class="fas fa-check mr-2"></i>Sign Agreement
+                            </button>
+                        </div>
+
+                        <p class="text-xs text-gray-500 text-center mt-4">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            By signing, you agree to the terms and conditions outlined in this agreement.
+                        </p>
+                    </div>
+                </div>
+            `;
+
+            // Initialize signature pad
+            setTimeout(() => {
+                const canvas = document.getElementById('signature-canvas');
+                if (canvas && typeof SignaturePad !== 'undefined') {
+                    signaturePad = new SignaturePad(canvas, {
+                        backgroundColor: 'rgb(255, 255, 255)',
+                        penColor: partyColor
+                    });
+                }
+            }, 100);
+        }
+
+        function clearSignature() {
+            if (signaturePad) {
+                signaturePad.clear();
+            }
+        }
+
+        async function saveSignature() {
+            if (!signaturePad) {
+                alert('Signature pad not initialized');
+                return;
+            }
+
+            if (signaturePad.isEmpty()) {
+                alert('Please draw your signature first');
+                return;
+            }
+
+            const signatureData = signaturePad.toDataURL();
+
+            try {
+                // Disable button to prevent double submission
+                event.target.disabled = true;
+                event.target.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Saving...';
+
+                await axios.post(`/api/share/${currentToken}/sign`, {
+                    signature: signatureData
+                });
+
+                // Show success message
+                document.getElementById('signature-section').classList.add('hidden');
+                document.getElementById('success-message').classList.remove('hidden');
+
+            } catch (error) {
+                console.error('Error saving signature:', error);
+                const errorMsg = error.response?.data?.error || error.message || 'Failed to save signature';
+                alert('Error: ' + errorMsg);
+                
+                // Re-enable button
+                event.target.disabled = false;
+                event.target.innerHTML = '<i class="fas fa-check mr-2"></i>Sign Agreement';
+            }
+        }
+
+        function showError(message) {
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('error').classList.remove('hidden');
+            document.getElementById('error-message').textContent = message;
+        }
+
+        // Load agreement on page load
+        loadAgreement();
+    </script>
+</body>
+</html>
