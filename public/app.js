@@ -597,33 +597,73 @@ async function handleAgreementSave(e) {
     const customerId = document.getElementById('agreement-customer').value;
     const title = document.getElementById('agreement-title').value;
     const startDate = document.getElementById('agreement-start-date').value;
-    const content = document.getElementById('agreement-content').value;
     
     if (!agencyId) {
-        showNotification('Please select an agency', 'error');
+        showNotification('⚠️ Please select an agency', 'error');
         return;
     }
     if (!customerId) {
-        showNotification('Please select a customer', 'error');
+        showNotification('⚠️ Please select a customer', 'error');
         return;
     }
     if (!title) {
-        showNotification('Please enter agreement title', 'error');
+        showNotification('⚠️ Please enter agreement title', 'error');
         return;
     }
     if (!startDate) {
-        showNotification('Please select start date', 'error');
+        showNotification('⚠️ Please select start date', 'error');
         return;
     }
+    
+    // Get selected agency and customer
+    const agency = agencies.find(a => a.id == agencyId);
+    const customer = customers.find(c => c.id == customerId);
+    const services = getServiceSections();
+    
+    // Auto-generate content from template
+    const templateId = document.getElementById('agreement-template').value;
+    let content = '';
+    
+    if (templateId) {
+        const template = templates.find(t => t.id == templateId);
+        if (template) {
+            content = template.content;
+        }
+    }
+    
     if (!content) {
-        showNotification('Please enter agreement content', 'error');
-        return;
+        // Default template
+        content = `SERVICE AGREEMENT\n\nThis agreement is made between ${agency?.name || '[Agency]'} ("Agency") and ${customer?.name || '[Customer]'} ("Client").\n\nSERVICES:\nThe Agency agrees to provide the following services:\n\n`;
+        
+        services.forEach((s, i) => {
+            content += `${i + 1}. ${s.title}`;
+            if (s.description) content += ` - ${s.description}`;
+            if (s.price) content += ` ($${s.price})`;
+            content += '\n';
+        });
+        
+        const monthlyPayment = document.getElementById('agreement-payment').value;
+        const paymentDay = document.getElementById('agreement-payment-day').value;
+        const endDate = document.getElementById('agreement-end-date').value;
+        
+        content += `\nPAYMENT TERMS:\n`;
+        if (monthlyPayment) {
+            content += `Monthly Payment: $${monthlyPayment}\nDue Date: Day ${paymentDay} of each month\n`;
+        }
+        
+        content += `\nTERM:\nStart Date: ${startDate}\n`;
+        if (endDate) content += `End Date: ${endDate}\n`;
+        
+        const notes = document.getElementById('agreement-notes')?.value;
+        if (notes) {
+            content += `\nADDITIONAL NOTES:\n${notes}\n`;
+        }
     }
     
     const data = {
         agency_id: parseInt(agencyId),
         customer_id: parseInt(customerId),
-        template_id: document.getElementById('agreement-template').value || null,
+        template_id: templateId || null,
         title: title,
         content: content,
         monthly_payment: document.getElementById('agreement-payment').value || null,
@@ -631,7 +671,7 @@ async function handleAgreementSave(e) {
         start_date: startDate,
         end_date: document.getElementById('agreement-end-date').value || null,
         status: 'draft',
-        services: getServiceSections()
+        services: services
     };
     
     try {
@@ -644,7 +684,7 @@ async function handleAgreementSave(e) {
         updateDashboard();
     } catch (error) {
         console.error('Error creating agreement:', error);
-        const errorMsg = error.response?.data?.message || error.message || 'Unknown error';
+        const errorMsg = error.response?.data?.error || error.response?.data?.message || error.message || 'Failed to create agreement';
         showNotification(`❌ Error: ${errorMsg}`, 'error');
     }
 }
@@ -743,6 +783,49 @@ async function viewAgreement(id) {
                     <h3 class="font-semibold text-gray-900 mb-3">Agreement Content</h3>
                     <div class="bg-gray-50 p-4 rounded-lg whitespace-pre-wrap text-sm">
                         ${agreement.content}
+                    </div>
+                </div>
+                
+                <!-- Signature Sections -->
+                <div class="grid grid-cols-2 gap-6 mb-6">
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <h3 class="font-semibold text-gray-900 mb-3">
+                            <i class="fas fa-pen-fancy mr-2 text-blue-600"></i>Agency Signature
+                        </h3>
+                        ${agreement.agency_signed ? `
+                            <div class="bg-white border border-gray-300 rounded p-2">
+                                <img src="${agreement.agency_signature}" alt="Agency Signature" class="max-h-24" />
+                            </div>
+                            <p class="text-xs text-gray-600 mt-2">Signed on ${formatDate(agreement.agency_signed_at)}</p>
+                        ` : `
+                            <div class="text-center py-8 bg-gray-50 rounded">
+                                <i class="fas fa-signature text-4xl text-gray-400 mb-3"></i>
+                                <p class="text-sm text-gray-600">Not signed yet</p>
+                                <button onclick="openSignaturePad(${id}, 'agency')" class="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
+                                    <i class="fas fa-pen mr-2"></i>Sign Now
+                                </button>
+                            </div>
+                        `}
+                    </div>
+                    
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <h3 class="font-semibold text-gray-900 mb-3">
+                            <i class="fas fa-pen-fancy mr-2 text-green-600"></i>Customer Signature
+                        </h3>
+                        ${agreement.customer_signed ? `
+                            <div class="bg-white border border-gray-300 rounded p-2">
+                                <img src="${agreement.customer_signature}" alt="Customer Signature" class="max-h-24" />
+                            </div>
+                            <p class="text-xs text-gray-600 mt-2">Signed on ${formatDate(agreement.customer_signed_at)}</p>
+                        ` : `
+                            <div class="text-center py-8 bg-gray-50 rounded">
+                                <i class="fas fa-signature text-4xl text-gray-400 mb-3"></i>
+                                <p class="text-sm text-gray-600">Not signed yet</p>
+                                <button onclick="openSignaturePad(${id}, 'customer')" class="mt-3 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm">
+                                    <i class="fas fa-pen mr-2"></i>Sign Now
+                                </button>
+                            </div>
+                        `}
                     </div>
                 </div>
                 
@@ -957,3 +1040,103 @@ async function deleteService(id) {
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('service-form')?.addEventListener('submit', handleServiceSave);
 });
+
+// ======================
+// SIGNATURE PAD FUNCTIONS
+// ======================
+let currentSignaturePad = null;
+let currentAgreementId = null;
+let currentSignatureParty = null;
+
+function openSignaturePad(agreementId, party) {
+    currentAgreementId = agreementId;
+    currentSignatureParty = party;
+    
+    const modal = document.createElement('div');
+    modal.id = 'signature-modal';
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]';
+    modal.innerHTML = `
+        <div class="bg-white rounded-lg p-6 w-full max-w-2xl">
+            <h3 class="text-xl font-bold mb-4">
+                <i class="fas fa-pen-fancy mr-2 ${party === 'agency' ? 'text-blue-600' : 'text-green-600'}"></i>
+                ${party === 'agency' ? 'Agency' : 'Customer'} Signature
+            </h3>
+            <p class="text-sm text-gray-600 mb-4">
+                Draw your signature below using your mouse, touchscreen, or stylus
+            </p>
+            
+            <div class="border-2 border-gray-300 rounded-lg bg-white mb-4">
+                <canvas id="signature-canvas" class="w-full" width="700" height="300" style="touch-action: none;"></canvas>
+            </div>
+            
+            <div class="flex justify-between items-center">
+                <button onclick="clearSignature()" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+                    <i class="fas fa-eraser mr-2"></i>Clear
+                </button>
+                <div class="flex gap-3">
+                    <button onclick="closeSignaturePad()" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button onclick="saveSignature()" class="px-6 py-2 ${party === 'agency' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-green-600 hover:bg-green-700'} text-white rounded-lg">
+                        <i class="fas fa-check mr-2"></i>Save Signature
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Initialize signature pad
+    const canvas = document.getElementById('signature-canvas');
+    currentSignaturePad = new SignaturePad(canvas, {
+        backgroundColor: 'rgb(255, 255, 255)',
+        penColor: party === 'agency' ? 'rgb(37, 99, 235)' : 'rgb(22, 163, 74)'
+    });
+}
+
+function closeSignaturePad() {
+    const modal = document.getElementById('signature-modal');
+    if (modal) modal.remove();
+    currentSignaturePad = null;
+    currentAgreementId = null;
+    currentSignatureParty = null;
+}
+
+function clearSignature() {
+    if (currentSignaturePad) {
+        currentSignaturePad.clear();
+    }
+}
+
+async function saveSignature() {
+    if (!currentSignaturePad || currentSignaturePad.isEmpty()) {
+        showNotification('⚠️ Please draw your signature first', 'error');
+        return;
+    }
+    
+    try {
+        const signatureData = currentSignaturePad.toDataURL();
+        
+        await axios.post(`/api/agreements/${currentAgreementId}/sign`, {
+            party: currentSignatureParty,
+            signature: signatureData
+        });
+        
+        showNotification(`✅ Signature saved successfully!`);
+        closeSignaturePad();
+        
+        // Reload data and close any open agreement modals
+        await loadAllData();
+        document.querySelectorAll('.fixed').forEach(modal => {
+            if (modal.id !== 'signature-modal') modal.remove();
+        });
+        
+        // Reopen the agreement to show the signature
+        viewAgreement(currentAgreementId);
+        
+    } catch (error) {
+        console.error('Error saving signature:', error);
+        showNotification('❌ Error saving signature', 'error');
+    }
+}

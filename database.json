@@ -167,6 +167,31 @@
       "customer_signed": 0,
       "created_at": "2025-12-03T14:41:50.393Z",
       "updated_at": "2025-12-03T14:41:50.393Z"
+    },
+    {
+      "id": 5,
+      "agreement_number": "AGR-1764773086927-352",
+      "agency_id": 1,
+      "customer_id": 4,
+      "template_id": "2",
+      "title": "Kk",
+      "content": "DIGITAL MARKETING SERVICES AGREEMENT\n\nBetween: {{AGENCY_NAME}}\nAnd: {{CUSTOMER_NAME}}\n\nThe Agency will provide comprehensive digital marketing services including:\n{{SERVICES}}\n\nMonthly Investment: {{MONTHLY_PAYMENT}}\nPayment Schedule: {{PAYMENT_DAY}} of each month\nContract Period: {{START_DATE}} to {{END_DATE}}",
+      "monthly_payment": null,
+      "payment_day": 1,
+      "start_date": "2025-12-03",
+      "end_date": "2026-03-31",
+      "status": "draft",
+      "services": [
+        {
+          "title": "Social Media Management",
+          "description": "Monthly social media content and management",
+          "price": 1200
+        }
+      ],
+      "agency_signed": 0,
+      "customer_signed": 0,
+      "created_at": "2025-12-03T14:44:46.927Z",
+      "updated_at": "2025-12-03T14:44:46.927Z"
     }
   ],
   "reminders": [],
