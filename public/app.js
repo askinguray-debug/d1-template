@@ -7,6 +7,21 @@ let reminders = [];
 let serviceSectionCounter = 0;
 let serviceLibrary = [];
 
+// Helper function to process template placeholders
+function processTemplate(content, data) {
+    if (!content) return '';
+    
+    // Replace all template variables with actual data
+    return content
+        .replace(/\{\{AGENCY_NAME\}\}/g, data.agencyName || '[Agency Name]')
+        .replace(/\{\{CUSTOMER_NAME\}\}/g, data.customerName || '[Customer Name]')
+        .replace(/\{\{SERVICES\}\}/g, data.services || '[Services]')
+        .replace(/\{\{MONTHLY_PAYMENT\}\}/g, data.monthlyPayment || '[Payment Amount]')
+        .replace(/\{\{PAYMENT_DAY\}\}/g, data.paymentDay || '[Payment Day]')
+        .replace(/\{\{START_DATE\}\}/g, data.startDate || '[Start Date]')
+        .replace(/\{\{END_DATE\}\}/g, data.endDate || '[End Date]');
+}
+
 // Initialize app
 document.addEventListener('DOMContentLoaded', async () => {
     await loadAllData();
@@ -634,12 +649,34 @@ async function handleAgreementSave(e) {
     
     // Auto-generate content from template
     const templateId = document.getElementById('agreement-template').value;
+    const monthlyPayment = document.getElementById('agreement-payment').value;
+    const paymentDay = document.getElementById('agreement-payment-day').value;
+    const endDate = document.getElementById('agreement-end-date').value;
+    
     let content = '';
     
     if (templateId) {
         const template = templates.find(t => t.id == templateId);
         if (template) {
-            content = template.content;
+            // Build services text for template
+            let servicesText = '';
+            services.forEach((s, i) => {
+                servicesText += `${i + 1}. ${s.title}`;
+                if (s.description) servicesText += ` - ${s.description}`;
+                if (s.price) servicesText += ` ($${s.price})`;
+                servicesText += '\n';
+            });
+            
+            // Process template with actual data
+            content = processTemplate(template.content, {
+                agencyName: agency?.name,
+                customerName: customer?.name,
+                services: servicesText.trim(),
+                monthlyPayment: monthlyPayment || 'N/A',
+                paymentDay: paymentDay || 'N/A',
+                startDate: startDate,
+                endDate: endDate || 'Ongoing'
+            });
         }
     }
     
@@ -653,10 +690,6 @@ async function handleAgreementSave(e) {
             if (s.price) content += ` ($${s.price})`;
             content += '\n';
         });
-        
-        const monthlyPayment = document.getElementById('agreement-payment').value;
-        const paymentDay = document.getElementById('agreement-payment-day').value;
-        const endDate = document.getElementById('agreement-end-date').value;
         
         content += `\nPAYMENT TERMS:\n`;
         if (monthlyPayment) {
