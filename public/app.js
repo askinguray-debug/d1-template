@@ -1202,7 +1202,3 @@ async function saveSignature() {
         showNotification(`❌ Error saving signature: ${errorMsg}`, 'error');
     }
 }
-essage || 'Unknown error';
-        showNotification(`❌ Error saving signature: ${errorMsg}`, 'error');
-    }
-}
