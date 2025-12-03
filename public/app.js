@@ -44,6 +44,7 @@ function showTab(tabName) {
     if (tabName === 'customers') loadCustomers();
     if (tabName === 'templates') loadTemplates();
     if (tabName === 'reminders') loadReminders();
+    if (tabName === 'services') loadServices();
     if (tabName === 'settings') loadSettings();
     if (tabName === 'new-agreement') loadNewAgreementForm();
 }
@@ -856,3 +857,103 @@ function showNotification(message, type = 'success') {
     document.body.appendChild(notification);
     setTimeout(() => notification.remove(), 3000);
 }
+
+// ======================
+// SERVICE LIBRARY FUNCTIONS
+// ======================
+function loadServices() {
+    const servicesHtml = serviceLibrary.map(service => `
+        <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+            <div class="flex justify-between items-start mb-2">
+                <div>
+                    <h3 class="font-semibold text-gray-900">${service.name}</h3>
+                    <span class="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">${service.category}</span>
+                </div>
+                <div class="text-lg font-bold text-blue-600">$${service.default_price}</div>
+            </div>
+            ${service.description ? `<p class="text-sm text-gray-600 mt-2">${service.description}</p>` : ''}
+            <div class="flex gap-2 mt-3">
+                <button onclick="editService(${service.id})" class="text-blue-600 hover:text-blue-800 text-sm">
+                    <i class="fas fa-edit mr-1"></i>Edit
+                </button>
+                <button onclick="deleteService(${service.id})" class="text-red-600 hover:text-red-800 text-sm">
+                    <i class="fas fa-trash mr-1"></i>Delete
+                </button>
+            </div>
+        </div>
+    `).join('');
+    
+    document.getElementById('services-list').innerHTML = servicesHtml || '<p class="text-gray-500 col-span-full text-center py-8">No services yet. Click "Add Service" to create one.</p>';
+}
+
+function showServiceForm(id = null) {
+    document.getElementById('service-form-modal').classList.remove('hidden');
+    if (id) {
+        const service = serviceLibrary.find(s => s.id == id);
+        if (service) {
+            document.getElementById('service-id').value = service.id;
+            document.getElementById('service-name').value = service.name;
+            document.getElementById('service-category').value = service.category || 'Other';
+            document.getElementById('service-description').value = service.description || '';
+            document.getElementById('service-price').value = service.default_price || '';
+        }
+    } else {
+        document.getElementById('service-form').reset();
+        document.getElementById('service-id').value = '';
+    }
+}
+
+function closeServiceForm() {
+    document.getElementById('service-form-modal').classList.add('hidden');
+    document.getElementById('service-form').reset();
+}
+
+async function handleServiceSave(e) {
+    e.preventDefault();
+    const id = document.getElementById('service-id').value;
+    const data = {
+        name: document.getElementById('service-name').value,
+        category: document.getElementById('service-category').value,
+        description: document.getElementById('service-description').value,
+        default_price: parseFloat(document.getElementById('service-price').value) || 0
+    };
+    
+    try {
+        if (id) {
+            await axios.put(`/api/service-library/${id}`, data);
+            showNotification('Service updated successfully');
+        } else {
+            await axios.post('/api/service-library', data);
+            showNotification('Service created successfully');
+        }
+        closeServiceForm();
+        await loadAllData();
+        loadServices();
+    } catch (error) {
+        console.error('Error saving service:', error);
+        showNotification('Error saving service', 'error');
+    }
+}
+
+function editService(id) {
+    showServiceForm(id);
+}
+
+async function deleteService(id) {
+    if (!confirm('Are you sure you want to delete this service?')) return;
+    
+    try {
+        await axios.delete(`/api/service-library/${id}`);
+        showNotification('Service deleted successfully');
+        await loadAllData();
+        loadServices();
+    } catch (error) {
+        console.error('Error deleting service:', error);
+        showNotification('Error deleting service', 'error');
+    }
+}
+
+// Add service form handler on load
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('service-form')?.addEventListener('submit', handleServiceSave);
+});
