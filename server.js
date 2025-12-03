@@ -4,6 +4,9 @@ import bodyParser from 'body-parser';
 import { readFile, writeFile } from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import puppeteer from 'puppeteer-core';
+import chromium from '@sparticuz/chromium';
+import nodemailer from 'nodemailer';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -516,6 +519,476 @@ app.put('/api/email-settings/:id', async (req, res) => {
   await writeDB(db);
   res.json(db.emailSettings);
 });
+
+// ======================
+// PDF & EMAIL API
+// ======================
+
+// Generate PDF for agreement
+app.get('/api/agreements/:id/pdf', async (req, res) => {
+  try {
+    const db = await readDB();
+    const agreement = db.agreements.find(a => a.id === parseInt(req.params.id));
+    
+    if (!agreement) {
+      return res.status(404).json({ error: 'Agreement not found' });
+    }
+
+    const agency = db.agencies.find(a => a.id === agreement.agency_id);
+    const customer = db.customers.find(c => c.id === agreement.customer_id);
+
+    // Generate HTML for PDF
+    const html = generateAgreementHTML(agreement, agency, customer);
+
+    // Launch browser and generate PDF
+    const browser = await puppeteer.launch({
+      args: chromium.args,
+      defaultViewport: chromium.defaultViewport,
+      executablePath: await chromium.executablePath(),
+      headless: chromium.headless,
+    });
+
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: 'networkidle0' });
+    
+    const pdf = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      margin: { top: '20mm', right: '15mm', bottom: '20mm', left: '15mm' }
+    });
+
+    await browser.close();
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="Agreement-${agreement.agreement_number}.pdf"`);
+    res.send(pdf);
+  } catch (error) {
+    console.error('PDF Generation Error:', error);
+    res.status(500).json({ error: 'Failed to generate PDF', details: error.message });
+  }
+});
+
+// Print agreement (HTML version)
+app.get('/api/agreements/:id/print', async (req, res) => {
+  try {
+    const db = await readDB();
+    const agreement = db.agreements.find(a => a.id === parseInt(req.params.id));
+    
+    if (!agreement) {
+      return res.status(404).json({ error: 'Agreement not found' });
+    }
+
+    const agency = db.agencies.find(a => a.id === agreement.agency_id);
+    const customer = db.customers.find(c => c.id === agreement.customer_id);
+
+    // Generate print-friendly HTML
+    const html = generateAgreementHTML(agreement, agency, customer, true);
+    
+    res.setHeader('Content-Type', 'text/html');
+    res.send(html);
+  } catch (error) {
+    console.error('Print Error:', error);
+    res.status(500).json({ error: 'Failed to generate print version', details: error.message });
+  }
+});
+
+// Send agreement via email
+app.post('/api/agreements/:id/send-email', async (req, res) => {
+  try {
+    const { recipient, cc } = req.body; // 'agency', 'customer', or 'both'
+    const db = await readDB();
+    const agreement = db.agreements.find(a => a.id === parseInt(req.params.id));
+    
+    if (!agreement) {
+      return res.status(404).json({ error: 'Agreement not found' });
+    }
+
+    const agency = db.agencies.find(a => a.id === agreement.agency_id);
+    const customer = db.customers.find(c => c.id === agreement.customer_id);
+    const emailSettings = db.emailSettings || {};
+
+    if (!emailSettings.provider || !emailSettings.api_key) {
+      return res.status(400).json({ error: 'Email settings not configured. Please configure in Settings tab.' });
+    }
+
+    // Generate PDF attachment
+    const html = generateAgreementHTML(agreement, agency, customer);
+    const browser = await puppeteer.launch({
+      args: chromium.args,
+      defaultViewport: chromium.defaultViewport,
+      executablePath: await chromium.executablePath(),
+      headless: chromium.headless,
+    });
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: 'networkidle0' });
+    const pdfBuffer = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      margin: { top: '20mm', right: '15mm', bottom: '20mm', left: '15mm' }
+    });
+    await browser.close();
+
+    // Configure email transporter
+    const transporter = createEmailTransporter(emailSettings);
+
+    // Determine recipients
+    const recipients = [];
+    if (recipient === 'agency' || recipient === 'both') {
+      recipients.push(agency.email);
+    }
+    if (recipient === 'customer' || recipient === 'both') {
+      recipients.push(customer.email);
+    }
+
+    // Send email
+    const mailOptions = {
+      from: `${emailSettings.from_name || 'Agreement System'} <${emailSettings.from_email}>`,
+      to: recipients.join(', '),
+      cc: cc || '',
+      subject: `Agreement: ${agreement.title} - ${agreement.agreement_number}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #2563eb;">Agreement Document</h2>
+          <p>Dear ${recipient === 'agency' ? agency.name : customer.name},</p>
+          <p>Please find attached the agreement document: <strong>${agreement.title}</strong></p>
+          <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <p style="margin: 5px 0;"><strong>Agreement Number:</strong> ${agreement.agreement_number}</p>
+            <p style="margin: 5px 0;"><strong>Agency:</strong> ${agency.name}</p>
+            <p style="margin: 5px 0;"><strong>Customer:</strong> ${customer.name}</p>
+            <p style="margin: 5px 0;"><strong>Start Date:</strong> ${new Date(agreement.start_date).toLocaleDateString()}</p>
+            ${agreement.monthly_payment ? `<p style="margin: 5px 0;"><strong>Monthly Payment:</strong> $${agreement.monthly_payment}</p>` : ''}
+          </div>
+          <p>If you have any questions, please don't hesitate to contact us.</p>
+          <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+            This is an automated message from Agreement Management System.
+          </p>
+        </div>
+      `,
+      attachments: [
+        {
+          filename: `Agreement-${agreement.agreement_number}.pdf`,
+          content: pdfBuffer,
+          contentType: 'application/pdf'
+        }
+      ]
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.json({ 
+      success: true, 
+      message: `Agreement sent successfully to ${recipient === 'both' ? 'both parties' : recipient}`,
+      recipients: recipients 
+    });
+  } catch (error) {
+    console.error('Email Send Error:', error);
+    res.status(500).json({ error: 'Failed to send email', details: error.message });
+  }
+});
+
+// Helper function to create email transporter based on provider
+function createEmailTransporter(settings) {
+  switch (settings.provider) {
+    case 'sendgrid':
+      return nodemailer.createTransport({
+        host: 'smtp.sendgrid.net',
+        port: 587,
+        auth: {
+          user: 'apikey',
+          pass: settings.api_key
+        }
+      });
+    
+    case 'mailgun':
+      return nodemailer.createTransport({
+        host: 'smtp.mailgun.org',
+        port: 587,
+        auth: {
+          user: settings.smtp_username || 'postmaster@yourdomain.mailgun.org',
+          pass: settings.api_key
+        }
+      });
+    
+    case 'ses':
+      return nodemailer.createTransport({
+        host: `email-smtp.${settings.aws_region || 'us-east-1'}.amazonaws.com`,
+        port: 587,
+        auth: {
+          user: settings.smtp_username,
+          pass: settings.api_key
+        }
+      });
+    
+    case 'resend':
+      return nodemailer.createTransport({
+        host: 'smtp.resend.com',
+        port: 465,
+        secure: true,
+        auth: {
+          user: 'resend',
+          pass: settings.api_key
+        }
+      });
+    
+    case 'postmark':
+      return nodemailer.createTransport({
+        host: 'smtp.postmarkapp.com',
+        port: 587,
+        auth: {
+          user: settings.api_key,
+          pass: settings.api_key
+        }
+      });
+    
+    case 'brevo':
+      return nodemailer.createTransport({
+        host: 'smtp-relay.brevo.com',
+        port: 587,
+        auth: {
+          user: settings.smtp_username || settings.from_email,
+          pass: settings.api_key
+        }
+      });
+    
+    case 'smtp':
+      return nodemailer.createTransport({
+        host: settings.smtp_host,
+        port: settings.smtp_port || 587,
+        secure: settings.smtp_secure || false,
+        auth: {
+          user: settings.smtp_username,
+          pass: settings.api_key
+        }
+      });
+    
+    default:
+      throw new Error('Unsupported email provider');
+  }
+}
+
+// Helper function to generate agreement HTML
+function generateAgreementHTML(agreement, agency, customer, printVersion = false) {
+  const servicesHtml = agreement.services && agreement.services.length > 0
+    ? agreement.services.map((s, i) => `
+        <tr>
+          <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${i + 1}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${s.title}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${s.description || '-'}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: right;">${s.price ? '$' + s.price : '-'}</td>
+        </tr>
+      `).join('')
+    : '<tr><td colspan="4" style="padding: 8px; text-align: center;">No services listed</td></tr>';
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <style>
+        body {
+          font-family: 'Arial', sans-serif;
+          line-height: 1.6;
+          color: #333;
+          max-width: 800px;
+          margin: 0 auto;
+          padding: 20px;
+        }
+        .header {
+          text-align: center;
+          margin-bottom: 30px;
+          padding-bottom: 20px;
+          border-bottom: 3px solid #2563eb;
+        }
+        .header h1 {
+          color: #2563eb;
+          margin: 0;
+          font-size: 28px;
+        }
+        .agreement-number {
+          color: #6b7280;
+          font-size: 14px;
+          margin-top: 10px;
+        }
+        .parties {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 20px;
+          margin: 30px 0;
+        }
+        .party-box {
+          border: 2px solid #e5e7eb;
+          padding: 15px;
+          border-radius: 8px;
+          background-color: #f9fafb;
+        }
+        .party-box h3 {
+          margin: 0 0 10px 0;
+          color: #1f2937;
+          font-size: 16px;
+        }
+        .party-box p {
+          margin: 5px 0;
+          font-size: 14px;
+        }
+        .section {
+          margin: 30px 0;
+        }
+        .section-title {
+          background-color: #2563eb;
+          color: white;
+          padding: 10px 15px;
+          border-radius: 5px;
+          font-size: 16px;
+          font-weight: bold;
+          margin-bottom: 15px;
+        }
+        .content {
+          padding: 15px;
+          background-color: #f9fafb;
+          border-radius: 5px;
+          white-space: pre-wrap;
+          font-size: 14px;
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin: 15px 0;
+        }
+        th {
+          background-color: #2563eb;
+          color: white;
+          padding: 10px;
+          text-align: left;
+        }
+        .signatures {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 30px;
+          margin-top: 50px;
+          page-break-inside: avoid;
+        }
+        .signature-box {
+          border: 2px solid #e5e7eb;
+          padding: 15px;
+          border-radius: 8px;
+          text-align: center;
+        }
+        .signature-box h4 {
+          margin: 0 0 15px 0;
+          color: #1f2937;
+        }
+        .signature-image {
+          max-height: 80px;
+          margin: 10px 0;
+        }
+        .signature-date {
+          font-size: 12px;
+          color: #6b7280;
+          margin-top: 10px;
+        }
+        .status-badge {
+          display: inline-block;
+          padding: 5px 15px;
+          border-radius: 20px;
+          font-size: 12px;
+          font-weight: bold;
+        }
+        .status-active { background-color: #d1fae5; color: #065f46; }
+        .status-draft { background-color: #fef3c7; color: #92400e; }
+        ${printVersion ? '@media print { body { margin: 0; } }' : ''}
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>${agreement.title}</h1>
+        <div class="agreement-number">${agreement.agreement_number}</div>
+        <span class="status-badge status-${agreement.status}">${agreement.status.toUpperCase()}</span>
+      </div>
+
+      <div class="parties">
+        <div class="party-box">
+          <h3>📋 Agency</h3>
+          <p><strong>${agency.name}</strong></p>
+          ${agency.email ? `<p>✉️ ${agency.email}</p>` : ''}
+          ${agency.phone ? `<p>📞 ${agency.phone}</p>` : ''}
+          ${agency.address ? `<p>📍 ${agency.address}</p>` : ''}
+          ${agreement.agency_signed ? `<p style="color: #059669; font-weight: bold;">✓ Signed: ${new Date(agreement.agency_signed_at).toLocaleString()}</p>` : ''}
+        </div>
+        <div class="party-box">
+          <h3>👤 Customer</h3>
+          <p><strong>${customer.name}</strong></p>
+          ${customer.email ? `<p>✉️ ${customer.email}</p>` : ''}
+          ${customer.phone ? `<p>📞 ${customer.phone}</p>` : ''}
+          ${customer.company ? `<p>🏢 ${customer.company}</p>` : ''}
+          ${agreement.customer_signed ? `<p style="color: #059669; font-weight: bold;">✓ Signed: ${new Date(agreement.customer_signed_at).toLocaleString()}</p>` : ''}
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Agreement Details</div>
+        <table>
+          <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;"><strong>Start Date:</strong></td>
+            <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${new Date(agreement.start_date).toLocaleDateString()}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;"><strong>End Date:</strong></td>
+            <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${agreement.end_date ? new Date(agreement.end_date).toLocaleDateString() : 'Ongoing'}</td>
+          </tr>
+          ${agreement.monthly_payment ? `
+          <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;"><strong>Monthly Payment:</strong></td>
+            <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">$${agreement.monthly_payment}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;"><strong>Payment Day:</strong></td>
+            <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">Day ${agreement.payment_day} of month</td>
+          </tr>` : ''}
+        </table>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Services</div>
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 50px;">#</th>
+              <th>Service</th>
+              <th>Description</th>
+              <th style="width: 100px; text-align: right;">Price</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${servicesHtml}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Agreement Content</div>
+        <div class="content">${agreement.content}</div>
+      </div>
+
+      ${agreement.agency_signed || agreement.customer_signed ? `
+      <div class="signatures">
+        <div class="signature-box">
+          <h4>Agency Signature</h4>
+          ${agreement.agency_signed ? `
+            <img src="${agreement.agency_signature}" class="signature-image" alt="Agency Signature" />
+            <div class="signature-date">Signed on ${new Date(agreement.agency_signed_at).toLocaleString()}</div>
+          ` : '<p style="color: #9ca3af;">Not signed yet</p>'}
+        </div>
+        <div class="signature-box">
+          <h4>Customer Signature</h4>
+          ${agreement.customer_signed ? `
+            <img src="${agreement.customer_signature}" class="signature-image" alt="Customer Signature" />
+            <div class="signature-date">Signed on ${new Date(agreement.customer_signed_at).toLocaleString()}</div>
+          ` : '<p style="color: #9ca3af;">Not signed yet</p>'}
+        </div>
+      </div>
+      ` : ''}
+
+      ${printVersion ? '<script>window.print();</script>' : ''}
+    </body>
+    </html>
+  `;
+}
 
 // Serve index.html for root route
 app.get('/', (req, res) => {

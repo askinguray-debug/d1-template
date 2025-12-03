@@ -874,13 +874,36 @@ async function viewAgreement(id) {
                     </div>
                 </div>
                 
-                <div class="flex justify-end gap-3">
+                <div class="flex justify-between items-center gap-3">
                     <button onclick="this.closest('.fixed').remove()" class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
                         Close
                     </button>
-                    <button onclick="printAgreement(${id})" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                        <i class="fas fa-print mr-2"></i>Print
-                    </button>
+                    <div class="flex gap-3">
+                        <button onclick="downloadPDF(${id})" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+                            <i class="fas fa-file-pdf mr-2"></i>Download PDF
+                        </button>
+                        <button onclick="printAgreement(${id})" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                            <i class="fas fa-print mr-2"></i>Print
+                        </button>
+                        <div class="relative inline-block">
+                            <button onclick="toggleEmailMenu(${id})" id="email-btn-${id}" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                                <i class="fas fa-envelope mr-2"></i>Send Email
+                            </button>
+                            <div id="email-menu-${id}" class="hidden absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                                <div class="py-2">
+                                    <button onclick="sendEmail(${id}, 'agency')" class="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm">
+                                        <i class="fas fa-building mr-2 text-blue-600"></i>Send to Agency
+                                    </button>
+                                    <button onclick="sendEmail(${id}, 'customer')" class="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm">
+                                        <i class="fas fa-user mr-2 text-green-600"></i>Send to Customer
+                                    </button>
+                                    <button onclick="sendEmail(${id}, 'both')" class="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm">
+                                        <i class="fas fa-users mr-2 text-purple-600"></i>Send to Both Parties
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         `;
@@ -911,6 +934,133 @@ async function deleteAgreement(id) {
 function printAgreement(id) {
     window.open(`/api/agreements/${id}/print`, '_blank');
 }
+
+// Download PDF
+function downloadPDF(id) {
+    window.location.href = `/api/agreements/${id}/pdf`;
+}
+
+// Show email dialog
+function showEmailDialog(id) {
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    modal.innerHTML = `
+        <div class="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 class="text-xl font-bold text-gray-900 mb-4">
+                <i class="fas fa-envelope mr-2 text-green-600"></i>Send Agreement via Email
+            </h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Send to:</label>
+                    <div class="space-y-2">
+                        <label class="flex items-center">
+                            <input type="radio" name="recipient-modal" value="agency" class="mr-2">
+                            <span>Agency only</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="radio" name="recipient-modal" value="customer" class="mr-2">
+                            <span>Customer only</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="radio" name="recipient-modal" value="both" checked class="mr-2">
+                            <span>Both Agency and Customer</span>
+                        </label>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">CC (optional)</label>
+                    <input type="email" id="email-cc-modal" placeholder="additional@email.com" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                </div>
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <p class="text-sm text-blue-800">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        The agreement will be sent as a PDF attachment.
+                    </p>
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 mt-6">
+                <button onclick="this.closest('.fixed').remove()" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+                    Cancel
+                </button>
+                <button onclick="sendAgreementEmail(${id})" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                    <i class="fas fa-paper-plane mr-2"></i>Send Email
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+// Send agreement email
+async function sendAgreementEmail(id) {
+    const recipient = document.querySelector('input[name="recipient-modal"]:checked').value;
+    const cc = document.getElementById('email-cc-modal').value;
+    
+    try {
+        showNotification('📧 Sending email...', 'info');
+        
+        const response = await axios.post(`/api/agreements/${id}/send-email`, {
+            recipient: recipient,
+            cc: cc
+        });
+        
+        // Close all modals
+        document.querySelectorAll('.fixed').forEach(modal => {
+            if (modal.querySelector('[onclick*="sendAgreementEmail"]')) {
+                modal.remove();
+            }
+        });
+        
+        showNotification(`✅ ${response.data.message}`);
+    } catch (error) {
+        console.error('Error sending email:', error);
+        const errorMsg = error.response?.data?.error || error.response?.data?.details || 'Failed to send email';
+        showNotification(`❌ ${errorMsg}`, 'error');
+    }
+}
+
+// Toggle email menu
+function toggleEmailMenu(id) {
+    const menu = document.getElementById(`email-menu-${id}`);
+    // Close all other menus first
+    document.querySelectorAll('[id^="email-menu-"]').forEach(m => {
+        if (m.id !== `email-menu-${id}`) {
+            m.classList.add('hidden');
+        }
+    });
+    menu.classList.toggle('hidden');
+}
+
+// Send email
+async function sendEmail(id, recipient) {
+    try {
+        // Close the menu
+        const menu = document.getElementById(`email-menu-${id}`);
+        if (menu) menu.classList.add('hidden');
+        
+        // Show loading notification
+        showNotification('📧 Sending email...', 'info');
+        
+        const response = await axios.post(`/api/agreements/${id}/send-email`, {
+            recipient: recipient
+        });
+        
+        showNotification(`✅ ${response.data.message}`);
+    } catch (error) {
+        console.error('Error sending email:', error);
+        const errorMsg = error.response?.data?.error || 'Failed to send email';
+        showNotification(`❌ ${errorMsg}`, 'error');
+    }
+}
+
+// Close email menus when clicking outside
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('[id^="email-btn-"]') && !e.target.closest('[id^="email-menu-"]')) {
+        document.querySelectorAll('[id^="email-menu-"]').forEach(menu => {
+            menu.classList.add('hidden');
+        });
+    }
+});
 
 // Mark reminder as paid
 async function markReminderPaid(id) {
