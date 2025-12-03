@@ -6,6 +6,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import nodemailer from 'nodemailer';
 import crypto from 'crypto';
+import { Resend } from 'resend';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -708,7 +709,6 @@ app.post('/api/model-agreements/:id/send-email', async (req, res) => {
       return res.status(400).json({ error: 'Email settings not configured' });
     }
     
-    const transporter = await createEmailTransporter(emailSettings);
     let recipients = [];
     if (recipient === 'agency' || recipient === 'both') recipients.push(agency.email);
     if (recipient === 'customer' || recipient === 'both') recipients.push(customer.email);
@@ -735,13 +735,14 @@ app.post('/api/model-agreements/:id/send-email', async (req, res) => {
           <div style="white-space: pre-wrap; line-height: 1.6;">${agreement.content}</div>
         </div>
         
-        <p style="margin-top: 30px;">Best regards,<br>${emailSettings.from_name}</p>
+        <p style="margin-top: 30px;">Best regards,<br>${emailSettings.from_name || 'Fashion Cast Agency'}</p>
       </div>
     `;
     
-    await transporter.sendMail({
-      from: `"${emailSettings.from_name}" <${emailSettings.from_email}>`,
-      to: recipients.join(', '),
+    // Use Resend API directly
+    await resend.emails.send({
+      from: emailSettings.from_email || 'onboarding@resend.dev',
+      to: recipients,
       subject: `Cast & Modeling Agreement - ${agreement.agreement_number}`,
       html: emailContent
     });
@@ -1289,13 +1290,6 @@ app.post('/api/agreements/:id/send-email', async (req, res) => {
     const customer = db.customers.find(c => c.id === agreement.customer_id);
     const emailSettings = db.emailSettings || {};
 
-    if (!emailSettings.provider || !emailSettings.api_key) {
-      return res.status(400).json({ error: 'Email settings not configured. Please configure in Settings tab.' });
-    }
-
-    // Configure email transporter
-    const transporter = createEmailTransporter(emailSettings);
-
     // Determine recipients
     const recipients = [];
     if (recipient === 'agency' || recipient === 'both') {
@@ -1305,49 +1299,49 @@ app.post('/api/agreements/:id/send-email', async (req, res) => {
       recipients.push(customer.email);
     }
 
-    // Send email
-    const mailOptions = {
-      from: `${emailSettings.from_name || 'Agreement System'} <${emailSettings.from_email}>`,
-      to: recipients.join(', '),
-      cc: cc || '',
-      subject: `Agreement: ${agreement.title} - ${agreement.agreement_number}`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #2563eb;">Agreement Notification</h2>
-          <p>Dear ${recipient === 'agency' ? agency.name : customer.name},</p>
-          <p>This is a notification regarding the agreement: <strong>${agreement.title}</strong></p>
-          <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
-            <p style="margin: 5px 0;"><strong>Agreement Number:</strong> ${agreement.agreement_number}</p>
-            <p style="margin: 5px 0;"><strong>Agency:</strong> ${agency.name}</p>
-            <p style="margin: 5px 0;"><strong>Customer:</strong> ${customer.name}</p>
-            <p style="margin: 5px 0;"><strong>Start Date:</strong> ${new Date(agreement.start_date).toLocaleDateString()}</p>
-            ${agreement.end_date ? `<p style="margin: 5px 0;"><strong>End Date:</strong> ${new Date(agreement.end_date).toLocaleDateString()}</p>` : ''}
-            ${agreement.monthly_payment ? `<p style="margin: 5px 0;"><strong>Monthly Payment:</strong> $${agreement.monthly_payment}</p>` : ''}
-            <p style="margin: 5px 0;"><strong>Status:</strong> ${agreement.status.toUpperCase()}</p>
-          </div>
-          ${agreement.services && agreement.services.length > 0 ? `
-          <div style="margin: 20px 0;">
-            <h3 style="color: #1f2937;">Services Included:</h3>
-            <ul style="list-style: none; padding: 0;">
-              ${agreement.services.map(s => `
-                <li style="padding: 8px; background-color: #f9fafb; margin: 5px 0; border-radius: 5px;">
-                  <strong>${s.title}</strong>${s.price ? ` - $${s.price}` : ''}
-                  ${s.description ? `<br><span style="color: #6b7280; font-size: 14px;">${s.description}</span>` : ''}
-                </li>
-              `).join('')}
-            </ul>
-          </div>
-          ` : ''}
-          <p>To view the complete agreement document, please log in to the agreement management system.</p>
-          <p>If you have any questions, please don't hesitate to contact us.</p>
-          <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
-            This is an automated message from Agreement Management System.
-          </p>
+    // Email content
+    const emailContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #2563eb;">Agreement Notification</h2>
+        <p>Dear ${recipient === 'agency' ? agency.name : customer.name},</p>
+        <p>This is a notification regarding the agreement: <strong>${agreement.title}</strong></p>
+        <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+          <p style="margin: 5px 0;"><strong>Agreement Number:</strong> ${agreement.agreement_number}</p>
+          <p style="margin: 5px 0;"><strong>Agency:</strong> ${agency.name}</p>
+          <p style="margin: 5px 0;"><strong>Customer:</strong> ${customer.name}</p>
+          <p style="margin: 5px 0;"><strong>Start Date:</strong> ${new Date(agreement.start_date).toLocaleDateString()}</p>
+          ${agreement.end_date ? `<p style="margin: 5px 0;"><strong>End Date:</strong> ${new Date(agreement.end_date).toLocaleDateString()}</p>` : ''}
+          ${agreement.monthly_payment ? `<p style="margin: 5px 0;"><strong>Monthly Payment:</strong> $${agreement.monthly_payment}</p>` : ''}
+          <p style="margin: 5px 0;"><strong>Status:</strong> ${agreement.status.toUpperCase()}</p>
         </div>
-      `
-    };
+        ${agreement.services && agreement.services.length > 0 ? `
+        <div style="margin: 20px 0;">
+          <h3 style="color: #1f2937;">Services Included:</h3>
+          <ul style="list-style: none; padding: 0;">
+            ${agreement.services.map(s => `
+              <li style="padding: 8px; background-color: #f9fafb; margin: 5px 0; border-radius: 5px;">
+                <strong>${s.title}</strong>${s.price ? ` - $${s.price}` : ''}
+                ${s.description ? `<br><span style="color: #6b7280; font-size: 14px;">${s.description}</span>` : ''}
+              </li>
+            `).join('')}
+          </ul>
+        </div>
+        ` : ''}
+        <p>To view the complete agreement document, please log in to the agreement management system.</p>
+        <p>If you have any questions, please don't hesitate to contact us.</p>
+        <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+          This is an automated message from Agreement Management System.
+        </p>
+      </div>
+    `;
 
-    await transporter.sendMail(mailOptions);
+    // Use Resend API directly
+    await resend.emails.send({
+      from: emailSettings.from_email || 'onboarding@resend.dev',
+      to: recipients,
+      subject: `Agreement: ${agreement.title} - ${agreement.agreement_number}`,
+      html: emailContent
+    });
 
     res.json({ 
       success: true, 
@@ -1359,6 +1353,9 @@ app.post('/api/agreements/:id/send-email', async (req, res) => {
     res.status(500).json({ error: 'Failed to send email', details: error.message });
   }
 });
+
+// Initialize Resend with API key
+const resend = new Resend('re_L34baJx9_D44c6KUdsiapZPBtJXZPbc2S');
 
 // Helper function to create email transporter based on provider
 function createEmailTransporter(settings) {
@@ -1394,15 +1391,8 @@ function createEmailTransporter(settings) {
       });
     
     case 'resend':
-      return nodemailer.createTransport({
-        host: 'smtp.resend.com',
-        port: 465,
-        secure: true,
-        auth: {
-          user: 'resend',
-          pass: settings.api_key
-        }
-      });
+      // Use native Resend SDK instead of SMTP
+      return 'resend-native';
     
     case 'postmark':
       return nodemailer.createTransport({
