@@ -1074,7 +1074,7 @@ function openSignaturePad(agreementId, party) {
                     <i class="fas fa-eraser mr-2"></i>Clear
                 </button>
                 <div class="flex gap-3">
-                    <button onclick="closeSignaturePad()" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+                    <button onclick="cancelSignature()" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
                         Cancel
                     </button>
                     <button onclick="saveSignature()" class="px-6 py-2 ${party === 'agency' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-green-600 hover:bg-green-700'} text-white rounded-lg">
@@ -1116,6 +1116,12 @@ function closeSignaturePad() {
     const modal = document.getElementById('signature-modal');
     if (modal) modal.remove();
     currentSignaturePad = null;
+    // Don't clear agreement info here - it's needed for saving
+}
+
+function cancelSignature() {
+    closeSignaturePad();
+    // Clear all signature-related variables when canceling
     currentAgreementId = null;
     currentSignatureParty = null;
 }
@@ -1138,7 +1144,11 @@ async function saveSignature() {
     }
     
     if (!currentAgreementId || !currentSignatureParty) {
-        showNotification('❌ Missing agreement information. Please try again.', 'error');
+        console.error('Missing signature data:', {
+            agreementId: currentAgreementId,
+            party: currentSignatureParty
+        });
+        showNotification('❌ Missing agreement information. Please close and reopen the signature pad.', 'error');
         return;
     }
     
@@ -1155,7 +1165,15 @@ async function saveSignature() {
         console.log('Signature saved response:', response.data);
         
         showNotification(`✅ Signature saved successfully!`);
+        
+        // Store the agreement ID before closing
+        const agreementIdToReopen = currentAgreementId;
+        
         closeSignaturePad();
+        
+        // Clear the variables after closing the modal
+        currentAgreementId = null;
+        currentSignatureParty = null;
         
         // Reload data and close any open agreement modals
         await loadAllData();
@@ -1164,11 +1182,15 @@ async function saveSignature() {
         });
         
         // Reopen the agreement to show the signature
-        viewAgreement(currentAgreementId);
+        viewAgreement(agreementIdToReopen);
         
     } catch (error) {
         console.error('Error saving signature:', error);
         const errorMsg = error.response?.data?.error || error.response?.data?.message || error.message || 'Unknown error';
+        showNotification(`❌ Error saving signature: ${errorMsg}`, 'error');
+    }
+}
+essage || 'Unknown error';
         showNotification(`❌ Error saving signature: ${errorMsg}`, 'error');
     }
 }
