@@ -2,12 +2,13 @@
   "agencies": [
     {
       "id": 1,
-      "name": "Creative Agency Ltd",
-      "email": "info@creativeagency.com",
-      "phone": "+1-555-0101",
-      "address": "123 Business Ave, Suite 100",
+      "name": "FCA",
+      "email": "info@fashioncast.ageency",
+      "phone": "+9050787522228",
+      "address": "Symrna TR FOLKART TOWERS",
       "is_active": 1,
-      "created_at": "2025-12-01T18:38:26.496Z"
+      "created_at": "2025-12-01T18:38:26.496Z",
+      "updated_at": "2025-12-03T14:35:54.616Z"
     },
     {
       "id": 2,
@@ -38,20 +39,15 @@
       "created_at": "2025-12-01T18:38:26.496Z"
     },
     {
-      "id": 2,
-      "name": "Sarah Johnson",
-      "email": "sarah.j@techcorp.com",
-      "phone": "+1-555-1002",
-      "company": "TechCorp LLC",
-      "created_at": "2025-12-01T18:38:26.496Z"
-    },
-    {
-      "id": 3,
-      "name": "Michael Brown",
-      "email": "mbrown@retailco.com",
-      "phone": "+1-555-1003",
-      "company": "RetailCo",
-      "created_at": "2025-12-01T18:38:26.496Z"
+      "id": 4,
+      "name": "Kalo",
+      "email": "Georgiev.kalojan@gmail.com",
+      "phone": "000",
+      "company": "The nest",
+      "tax_id": "224",
+      "address": "Bg",
+      "created_at": "2025-12-03T14:36:28.221Z",
+      "updated_at": "2025-12-03T14:36:28.221Z"
     }
   ],
   "templates": [
@@ -67,7 +63,8 @@
       "name": "Digital Marketing Agreement",
       "description": "Agreement for digital marketing services",
       "content": "DIGITAL MARKETING SERVICES AGREEMENT\n\nBetween: {{AGENCY_NAME}}\nAnd: {{CUSTOMER_NAME}}\n\nThe Agency will provide comprehensive digital marketing services including:\n{{SERVICES}}\n\nMonthly Investment: {{MONTHLY_PAYMENT}}\nPayment Schedule: {{PAYMENT_DAY}} of each month\nContract Period: {{START_DATE}} to {{END_DATE}}",
-      "created_at": "2025-12-01T18:38:26.496Z"
+      "created_at": "2025-12-01T18:38:26.496Z",
+      "updated_at": "2025-12-03T13:49:47.183Z"
     },
     {
       "id": 3,
@@ -77,7 +74,73 @@
       "created_at": "2025-12-01T18:38:26.496Z"
     }
   ],
-  "agreements": [],
+  "agreements": [
+    {
+      "id": 1,
+      "agreement_number": "AGR-1764769772325-453",
+      "agency_id": 1,
+      "customer_id": 1,
+      "template_id": "2",
+      "title": "Mr",
+      "content": "DIGITAL MARKETING SERVICES AGREEMENT\n\nBetween: {{AGENCY_NAME}}\nAnd: {{CUSTOMER_NAME}}\n\nThe Agency will provide comprehensive digital marketing services including:\n{{SERVICES}}\n\nMonthly Investment: {{MONTHLY_PAYMENT}}\nPayment Schedule: {{PAYMENT_DAY}} of each month\nContract Period: {{START_DATE}} to {{END_DATE}}",
+      "monthly_payment": null,
+      "payment_day": 1,
+      "start_date": "2025-12-03",
+      "end_date": "2025-12-28",
+      "status": "draft",
+      "services": [
+        {
+          "title": "Sm",
+          "description": "Sm",
+          "price": 1000
+        }
+      ],
+      "agency_signed": 0,
+      "customer_signed": 0,
+      "created_at": "2025-12-03T13:49:32.325Z",
+      "updated_at": "2025-12-03T13:49:32.325Z"
+    },
+    {
+      "id": 2,
+      "agreement_number": "AGR-1764772645420-982",
+      "agency_id": 1,
+      "customer_id": 4,
+      "template_id": "2",
+      "title": "K",
+      "content": "DIGITAL MARKETING SERVICES AGREEMENT\n\nBetween: {{AGENCY_NAME}}\nAnd: {{CUSTOMER_NAME}}\n\nThe Agency will provide comprehensive digital marketing services including:\n{{SERVICES}}\n\nMonthly Investment: {{MONTHLY_PAYMENT}}\nPayment Schedule: {{PAYMENT_DAY}} of each month\nContract Period: {{START_DATE}} to {{END_DATE}}",
+      "monthly_payment": "500",
+      "payment_day": 15,
+      "start_date": "2025-12-03",
+      "end_date": "2026-04-30",
+      "status": "draft",
+      "services": [
+        {
+          "title": "Ffr",
+          "description": "Fty",
+          "price": 600
+        }
+      ],
+      "agency_signed": 0,
+      "customer_signed": 0,
+      "created_at": "2025-12-03T14:37:25.420Z",
+      "updated_at": "2025-12-03T14:37:25.420Z"
+    },
+    {
+      "id": 3,
+      "agreement_number": "AGR-1764772751447-830",
+      "agency_id": 1,
+      "customer_id": 1,
+      "title": "Test Agreement",
+      "content": "Test content",
+      "start_date": "2025-01-01",
+      "services": [],
+      "status": "draft",
+      "agency_signed": 0,
+      "customer_signed": 0,
+      "created_at": "2025-12-03T14:39:11.447Z",
+      "updated_at": "2025-12-03T14:39:11.448Z"
+    }
+  ],
   "reminders": [],
   "emailSettings": {
     "provider": "sendgrid",
@@ -85,5 +148,63 @@
     "from_email": "noreply@yourcompany.com",
     "from_name": "Agreement System",
     "reminder_days_before": 3
-  }
+  },
+  "serviceLibrary": [
+    {
+      "id": 1,
+      "name": "Website Design",
+      "description": "Complete website design and development",
+      "default_price": 2500,
+      "category": "Web Development"
+    },
+    {
+      "id": 2,
+      "name": "SEO Optimization",
+      "description": "Search engine optimization services",
+      "default_price": 800,
+      "category": "Digital Marketing"
+    },
+    {
+      "id": 3,
+      "name": "Social Media Management",
+      "description": "Monthly social media content and management",
+      "default_price": 1200,
+      "category": "Digital Marketing"
+    },
+    {
+      "id": 4,
+      "name": "Logo Design",
+      "description": "Professional logo design with 3 revisions",
+      "default_price": 500,
+      "category": "Branding"
+    },
+    {
+      "id": 5,
+      "name": "Content Writing",
+      "description": "Blog posts and website content",
+      "default_price": 300,
+      "category": "Content"
+    },
+    {
+      "id": 6,
+      "name": "Email Marketing",
+      "description": "Email campaign setup and management",
+      "default_price": 600,
+      "category": "Digital Marketing"
+    },
+    {
+      "id": 7,
+      "name": "Website Maintenance",
+      "description": "Monthly website updates and maintenance",
+      "default_price": 200,
+      "category": "Web Development"
+    },
+    {
+      "id": 8,
+      "name": "Graphic Design",
+      "description": "Custom graphic design services",
+      "default_price": 400,
+      "category": "Design"
+    }
+  ]
 }

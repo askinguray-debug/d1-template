@@ -5,6 +5,7 @@ let templates = [];
 let agreements = [];
 let reminders = [];
 let serviceSectionCounter = 0;
+let serviceLibrary = [];
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', async () => {
@@ -50,12 +51,13 @@ function showTab(tabName) {
 // Load all data
 async function loadAllData() {
     try {
-        const [agenciesRes, customersRes, templatesRes, agreementsRes, remindersRes] = await Promise.all([
+        const [agenciesRes, customersRes, templatesRes, agreementsRes, remindersRes, serviceLibraryRes] = await Promise.all([
             axios.get('/api/agencies'),
             axios.get('/api/customers'),
             axios.get('/api/templates'),
             axios.get('/api/agreements'),
-            axios.get('/api/reminders/pending')
+            axios.get('/api/reminders/pending'),
+            axios.get('/api/service-library')
         ]);
         
         agencies = agenciesRes.data;
@@ -63,6 +65,7 @@ async function loadAllData() {
         templates = templatesRes.data;
         agreements = agreementsRes.data;
         reminders = remindersRes.data;
+        serviceLibrary = serviceLibraryRes.data;
     } catch (error) {
         console.error('Error loading data:', error);
         showNotification('Error loading data', 'error');
@@ -518,19 +521,53 @@ async function handleTemplateChange(e) {
 function addServiceSection() {
     serviceSectionCounter++;
     const section = document.createElement('div');
-    section.className = 'border border-gray-200 rounded-lg p-3';
+    section.className = 'border border-gray-200 rounded-lg p-3 bg-gray-50';
     section.id = `service-${serviceSectionCounter}`;
+    
+    // Create service library options
+    const serviceOptions = serviceLibrary.map(s => 
+        `<option value="${s.id}" data-price="${s.default_price}" data-desc="${s.description}">${s.name} - $${s.default_price}</option>`
+    ).join('');
+    
     section.innerHTML = `
-        <div class="flex gap-3">
-            <input type="text" placeholder="Service Title" class="flex-1 px-3 py-2 border border-gray-300 rounded" data-service-title>
-            <input type="text" placeholder="Description" class="flex-1 px-3 py-2 border border-gray-300 rounded" data-service-description>
-            <input type="number" placeholder="Price" step="0.01" class="w-32 px-3 py-2 border border-gray-300 rounded" data-service-price>
-            <button type="button" onclick="removeServiceSection(${serviceSectionCounter})" class="text-red-600 hover:text-red-800 px-3">
-                <i class="fas fa-times"></i>
-            </button>
+        <div class="space-y-2">
+            <div class="flex gap-3">
+                <select class="flex-1 px-3 py-2 border border-gray-300 rounded" data-service-library onchange="fillServiceFromLibrary(${serviceSectionCounter}, this)">
+                    <option value="">Select from Service Library (or type custom)</option>
+                    ${serviceOptions}
+                </select>
+                <button type="button" onclick="removeServiceSection(${serviceSectionCounter})" class="text-red-600 hover:text-red-800 px-3">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="flex gap-3">
+                <input type="text" placeholder="Service Title *" class="flex-1 px-3 py-2 border border-gray-300 rounded" data-service-title required>
+                <input type="number" placeholder="Price" step="0.01" class="w-32 px-3 py-2 border border-gray-300 rounded" data-service-price>
+            </div>
+            <input type="text" placeholder="Description" class="w-full px-3 py-2 border border-gray-300 rounded" data-service-description>
         </div>
     `;
     document.getElementById('service-sections').appendChild(section);
+}
+
+function fillServiceFromLibrary(sectionId, selectElement) {
+    const selectedOption = selectElement.options[selectElement.selectedIndex];
+    if (!selectedOption.value) return;
+    
+    const section = document.getElementById(`service-${sectionId}`);
+    const title = section.querySelector('[data-service-title]');
+    const desc = section.querySelector('[data-service-description]');
+    const price = section.querySelector('[data-service-price]');
+    
+    // Get data from service library
+    const serviceId = parseInt(selectedOption.value);
+    const service = serviceLibrary.find(s => s.id === serviceId);
+    
+    if (service) {
+        title.value = service.name;
+        desc.value = service.description;
+        price.value = service.default_price;
+    }
 }
 
 function removeServiceSection(id) {
@@ -554,23 +591,51 @@ function getServiceSections() {
 async function handleAgreementSave(e) {
     e.preventDefault();
     
+    // Validation
+    const agencyId = document.getElementById('agreement-agency').value;
+    const customerId = document.getElementById('agreement-customer').value;
+    const title = document.getElementById('agreement-title').value;
+    const startDate = document.getElementById('agreement-start-date').value;
+    const content = document.getElementById('agreement-content').value;
+    
+    if (!agencyId) {
+        showNotification('Please select an agency', 'error');
+        return;
+    }
+    if (!customerId) {
+        showNotification('Please select a customer', 'error');
+        return;
+    }
+    if (!title) {
+        showNotification('Please enter agreement title', 'error');
+        return;
+    }
+    if (!startDate) {
+        showNotification('Please select start date', 'error');
+        return;
+    }
+    if (!content) {
+        showNotification('Please enter agreement content', 'error');
+        return;
+    }
+    
     const data = {
-        agency_id: parseInt(document.getElementById('agreement-agency').value),
-        customer_id: parseInt(document.getElementById('agreement-customer').value),
+        agency_id: parseInt(agencyId),
+        customer_id: parseInt(customerId),
         template_id: document.getElementById('agreement-template').value || null,
-        title: document.getElementById('agreement-title').value,
-        content: document.getElementById('agreement-content').value,
+        title: title,
+        content: content,
         monthly_payment: document.getElementById('agreement-payment').value || null,
         payment_day: parseInt(document.getElementById('agreement-payment-day').value),
-        start_date: document.getElementById('agreement-start-date').value,
+        start_date: startDate,
         end_date: document.getElementById('agreement-end-date').value || null,
         status: 'draft',
         services: getServiceSections()
     };
     
     try {
-        await axios.post('/api/agreements', data);
-        showNotification('Agreement created successfully');
+        const response = await axios.post('/api/agreements', data);
+        showNotification('✅ Agreement created successfully!');
         document.getElementById('new-agreement-form').reset();
         document.getElementById('service-sections').innerHTML = '';
         await loadAllData();
@@ -578,7 +643,8 @@ async function handleAgreementSave(e) {
         updateDashboard();
     } catch (error) {
         console.error('Error creating agreement:', error);
-        showNotification('Error creating agreement', 'error');
+        const errorMsg = error.response?.data?.message || error.message || 'Unknown error';
+        showNotification(`❌ Error: ${errorMsg}`, 'error');
     }
 }
 

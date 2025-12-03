@@ -426,6 +426,68 @@ app.put('/api/reminders/:id/mark-sent', async (req, res) => {
 });
 
 // ======================
+// SERVICE LIBRARY API
+// ======================
+app.get('/api/service-library', async (req, res) => {
+  const db = await readDB();
+  if (!db.serviceLibrary) {
+    db.serviceLibrary = [];
+  }
+  res.json(db.serviceLibrary);
+});
+
+app.get('/api/service-library/:id', async (req, res) => {
+  const db = await readDB();
+  const service = db.serviceLibrary?.find(s => s.id === parseInt(req.params.id));
+  res.json(service || {});
+});
+
+app.post('/api/service-library', async (req, res) => {
+  const db = await readDB();
+  if (!db.serviceLibrary) {
+    db.serviceLibrary = [];
+  }
+  const newService = {
+    id: getNextId(db.serviceLibrary),
+    ...req.body,
+    created_at: new Date().toISOString()
+  };
+  db.serviceLibrary.push(newService);
+  await writeDB(db);
+  res.json(newService);
+});
+
+app.put('/api/service-library/:id', async (req, res) => {
+  const db = await readDB();
+  if (!db.serviceLibrary) {
+    db.serviceLibrary = [];
+  }
+  const index = db.serviceLibrary.findIndex(s => s.id === parseInt(req.params.id));
+  if (index !== -1) {
+    db.serviceLibrary[index] = {
+      ...db.serviceLibrary[index],
+      ...req.body,
+      id: parseInt(req.params.id),
+      updated_at: new Date().toISOString()
+    };
+    await writeDB(db);
+    res.json(db.serviceLibrary[index]);
+  } else {
+    res.status(404).json({ error: 'Service not found' });
+  }
+});
+
+app.delete('/api/service-library/:id', async (req, res) => {
+  const db = await readDB();
+  if (!db.serviceLibrary) {
+    db.serviceLibrary = [];
+  }
+  db.serviceLibrary = db.serviceLibrary.filter(s => s.id !== parseInt(req.params.id));
+  await writeDB(db);
+  res.json({ success: true });
+});
+
+// ======================
 // EMAIL SETTINGS API
 // ======================
 app.get('/api/email-settings', async (req, res) => {
