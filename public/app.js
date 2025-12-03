@@ -1087,12 +1087,29 @@ function openSignaturePad(agreementId, party) {
     
     document.body.appendChild(modal);
     
-    // Initialize signature pad
-    const canvas = document.getElementById('signature-canvas');
-    currentSignaturePad = new SignaturePad(canvas, {
-        backgroundColor: 'rgb(255, 255, 255)',
-        penColor: party === 'agency' ? 'rgb(37, 99, 235)' : 'rgb(22, 163, 74)'
-    });
+    // Initialize signature pad with delay to ensure canvas is ready
+    setTimeout(() => {
+        try {
+            const canvas = document.getElementById('signature-canvas');
+            if (!canvas) {
+                showNotification('❌ Canvas element not found', 'error');
+                return;
+            }
+            
+            if (typeof SignaturePad === 'undefined') {
+                showNotification('❌ SignaturePad library not loaded. Please refresh the page.', 'error');
+                return;
+            }
+            
+            currentSignaturePad = new SignaturePad(canvas, {
+                backgroundColor: 'rgb(255, 255, 255)',
+                penColor: party === 'agency' ? 'rgb(37, 99, 235)' : 'rgb(22, 163, 74)'
+            });
+        } catch (error) {
+            console.error('Error initializing signature pad:', error);
+            showNotification('❌ Error initializing signature pad: ' + error.message, 'error');
+        }
+    }, 100);
 }
 
 function closeSignaturePad() {
@@ -1110,18 +1127,32 @@ function clearSignature() {
 }
 
 async function saveSignature() {
-    if (!currentSignaturePad || currentSignaturePad.isEmpty()) {
+    if (!currentSignaturePad) {
+        showNotification('❌ Signature pad not initialized. Please try again.', 'error');
+        return;
+    }
+    
+    if (currentSignaturePad.isEmpty()) {
         showNotification('⚠️ Please draw your signature first', 'error');
+        return;
+    }
+    
+    if (!currentAgreementId || !currentSignatureParty) {
+        showNotification('❌ Missing agreement information. Please try again.', 'error');
         return;
     }
     
     try {
         const signatureData = currentSignaturePad.toDataURL();
         
-        await axios.post(`/api/agreements/${currentAgreementId}/sign`, {
+        console.log('Saving signature for agreement:', currentAgreementId, 'party:', currentSignatureParty);
+        
+        const response = await axios.post(`/api/agreements/${currentAgreementId}/sign`, {
             party: currentSignatureParty,
             signature: signatureData
         });
+        
+        console.log('Signature saved response:', response.data);
         
         showNotification(`✅ Signature saved successfully!`);
         closeSignaturePad();
@@ -1137,6 +1168,7 @@ async function saveSignature() {
         
     } catch (error) {
         console.error('Error saving signature:', error);
-        showNotification('❌ Error saving signature', 'error');
+        const errorMsg = error.response?.data?.error || error.response?.data?.message || error.message || 'Unknown error';
+        showNotification(`❌ Error saving signature: ${errorMsg}`, 'error');
     }
 }
