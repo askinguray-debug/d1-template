@@ -85,11 +85,11 @@
   "emailSettings": {
     "provider": "resend",
     "api_key": "re_L34baJx9_D44c6KUdsiapZPBtJXZPbc2S",
-    "from_email": "onboarding@resend.dev",
-    "from_name": "Recluma",
-    "reminder_days_before": 3,
-    "created_at": "2025-12-03T21:31:26.827Z",
-    "updated_at": "2025-12-03T21:31:26.827Z"
+    "from_email": "",
+    "from_name": "",
+    "reminder_days_before": 1,
+    "created_at": "2025-12-03T21:52:05.800Z",
+    "updated_at": "2025-12-03T21:52:05.800Z"
   },
   "serviceLibrary": [
     {
@@ -225,6 +225,26 @@
       "content": "\nFASHION CAST AGENCY\n\nComprehensive Model Registration & Collaboration Agreement (Non-Exclusive)\n\nThis agreement is made between Fashion Cast Agency (“FCA”) and the individual signing below (“the Model”). It outlines how the collaboration works, how content is produced and used, and what rights and responsibilities apply to both parties.\n\n⸻\n\n1. Purpose and Overview\n\nFCA helps build your professional presence and connects you with fashion brands, designers, lifestyle companies, and creative teams. We invest in photography, video, and AI-generated visuals to showcase your creative potential.\n\nThis is a non-exclusive agreement. The Model may freely work with other agencies or accept independent jobs at any time.\n\n⸻\n\n2. How Our Process Works\n\n2.1 Registration and Promotion\n\nAfter signing, FCA creates promotional visuals for the Model, including photos, AI-generated composites, and short videos. These are produced at FCA’s expense and used to introduce the Model to potential clients.\n\nThe Model is not tied exclusively to FCA and may collaborate with others.\n\n2.2 Brand Engagement\n\nWhen a brand shows interest, FCA contacts the Model with full project details. No project begins without the Model’s explicit approval.\n\n2.3 Concept Development\n\nOnce the Model and brand agree to proceed, FCA produces draft visuals to preview the collaboration. Final production begins only after both sides fully approve the concept.\n\n2.4 Final Production\n\nFCA produces final campaign visuals and delivers them for approval. Once approved, the content is published on FCA’s platforms and/or the brand’s platforms.\n\nAll approvals are final.\n\n⸻\n\n3. Payment and Commission\n\nFCA does not charge the Model for promotional visuals.\nFor paid brand campaigns, FCA receives a commission between 15%–20%, depending on the project.\n\n⸻\n\n4. Booking Rules\n\nFCA proposes only jobs that match the Model’s personality, comfort level, and goals.\nThe Model may decline any job. FCA never books the Model without approval.\n\n⸻\n\n5. Image Usage Rights and Ownership\n\nOnce the Model approves final campaign visuals, the Model grants FCA and the brand the permanent right to use that content for:\n\t•\tsocial media\n\t•\twebsites\n\t•\tpromotional materials\n\t•\tonline advertising\n\t•\tlookbooks and digital campaigns\n\nThe Model still owns their personal likeness, but the specific approved visuals become permanently licensed and cannot be revoked.\n\nApproved and published content can never be removed unless FCA chooses to do so voluntarily.\n\n⸻\n\n6. Contract Duration and Termination\n\nThis agreement is valid for five (5) years from the date of signing.\n\nEither party may terminate the agreement with 30 days’ written notice.\n\nTermination does not affect any approved and published content; such content remains permanently in FCA’s archive.\n\n⸻\n\n7. Content Permanence and AI Training\n\nAll approved visuals may be used permanently by FCA and collaborating brands.\nThe content may also be used to train FCA’s AI systems and to generate new promotional materials.\n\nPublished content cannot be edited, restricted, removed, or deleted by the Model.\n\nOnly FCA has the right to decide whether content remains online.\n\n⸻\n\n8. Penalty for Leaving the Agency Within First Two Years\n\nThe Model is always free to leave FCA.\nHowever, if the Model decides to terminate their membership and leave FCA within the first two (2) years of this agreement, the Model agrees to pay a contractual exit penalty of 5,000 USD.\n\nThis penalty compensates FCA for:\n\t•\tportfolio creation\n\t•\tAI training value\n\t•\tpromotional investment\n\t•\tbrand development work\n\t•\tcontent production costs\n\nThis penalty applies ONLY if the Model chooses to leave FCA within the first 2 years.\nIt does NOT apply for reporting, blocking, or removing content — because content cannot be removed under any circumstance.\n\nAfter two years, there is no financial penalty for leaving the agency.\n\n⸻\n\n9. Confidentiality\n\nThe Model agrees to keep all unreleased campaigns and brand communication confidential until publicly released. FCA will protect the Model’s data securely and respectfully.\n\n⸻\n\n10. Governing Law\n\nThis agreement is governed by the laws of the United Republic of Tanzania.\n\nAny disputes will be resolved first through negotiation, then through arbitration or court proceedings in Tanzania if necessary.\n\n⸻",
       "created_at": "2025-12-03T20:36:30.260Z",
       "updated_at": "2025-12-03T20:36:30.260Z"
+    }
+  ],
+  "shareTokens": [
+    {
+      "token": "2727523a8d8a08582171aaa234ebe87234b2cbe739f3887521db109d5ec1a874",
+      "agreementId": 3,
+      "agreementType": "model",
+      "party": "agency",
+      "used": false,
+      "createdAt": "2025-12-03T21:50:43.171Z",
+      "expiresAt": "2026-01-02T21:50:43.171Z"
+    },
+    {
+      "token": "57e547d937f06c9b9652910effaec7d6049b8045dbd5eb3278e846aae0f83061",
+      "agreementId": 3,
+      "agreementType": "model",
+      "party": "customer",
+      "used": false,
+      "createdAt": "2025-12-03T21:50:43.178Z",
+      "expiresAt": "2026-01-02T21:50:43.178Z"
     }
   ]
 }

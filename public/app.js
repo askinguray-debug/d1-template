@@ -6,6 +6,7 @@ let agreements = [];
 let reminders = [];
 let serviceSectionCounter = 0;
 let serviceLibrary = [];
+let currentAgreementType = 'regular'; // 'regular' or 'model'
 
 // Helper function to process template placeholders
 function processTemplate(content, data) {
@@ -408,7 +409,7 @@ ${agreement.content}
                         <button onclick="printModelAgreement(${id})" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700">
                             <i class="fas fa-print mr-2"></i>Print
                         </button>
-                        <button onclick="sendModelAgreementEmail(${id})" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">
+                        <button onclick="showModelEmailDialog(${id})" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">
                             <i class="fas fa-envelope mr-2"></i>Send Email
                         </button>
                         <button onclick="closeModal('model-agreement-modal')" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300">
@@ -430,18 +431,151 @@ function printModelAgreement(id) {
     window.open(`/api/model-agreements/${id}/print`, '_blank');
 }
 
-async function sendModelAgreementEmail(id) {
-    const recipient = prompt('Send to:\n1. Agency\n2. Model\n3. Both\n\nEnter 1, 2, or 3:');
-    if (!recipient) return;
+function showModelEmailDialog(id) {
+    currentAgreementType = 'model';
+    const modal = document.createElement('div');
+    modal.id = 'model-email-dialog-modal';
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    modal.innerHTML = `
+        <div class="bg-white rounded-lg p-6 w-full max-w-lg">
+            <h3 class="text-xl font-bold text-gray-900 mb-4">
+                <i class="fas fa-envelope mr-2 text-purple-600"></i>Send Model Agreement via Email
+            </h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Quick Select Recipients:</label>
+                    <div class="space-y-2">
+                        <label class="flex items-center">
+                            <input type="checkbox" id="select-model-agency" class="mr-2" onchange="updateModelRecipientList()">
+                            <span>Agency</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="select-model-customer" class="mr-2" checked onchange="updateModelRecipientList()">
+                            <span>Model</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Recipients (To:)
+                        <span class="text-xs text-gray-500 ml-2">One email per line</span>
+                    </label>
+                    <textarea 
+                        id="model-email-recipients" 
+                        rows="3"
+                        placeholder="email1@example.com&#10;email2@example.com&#10;email3@example.com"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg font-mono text-sm resize-none focus:ring-2 focus:ring-purple-500"
+                    ></textarea>
+                    <p class="text-xs text-gray-500 mt-1">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Enter email addresses (one per line). You can add multiple recipients.
+                    </p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        CC (Carbon Copy) - Optional
+                        <span class="text-xs text-gray-500 ml-2">One email per line</span>
+                    </label>
+                    <textarea 
+                        id="model-email-cc" 
+                        rows="2"
+                        placeholder="cc1@example.com&#10;cc2@example.com"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg font-mono text-sm resize-none focus:ring-2 focus:ring-purple-500"
+                    ></textarea>
+                </div>
+                
+                <div class="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                    <p class="text-sm text-purple-800">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        The model agreement will be sent as a PDF attachment with signature links.
+                    </p>
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 mt-6">
+                <button onclick="closeModal('model-email-dialog-modal')" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+                    Cancel
+                </button>
+                <button onclick="sendModelAgreementEmail(${id})" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+                    <i class="fas fa-paper-plane mr-2"></i>Send Email
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
     
-    const recipientType = recipient === '1' ? 'agency' : recipient === '2' ? 'customer' : 'both';
+    // Store agreement ID for recipient list updates
+    window.currentModelEmailAgreementId = id;
+    updateModelRecipientList();
+}
+
+// Update model recipient list based on checkbox selection
+function updateModelRecipientList() {
+    const recipientsField = document.getElementById('model-email-recipients');
+    if (!recipientsField) return;
+    
+    const includeAgency = document.getElementById('select-model-agency')?.checked;
+    const includeCustomer = document.getElementById('select-model-customer')?.checked;
+    
+    let emails = [];
+    
+    // Find current model agreement to get agency/customer emails
+    const agreementId = window.currentModelEmailAgreementId;
+    const agreement = modelAgreements.find(a => a.id === agreementId);
+    
+    if (agreement) {
+        const agency = agencies.find(a => a.id === agreement.agency_id);
+        const customer = customers.find(c => c.id === agreement.customer_id);
+        
+        if (includeAgency && agency?.email) {
+            emails.push(agency.email);
+        }
+        if (includeCustomer && customer?.email) {
+            emails.push(customer.email);
+        }
+    }
+    
+    recipientsField.value = emails.join('\n');
+}
+
+async function sendModelAgreementEmail(id) {
+    const recipientsText = document.getElementById('model-email-recipients').value;
+    const ccText = document.getElementById('model-email-cc').value;
+    
+    // Parse email addresses (one per line)
+    const recipients = recipientsText
+        .split('\n')
+        .map(email => email.trim())
+        .filter(email => email.length > 0 && email.includes('@'));
+    
+    const cc = ccText
+        .split('\n')
+        .map(email => email.trim())
+        .filter(email => email.length > 0 && email.includes('@'));
+    
+    // Validation
+    if (recipients.length === 0) {
+        showNotification('❌ Please enter at least one recipient email address', 'error');
+        return;
+    }
     
     try {
-        await axios.post(`/api/model-agreements/${id}/send-email`, { recipient: recipientType });
-        alert('Email sent successfully!');
+        showNotification('📧 Sending email...', 'info');
+        
+        const response = await axios.post(`/api/model-agreements/${id}/send-email`, {
+            recipients: recipients,
+            cc: cc
+        });
+        
+        // Close email dialog
+        closeModal('model-email-dialog-modal');
+        
+        showNotification('✅ Model agreement email sent successfully!');
     } catch (error) {
         console.error('Error sending email:', error);
-        alert('Failed to send email. Please check email settings.');
+        const errorMsg = error.response?.data?.error || 'Failed to send email';
+        showNotification(`❌ ${errorMsg}`, 'error');
     }
 }
 
@@ -1354,40 +1488,64 @@ function downloadPDF(id) {
 
 // Show email dialog
 function showEmailDialog(id) {
+    currentAgreementType = 'regular';
     const modal = document.createElement('div');
     modal.id = 'email-dialog-modal';
     modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
     modal.innerHTML = `
-        <div class="bg-white rounded-lg p-6 w-full max-w-md">
+        <div class="bg-white rounded-lg p-6 w-full max-w-lg">
             <h3 class="text-xl font-bold text-gray-900 mb-4">
                 <i class="fas fa-envelope mr-2 text-green-600"></i>Send Agreement via Email
             </h3>
             <div class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Send to:</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Quick Select Recipients:</label>
                     <div class="space-y-2">
                         <label class="flex items-center">
-                            <input type="radio" name="recipient-modal" value="agency" class="mr-2">
-                            <span>Agency only</span>
+                            <input type="checkbox" id="select-agency" class="mr-2" onchange="updateRecipientList()">
+                            <span>Agency</span>
                         </label>
                         <label class="flex items-center">
-                            <input type="radio" name="recipient-modal" value="customer" class="mr-2">
-                            <span>Customer only</span>
-                        </label>
-                        <label class="flex items-center">
-                            <input type="radio" name="recipient-modal" value="both" checked class="mr-2">
-                            <span>Both Agency and Customer</span>
+                            <input type="checkbox" id="select-customer" class="mr-2" checked onchange="updateRecipientList()">
+                            <span>Customer</span>
                         </label>
                     </div>
                 </div>
+                
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">CC (optional)</label>
-                    <input type="email" id="email-cc-modal" placeholder="additional@email.com" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Recipients (To:)
+                        <span class="text-xs text-gray-500 ml-2">One email per line</span>
+                    </label>
+                    <textarea 
+                        id="email-recipients" 
+                        rows="3"
+                        placeholder="email1@example.com&#10;email2@example.com&#10;email3@example.com"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg font-mono text-sm resize-none focus:ring-2 focus:ring-blue-500"
+                    ></textarea>
+                    <p class="text-xs text-gray-500 mt-1">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Enter email addresses (one per line). You can add multiple recipients.
+                    </p>
                 </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        CC (Carbon Copy) - Optional
+                        <span class="text-xs text-gray-500 ml-2">One email per line</span>
+                    </label>
+                    <textarea 
+                        id="email-cc-modal" 
+                        rows="2"
+                        placeholder="cc1@example.com&#10;cc2@example.com"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg font-mono text-sm resize-none focus:ring-2 focus:ring-blue-500"
+                    ></textarea>
+                </div>
+                
                 <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
                     <p class="text-sm text-blue-800">
                         <i class="fas fa-info-circle mr-2"></i>
-                        The agreement will be sent as a PDF attachment.
+                        The agreement will be sent as a PDF attachment with signature links.
                     </p>
                 </div>
             </div>
@@ -1402,18 +1560,74 @@ function showEmailDialog(id) {
         </div>
     `;
     document.body.appendChild(modal);
+    
+    // Store agreement ID for recipient list updates
+    window.currentEmailAgreementId = id;
+    updateRecipientList();
+}
+
+// Update recipient list based on checkbox selection
+function updateRecipientList() {
+    const recipientsField = document.getElementById('email-recipients');
+    if (!recipientsField) return;
+    
+    const includeAgency = document.getElementById('select-agency')?.checked;
+    const includeCustomer = document.getElementById('select-customer')?.checked;
+    
+    let emails = [];
+    
+    // Find current agreement to get agency/customer emails
+    const agreementId = window.currentEmailAgreementId;
+    let agreement;
+    
+    if (currentAgreementType === 'model') {
+        agreement = modelAgreements.find(a => a.id === agreementId);
+    } else {
+        agreement = agreements.find(a => a.id === agreementId);
+    }
+    
+    if (agreement) {
+        const agency = agencies.find(a => a.id === agreement.agency_id);
+        const customer = customers.find(c => c.id === agreement.customer_id);
+        
+        if (includeAgency && agency?.email) {
+            emails.push(agency.email);
+        }
+        if (includeCustomer && customer?.email) {
+            emails.push(customer.email);
+        }
+    }
+    
+    recipientsField.value = emails.join('\n');
 }
 
 // Send agreement email
 async function sendAgreementEmail(id) {
-    const recipient = document.querySelector('input[name="recipient-modal"]:checked').value;
-    const cc = document.getElementById('email-cc-modal').value;
+    const recipientsText = document.getElementById('email-recipients').value;
+    const ccText = document.getElementById('email-cc-modal').value;
+    
+    // Parse email addresses (one per line)
+    const recipients = recipientsText
+        .split('\n')
+        .map(email => email.trim())
+        .filter(email => email.length > 0 && email.includes('@'));
+    
+    const cc = ccText
+        .split('\n')
+        .map(email => email.trim())
+        .filter(email => email.length > 0 && email.includes('@'));
+    
+    // Validation
+    if (recipients.length === 0) {
+        showNotification('❌ Please enter at least one recipient email address', 'error');
+        return;
+    }
     
     try {
         showNotification('📧 Sending email...', 'info');
         
         const response = await axios.post(`/api/agreements/${id}/send-email`, {
-            recipient: recipient,
+            recipients: recipients,
             cc: cc
         });
         

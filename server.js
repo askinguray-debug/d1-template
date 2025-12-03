@@ -703,14 +703,29 @@ app.post('/api/model-agreements/:id/send-email', async (req, res) => {
     
     const agency = db.agencies.find(a => a.id === agreement.agency_id);
     const customer = db.customers.find(c => c.id === agreement.customer_id);
-    const { recipient, cc } = req.body;
+    let { recipients, cc } = req.body;
     
     const emailSettings = db.emailSettings || {};
     
-    let recipients = [];
-    if (recipient === 'agency' || recipient === 'both') recipients.push(agency.email);
-    if (recipient === 'customer' || recipient === 'both') recipients.push(customer.email);
-    if (cc) recipients.push(cc);
+    // Support both new array format and old recipient format
+    if (!recipients || !Array.isArray(recipients)) {
+      const { recipient } = req.body;
+      recipients = [];
+      if (recipient === 'agency' || recipient === 'both') recipients.push(agency.email);
+      if (recipient === 'customer' || recipient === 'both') recipients.push(customer.email);
+    }
+    
+    // Add CC addresses to recipients
+    if (cc && Array.isArray(cc)) {
+      recipients = [...recipients, ...cc];
+    } else if (cc && typeof cc === 'string') {
+      recipients.push(cc);
+    }
+    
+    // Validate recipients
+    if (!recipients || recipients.length === 0) {
+      return res.status(400).json({ error: 'At least one recipient email is required' });
+    }
     
     // Generate share links for unsigned parties
     const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
@@ -1389,7 +1404,7 @@ app.get('/api/agreements/:id/print', async (req, res) => {
 // Send agreement via email
 app.post('/api/agreements/:id/send-email', async (req, res) => {
   try {
-    const { recipient, cc } = req.body; // 'agency', 'customer', or 'both'
+    let { recipients, cc } = req.body;
     const db = await readDB();
     const agreement = db.agreements.find(a => a.id === parseInt(req.params.id));
     
@@ -1401,15 +1416,29 @@ app.post('/api/agreements/:id/send-email', async (req, res) => {
     const customer = db.customers.find(c => c.id === agreement.customer_id);
     const emailSettings = db.emailSettings || {};
 
-    // Determine recipients
-    const recipients = [];
-    if (recipient === 'agency' || recipient === 'both') {
-      recipients.push(agency.email);
+    // Support both new array format and old recipient format
+    if (!recipients || !Array.isArray(recipients)) {
+      const { recipient } = req.body;
+      recipients = [];
+      if (recipient === 'agency' || recipient === 'both') {
+        recipients.push(agency.email);
+      }
+      if (recipient === 'customer' || recipient === 'both') {
+        recipients.push(customer.email);
+      }
     }
-    if (recipient === 'customer' || recipient === 'both') {
-      recipients.push(customer.email);
+    
+    // Add CC addresses to recipients
+    if (cc && Array.isArray(cc)) {
+      recipients = [...recipients, ...cc];
+    } else if (cc && typeof cc === 'string') {
+      recipients.push(cc);
     }
-    if (cc) recipients.push(cc);
+    
+    // Validate recipients
+    if (!recipients || recipients.length === 0) {
+      return res.status(400).json({ error: 'At least one recipient email is required' });
+    }
 
     // Generate share links for unsigned parties
     const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
