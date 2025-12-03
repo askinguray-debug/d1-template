@@ -855,25 +855,33 @@ app.post('/api/model-agreements/:id/send-email', async (req, res) => {
       </div>
     `;
     
-    // Generate PDF from HTML
-    const pdfHTML = generateModelAgreementHTML(agreement, agency, customer, true);
-    const pdfBuffer = await generatePDFBuffer(pdfHTML);
+    // Try to generate PDF, but send email even if it fails
+    let attachments = [];
+    try {
+      const pdfHTML = generateModelAgreementHTML(agreement, agency, customer, true);
+      const pdfBuffer = await generatePDFBuffer(pdfHTML);
+      attachments = [
+        {
+          filename: `Model_Agreement_${agreement.agreement_number}.pdf`,
+          content: pdfBuffer
+        }
+      ];
+    } catch (pdfError) {
+      console.error('PDF generation failed, sending email without PDF:', pdfError.message);
+      // Continue without PDF attachment
+    }
     
-    // Send email with PDF attachment
+    // Send email with or without PDF attachment
     await resend.emails.send({
       from: emailSettings.from_email || 'onboarding@resend.dev',
       to: recipients,
       subject: `📄 Cast & Modeling Agreement - ${agreement.agreement_number}`,
       html: emailContent,
-      attachments: [
-        {
-          filename: `Model_Agreement_${agreement.agreement_number}.pdf`,
-          content: pdfBuffer
-        }
-      ]
+      attachments: attachments
     });
     
-    res.json({ success: true, message: 'Email sent successfully with PDF attachment and signature links' });
+    const pdfStatus = attachments.length > 0 ? 'with PDF attachment' : '(PDF generation unavailable)';
+    res.json({ success: true, message: `Email sent successfully ${pdfStatus} and signature links` });
   } catch (error) {
     console.error('Email sending error:', error);
     res.status(500).json({ error: error.message });
@@ -1576,27 +1584,35 @@ app.post('/api/agreements/:id/send-email', async (req, res) => {
       </div>
     `;
 
-    // Generate PDF from HTML
-    const pdfHTML = generateAgreementHTML(agreement, agency, customer, true, true);
-    const pdfBuffer = await generatePDFBuffer(pdfHTML);
+    // Try to generate PDF, but send email even if it fails
+    let attachments = [];
+    try {
+      const pdfHTML = generateAgreementHTML(agreement, agency, customer, true, true);
+      const pdfBuffer = await generatePDFBuffer(pdfHTML);
+      attachments = [
+        {
+          filename: `Agreement_${agreement.agreement_number}.pdf`,
+          content: pdfBuffer
+        }
+      ];
+    } catch (pdfError) {
+      console.error('PDF generation failed, sending email without PDF:', pdfError.message);
+      // Continue without PDF attachment
+    }
 
-    // Use Resend API directly with PDF attachment
+    // Use Resend API directly with or without PDF attachment
     await resend.emails.send({
       from: emailSettings.from_email || 'onboarding@resend.dev',
       to: recipients,
       subject: `📄 Agreement: ${agreement.title} - ${agreement.agreement_number}`,
       html: emailContent,
-      attachments: [
-        {
-          filename: `Agreement_${agreement.agreement_number}.pdf`,
-          content: pdfBuffer
-        }
-      ]
+      attachments: attachments
     });
 
+    const pdfStatus = attachments.length > 0 ? 'with PDF attachment' : '(PDF generation unavailable)';
     res.json({ 
       success: true, 
-      message: `Agreement sent successfully to ${recipient === 'both' ? 'both parties' : recipient} with PDF attachment and signature links`,
+      message: `Agreement sent successfully ${pdfStatus} and signature links`,
       recipients: recipients 
     });
   } catch (error) {
