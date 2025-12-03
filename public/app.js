@@ -33,6 +33,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('template-form').addEventListener('submit', handleTemplateSave);
     document.getElementById('email-settings-form').addEventListener('submit', handleEmailSettingsSave);
     document.getElementById('new-agreement-form').addEventListener('submit', handleAgreementSave);
+    document.getElementById('new-model-agreement-form').addEventListener('submit', handleModelAgreementSave);
     
     // Template change handler
     document.getElementById('agreement-template').addEventListener('change', handleTemplateChange);
@@ -68,22 +69,25 @@ function showTab(tabName) {
     
     // Load data for specific tabs
     if (tabName === 'agreements') loadAgreements();
+    if (tabName === 'model-agreements') loadModelAgreements();
     if (tabName === 'customers') loadCustomers();
     if (tabName === 'templates') loadTemplates();
     if (tabName === 'reminders') loadReminders();
     if (tabName === 'services') loadServices();
     if (tabName === 'settings') loadSettings();
     if (tabName === 'new-agreement') loadNewAgreementForm();
+    if (tabName === 'new-model-agreement') loadNewModelAgreementForm();
 }
 
 // Load all data
 async function loadAllData() {
     try {
-        const [agenciesRes, customersRes, templatesRes, agreementsRes, remindersRes, serviceLibraryRes] = await Promise.all([
+        const [agenciesRes, customersRes, templatesRes, agreementsRes, modelAgreementsRes, remindersRes, serviceLibraryRes] = await Promise.all([
             axios.get('/api/agencies'),
             axios.get('/api/customers'),
             axios.get('/api/templates'),
             axios.get('/api/agreements'),
+            axios.get('/api/model-agreements'),
             axios.get('/api/reminders/pending'),
             axios.get('/api/service-library')
         ]);
@@ -92,6 +96,7 @@ async function loadAllData() {
         customers = customersRes.data;
         templates = templatesRes.data;
         agreements = agreementsRes.data;
+        modelAgreements = modelAgreementsRes.data;
         reminders = remindersRes.data;
         serviceLibrary = serviceLibraryRes.data;
     } catch (error) {
@@ -174,6 +179,311 @@ function loadAgreements() {
     `).join('');
     
     document.getElementById('agreements-list').innerHTML = agreementsHtml || '<p class="text-gray-500">No agreements yet</p>';
+}
+
+// Load model agreements
+let modelAgreements = [];
+
+async function loadModelAgreementsData() {
+    try {
+        const response = await axios.get('/api/model-agreements');
+        modelAgreements = response.data;
+    } catch (error) {
+        console.error('Error loading model agreements:', error);
+    }
+}
+
+function loadModelAgreements() {
+    const agreementsHtml = modelAgreements.map(agreement => `
+        <div class="border border-purple-200 rounded-lg p-4 hover:shadow-md transition-shadow bg-purple-50">
+            <div class="flex justify-between items-start">
+                <div class="flex-1">
+                    <div class="flex items-center gap-3">
+                        <h3 class="font-semibold text-gray-900">${agreement.title}</h3>
+                        <span class="px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(agreement.status)}">
+                            ${agreement.status}
+                        </span>
+                    </div>
+                    <p class="text-sm text-gray-600 mt-1">
+                        <i class="fas fa-building mr-1"></i>${agreement.agency_name} → 
+                        <i class="fas fa-user ml-2 mr-1"></i>${agreement.customer_name}
+                    </p>
+                    <div class="flex gap-4 mt-2 text-sm text-gray-500">
+                        <span><i class="fas fa-calendar mr-1"></i>${formatDate(agreement.start_date)}</span>
+                        <span><i class="fas fa-file-contract mr-1"></i>${agreement.agreement_number}</span>
+                    </div>
+                    <div class="flex gap-2 mt-3">
+                        ${agreement.agency_signed ? '<span class="text-xs text-green-600"><i class="fas fa-check-circle mr-1"></i>Agency Signed</span>' : ''}
+                        ${agreement.customer_signed ? '<span class="text-xs text-green-600"><i class="fas fa-check-circle mr-1"></i>Model Signed</span>' : ''}
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="viewModelAgreement(${agreement.id})" class="text-purple-600 hover:text-purple-800 px-3 py-1 rounded">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <button onclick="deleteModelAgreement(${agreement.id})" class="text-red-600 hover:text-red-800 px-3 py-1 rounded">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `).join('');
+    
+    document.getElementById('model-agreements-list').innerHTML = agreementsHtml || '<p class="text-gray-500">No model agreements yet</p>';
+}
+
+function loadNewModelAgreementForm() {
+    const agencyOptions = agencies.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+    const customerOptions = customers.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    
+    document.getElementById('model-agreement-agency').innerHTML = '<option value="">Select Agency...</option>' + agencyOptions;
+    document.getElementById('model-agreement-customer').innerHTML = '<option value="">Select Model...</option>' + customerOptions;
+}
+
+async function handleModelAgreementSave(e) {
+    e.preventDefault();
+    
+    const agencyId = parseInt(document.getElementById('model-agreement-agency').value);
+    const customerId = parseInt(document.getElementById('model-agreement-customer').value);
+    const title = document.getElementById('model-agreement-title').value;
+    const startDate = document.getElementById('model-agreement-start').value;
+    const endDate = document.getElementById('model-agreement-end').value;
+    const notes = document.getElementById('model-agreement-notes').value || '';
+    
+    if (!agencyId || !customerId || !title || !startDate) {
+        alert('Please fill all required fields');
+        return;
+    }
+    
+    const agency = agencies.find(a => a.id === agencyId);
+    const customer = customers.find(c => c.id === customerId);
+    
+    // Cast & Modeling Agreement Template (No Pricing)
+    const content = `
+CAST & MODELING AGREEMENT
+
+This agreement ("Agreement") is entered into as of ${new Date(startDate).toLocaleDateString()} between:
+
+AGENCY: ${agency.name}
+Address: ${agency.address || 'N/A'}
+Email: ${agency.email}
+Phone: ${agency.phone || 'N/A'}
+
+MODEL: ${customer.name}
+${customer.company ? 'Company: ' + customer.company : ''}
+Email: ${customer.email}
+Phone: ${customer.phone || 'N/A'}
+
+1. PURPOSE
+The Agency agrees to represent the Model for casting and modeling opportunities in accordance with the terms set forth in this Agreement.
+
+2. SCOPE OF REPRESENTATION
+The Agency shall use reasonable efforts to secure casting and modeling opportunities for the Model including but not limited to:
+- Fashion shows and runway modeling
+- Print advertising and editorial work
+- Commercial appearances and brand endorsements
+- Television and digital media appearances
+
+3. TERM
+This Agreement shall commence on ${new Date(startDate).toLocaleDateString()} and continue until ${new Date(endDate).toLocaleDateString()}, unless terminated earlier in accordance with the provisions herein.
+
+4. MODEL OBLIGATIONS
+The Model agrees to:
+- Maintain professional appearance and conduct
+- Attend all scheduled castings, fittings, and bookings
+- Provide accurate measurements and portfolio materials
+- Notify Agency promptly of any changes to availability or contact information
+
+5. AGENCY OBLIGATIONS
+The Agency agrees to:
+- Actively promote the Model to potential clients
+- Provide professional guidance and career development support
+- Handle negotiations and contracts on behalf of the Model
+- Maintain the Model's portfolio and promotional materials
+
+6. EXCLUSIVITY
+${notes.includes('exclusive') || notes.includes('Exclusive') ? 
+  'This is an exclusive representation agreement. The Model agrees not to seek representation from other agencies during the term of this Agreement.' :
+  'This is a non-exclusive representation agreement. The Model may seek additional representation provided there is no conflict with Agency bookings.'}
+
+7. TERMINATION
+Either party may terminate this Agreement with thirty (30) days written notice to the other party.
+
+8. CONFIDENTIALITY
+Both parties agree to maintain confidentiality of proprietary information shared during the course of this Agreement.
+
+9. GENERAL PROVISIONS
+This Agreement constitutes the entire agreement between the parties and supersedes all prior understandings. This Agreement shall be governed by the laws of the applicable jurisdiction.
+
+${notes ? '\nADDITIONAL NOTES:\n' + notes : ''}
+
+By signing below, both parties acknowledge they have read, understood, and agree to be bound by the terms of this Agreement.
+    `.trim();
+    
+    try {
+        await axios.post('/api/model-agreements', {
+            agency_id: agencyId,
+            customer_id: customerId,
+            title: title,
+            content: content,
+            start_date: startDate,
+            end_date: endDate,
+            status: 'draft'
+        });
+        
+        alert('Model agreement created successfully!');
+        document.getElementById('new-model-agreement-form').reset();
+        await loadModelAgreementsData();
+        showTab('model-agreements');
+    } catch (error) {
+        console.error('Error creating model agreement:', error);
+        alert('Failed to create model agreement');
+    }
+}
+
+async function viewModelAgreement(id) {
+    try {
+        const response = await axios.get(`/api/model-agreements/${id}`);
+        const agreement = response.data;
+        
+        const modalHtml = `
+            <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" id="model-agreement-modal">
+                <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto m-4">
+                    <div class="p-6 border-b border-gray-200">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h2 class="text-2xl font-bold text-purple-900">${agreement.title}</h2>
+                                <p class="text-gray-600 mt-1">${agreement.agreement_number}</p>
+                            </div>
+                            <button onclick="closeModal('model-agreement-modal')" class="text-gray-500 hover:text-gray-700">
+                                <i class="fas fa-times text-xl"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="p-6">
+                        <div class="grid grid-cols-2 gap-4 mb-6">
+                            <div>
+                                <p class="text-sm text-gray-600">Agency</p>
+                                <p class="font-semibold">${agreement.agency_name}</p>
+                                <p class="text-sm text-gray-500">${agreement.agency_email}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-600">Model</p>
+                                <p class="font-semibold">${agreement.customer_name}</p>
+                                <p class="text-sm text-gray-500">${agreement.customer_email}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4 mb-6">
+                            <div>
+                                <p class="text-sm text-gray-600">Start Date</p>
+                                <p class="font-semibold">${formatDate(agreement.start_date)}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-600">End Date</p>
+                                <p class="font-semibold">${formatDate(agreement.end_date)}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-6">
+                            <p class="text-sm text-gray-600 mb-2">Status</p>
+                            <span class="px-3 py-1 text-sm font-medium rounded-full ${getStatusColor(agreement.status)}">
+                                ${agreement.status.toUpperCase()}
+                            </span>
+                        </div>
+                        
+                        <div class="mb-6">
+                            <h3 class="font-semibold text-lg mb-2">Agreement Content</h3>
+                            <div class="bg-gray-50 p-4 rounded-lg whitespace-pre-wrap text-sm">
+${agreement.content}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-6">
+                            <h3 class="font-semibold text-lg mb-4">Signatures</h3>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="border border-gray-200 rounded-lg p-4">
+                                    <p class="font-medium mb-2">Agency</p>
+                                    ${agreement.agency_signed 
+                                        ? `<div>
+                                            <img src="${agreement.agency_signature}" style="max-height: 50px; border: 1px solid #e5e7eb; padding: 4px;" alt="Agency Signature" />
+                                            <p class="text-sm text-gray-600 mt-2">Signed: ${formatDate(agreement.agency_signed_at)}</p>
+                                          </div>`
+                                        : `<button onclick="openSignaturePad(${id}, 'agency', 'model')" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">
+                                            <i class="fas fa-pen mr-2"></i>Sign Now
+                                          </button>`
+                                    }
+                                </div>
+                                <div class="border border-gray-200 rounded-lg p-4">
+                                    <p class="font-medium mb-2">Model</p>
+                                    ${agreement.customer_signed 
+                                        ? `<div>
+                                            <img src="${agreement.customer_signature}" style="max-height: 50px; border: 1px solid #e5e7eb; padding: 4px;" alt="Model Signature" />
+                                            <p class="text-sm text-gray-600 mt-2">Signed: ${formatDate(agreement.customer_signed_at)}</p>
+                                          </div>`
+                                        : `<button onclick="openSignaturePad(${id}, 'customer', 'model')" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">
+                                            <i class="fas fa-pen mr-2"></i>Sign Now
+                                          </button>`
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="p-6 border-t border-gray-200 flex gap-3 justify-end">
+                        <button onclick="printModelAgreement(${id})" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700">
+                            <i class="fas fa-print mr-2"></i>Print
+                        </button>
+                        <button onclick="sendModelAgreementEmail(${id})" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">
+                            <i class="fas fa-envelope mr-2"></i>Send Email
+                        </button>
+                        <button onclick="closeModal('model-agreement-modal')" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+    } catch (error) {
+        console.error('Error viewing model agreement:', error);
+        alert('Failed to load model agreement');
+    }
+}
+
+function printModelAgreement(id) {
+    window.open(`/api/model-agreements/${id}/print`, '_blank');
+}
+
+async function sendModelAgreementEmail(id) {
+    const recipient = prompt('Send to:\n1. Agency\n2. Model\n3. Both\n\nEnter 1, 2, or 3:');
+    if (!recipient) return;
+    
+    const recipientType = recipient === '1' ? 'agency' : recipient === '2' ? 'customer' : 'both';
+    
+    try {
+        await axios.post(`/api/model-agreements/${id}/send-email`, { recipient: recipientType });
+        alert('Email sent successfully!');
+    } catch (error) {
+        console.error('Error sending email:', error);
+        alert('Failed to send email. Please check email settings.');
+    }
+}
+
+async function deleteModelAgreement(id) {
+    if (!confirm('Are you sure you want to delete this model agreement?')) return;
+    
+    try {
+        await axios.delete(`/api/model-agreements/${id}`);
+        await loadModelAgreementsData();
+        loadModelAgreements();
+        alert('Model agreement deleted successfully');
+    } catch (error) {
+        console.error('Error deleting model agreement:', error);
+        alert('Failed to delete model agreement');
+    }
 }
 
 // Load customers
@@ -1227,10 +1537,12 @@ document.addEventListener('DOMContentLoaded', () => {
 let currentSignaturePad = null;
 let currentAgreementId = null;
 let currentSignatureParty = null;
+let currentAgreementType = null; // 'regular' or 'model'
 
-function openSignaturePad(agreementId, party) {
+function openSignaturePad(agreementId, party, agreementType = 'regular') {
     currentAgreementId = agreementId;
     currentSignatureParty = party;
+    currentAgreementType = agreementType; // Store agreement type
     
     const modal = document.createElement('div');
     modal.id = 'signature-modal';
@@ -1335,9 +1647,14 @@ async function saveSignature() {
     try {
         const signatureData = currentSignaturePad.toDataURL();
         
-        console.log('Saving signature for agreement:', currentAgreementId, 'party:', currentSignatureParty);
+        console.log('Saving signature for agreement:', currentAgreementId, 'party:', currentSignatureParty, 'type:', currentAgreementType);
         
-        const response = await axios.post(`/api/agreements/${currentAgreementId}/sign`, {
+        // Determine API endpoint based on agreement type
+        const apiEndpoint = currentAgreementType === 'model' 
+            ? `/api/model-agreements/${currentAgreementId}/sign`
+            : `/api/agreements/${currentAgreementId}/sign`;
+        
+        const response = await axios.post(apiEndpoint, {
             party: currentSignatureParty,
             signature: signatureData
         });
@@ -1346,23 +1663,32 @@ async function saveSignature() {
         
         showNotification(`✅ Signature saved successfully!`);
         
-        // Store the agreement ID before closing
+        // Store the agreement ID and type before closing
         const agreementIdToReopen = currentAgreementId;
+        const agreementTypeToReopen = currentAgreementType;
         
         closeSignaturePad();
         
         // Clear the variables after closing the modal
         currentAgreementId = null;
         currentSignatureParty = null;
+        currentAgreementType = null;
         
         // Reload data and close any open agreement modals
         await loadAllData();
+        if (currentAgreementType === 'model') {
+            await loadModelAgreementsData();
+        }
         document.querySelectorAll('.fixed').forEach(modal => {
             if (modal.id !== 'signature-modal') modal.remove();
         });
         
         // Reopen the agreement to show the signature
-        viewAgreement(agreementIdToReopen);
+        if (agreementTypeToReopen === 'model') {
+            viewModelAgreement(agreementIdToReopen);
+        } else {
+            viewAgreement(agreementIdToReopen);
+        }
         
     } catch (error) {
         console.error('Error saving signature:', error);

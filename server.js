@@ -61,6 +61,7 @@ async function initDB() {
         }
       ],
       agreements: [],
+      modelAgreements: [],
       reminders: [],
       emailSettings: {
         provider: 'sendgrid',
@@ -350,6 +351,193 @@ app.delete('/api/agreements/:id', async (req, res) => {
   db.reminders = db.reminders.filter(r => r.agreement_id !== parseInt(req.params.id));
   await writeDB(db);
   res.json({ success: true });
+});
+
+// ======================
+// MODEL AGREEMENTS API (Cast & Modeling - No Pricing)
+// ======================
+app.get('/api/model-agreements', async (req, res) => {
+  const db = await readDB();
+  if (!db.modelAgreements) db.modelAgreements = [];
+  const agreementsWithDetails = db.modelAgreements.map(agreement => {
+    const agency = db.agencies.find(a => a.id === agreement.agency_id);
+    const customer = db.customers.find(c => c.id === agreement.customer_id);
+    return {
+      ...agreement,
+      agency_name: agency?.name || '',
+      customer_name: customer?.name || '',
+      customer_email: customer?.email || ''
+    };
+  }).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  res.json(agreementsWithDetails);
+});
+
+app.get('/api/model-agreements/:id', async (req, res) => {
+  const db = await readDB();
+  if (!db.modelAgreements) db.modelAgreements = [];
+  const agreement = db.modelAgreements.find(a => a.id === parseInt(req.params.id));
+  if (!agreement) {
+    return res.json({});
+  }
+  const agency = db.agencies.find(a => a.id === agreement.agency_id);
+  const customer = db.customers.find(c => c.id === agreement.customer_id);
+  res.json({
+    ...agreement,
+    agency_name: agency?.name || '',
+    agency_email: agency?.email || '',
+    agency_address: agency?.address || '',
+    customer_name: customer?.name || '',
+    customer_email: customer?.email || '',
+    customer_company: customer?.company || ''
+  });
+});
+
+app.post('/api/model-agreements', async (req, res) => {
+  const db = await readDB();
+  if (!db.modelAgreements) db.modelAgreements = [];
+  const agreementNumber = `MODEL-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+  const newAgreement = {
+    id: getNextId(db.modelAgreements),
+    agreement_number: agreementNumber,
+    ...req.body,
+    status: req.body.status || 'draft',
+    agency_signed: 0,
+    customer_signed: 0,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+  db.modelAgreements.push(newAgreement);
+  await writeDB(db);
+  res.json(newAgreement);
+});
+
+app.put('/api/model-agreements/:id', async (req, res) => {
+  const db = await readDB();
+  if (!db.modelAgreements) db.modelAgreements = [];
+  const index = db.modelAgreements.findIndex(a => a.id === parseInt(req.params.id));
+  if (index !== -1) {
+    db.modelAgreements[index] = {
+      ...db.modelAgreements[index],
+      ...req.body,
+      id: parseInt(req.params.id),
+      updated_at: new Date().toISOString()
+    };
+    await writeDB(db);
+    res.json(db.modelAgreements[index]);
+  } else {
+    res.status(404).json({ error: 'Model Agreement not found' });
+  }
+});
+
+app.post('/api/model-agreements/:id/sign', async (req, res) => {
+  const db = await readDB();
+  if (!db.modelAgreements) db.modelAgreements = [];
+  const index = db.modelAgreements.findIndex(a => a.id === parseInt(req.params.id));
+  if (index !== -1) {
+    if (req.body.party === 'agency') {
+      db.modelAgreements[index].agency_signed = 1;
+      db.modelAgreements[index].agency_signature = req.body.signature;
+      db.modelAgreements[index].agency_signed_at = new Date().toISOString();
+    } else if (req.body.party === 'customer') {
+      db.modelAgreements[index].customer_signed = 1;
+      db.modelAgreements[index].customer_signature = req.body.signature;
+      db.modelAgreements[index].customer_signed_at = new Date().toISOString();
+    }
+    if (db.modelAgreements[index].agency_signed && db.modelAgreements[index].customer_signed) {
+      db.modelAgreements[index].status = 'active';
+    }
+    await writeDB(db);
+    res.json(db.modelAgreements[index]);
+  } else {
+    res.status(404).json({ error: 'Model Agreement not found' });
+  }
+});
+
+app.delete('/api/model-agreements/:id', async (req, res) => {
+  const db = await readDB();
+  if (!db.modelAgreements) db.modelAgreements = [];
+  db.modelAgreements = db.modelAgreements.filter(a => a.id !== parseInt(req.params.id));
+  await writeDB(db);
+  res.json({ success: true });
+});
+
+// Model Agreement Print (No pricing information)
+app.get('/api/model-agreements/:id/print', async (req, res) => {
+  const db = await readDB();
+  if (!db.modelAgreements) db.modelAgreements = [];
+  const agreement = db.modelAgreements.find(a => a.id === parseInt(req.params.id));
+  if (!agreement) {
+    return res.status(404).send('Model Agreement not found');
+  }
+  const agency = db.agencies.find(a => a.id === agreement.agency_id);
+  const customer = db.customers.find(c => c.id === agreement.customer_id);
+  
+  const html = generateModelAgreementHTML(agreement, agency, customer);
+  res.send(html);
+});
+
+// Model Agreement Email Sending
+app.post('/api/model-agreements/:id/send-email', async (req, res) => {
+  try {
+    const db = await readDB();
+    if (!db.modelAgreements) db.modelAgreements = [];
+    const agreement = db.modelAgreements.find(a => a.id === parseInt(req.params.id));
+    if (!agreement) {
+      return res.status(404).json({ error: 'Model Agreement not found' });
+    }
+    
+    const agency = db.agencies.find(a => a.id === agreement.agency_id);
+    const customer = db.customers.find(c => c.id === agreement.customer_id);
+    const { recipient, cc } = req.body;
+    
+    const emailSettings = db.emailSettings || {};
+    if (!emailSettings.api_key || !emailSettings.from_email) {
+      return res.status(400).json({ error: 'Email settings not configured' });
+    }
+    
+    const transporter = await createEmailTransporter(emailSettings);
+    let recipients = [];
+    if (recipient === 'agency' || recipient === 'both') recipients.push(agency.email);
+    if (recipient === 'customer' || recipient === 'both') recipients.push(customer.email);
+    if (cc) recipients.push(cc);
+    
+    const emailContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #8b5cf6;">Cast & Modeling Agreement</h2>
+        <p>Dear Recipient,</p>
+        <p>Please find the model agreement details below:</p>
+        
+        <div style="background-color: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <p><strong>Agreement Number:</strong> ${agreement.agreement_number}</p>
+          <p><strong>Title:</strong> ${agreement.title}</p>
+          <p><strong>Agency:</strong> ${agency.name}</p>
+          <p><strong>Model:</strong> ${customer.name}</p>
+          <p><strong>Start Date:</strong> ${new Date(agreement.start_date).toLocaleDateString()}</p>
+          <p><strong>End Date:</strong> ${new Date(agreement.end_date).toLocaleDateString()}</p>
+          <p><strong>Status:</strong> ${agreement.status.toUpperCase()}</p>
+        </div>
+        
+        <div style="margin: 20px 0;">
+          <h3>Agreement Details:</h3>
+          <div style="white-space: pre-wrap; line-height: 1.6;">${agreement.content}</div>
+        </div>
+        
+        <p style="margin-top: 30px;">Best regards,<br>${emailSettings.from_name}</p>
+      </div>
+    `;
+    
+    await transporter.sendMail({
+      from: `"${emailSettings.from_name}" <${emailSettings.from_email}>`,
+      to: recipients.join(', '),
+      subject: `Cast & Modeling Agreement - ${agreement.agreement_number}`,
+      html: emailContent
+    });
+    
+    res.json({ success: true, message: 'Email sent successfully' });
+  } catch (error) {
+    console.error('Email sending error:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // ======================
@@ -737,6 +925,195 @@ function createEmailTransporter(settings) {
 }
 
 // Helper function to generate agreement HTML
+// Model Agreement HTML Generator (No Pricing)
+function generateModelAgreementHTML(agreement, agency, customer, printVersion = false) {
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <style>
+        body {
+          font-family: 'Arial', sans-serif;
+          line-height: 1.6;
+          color: #333;
+          max-width: 800px;
+          margin: 0 auto;
+          padding: 20px;
+        }
+        .header {
+          text-align: center;
+          margin-bottom: 30px;
+          padding-bottom: 20px;
+          border-bottom: 3px solid #8b5cf6;
+        }
+        .header h1 {
+          color: #8b5cf6;
+          margin: 0;
+          font-size: 28px;
+        }
+        .agreement-number {
+          color: #6b7280;
+          font-size: 14px;
+          margin-top: 10px;
+        }
+        .parties {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 20px;
+          margin: 30px 0;
+        }
+        .party-box {
+          border: 2px solid #e5e7eb;
+          padding: 20px;
+          border-radius: 8px;
+          background-color: #f9fafb;
+        }
+        .party-box h3 {
+          margin: 0 0 15px 0;
+          color: #8b5cf6;
+          font-size: 18px;
+        }
+        .content {
+          margin: 30px 0;
+          white-space: pre-wrap;
+          line-height: 1.8;
+        }
+        .section {
+          margin: 25px 0;
+        }
+        .section h3 {
+          color: #8b5cf6;
+          margin-bottom: 10px;
+        }
+        .signatures {
+          margin-top: 50px;
+          page-break-inside: avoid;
+        }
+        .signature-section {
+          margin: 30px 0;
+          padding: 20px;
+          border: 2px solid #e5e7eb;
+          border-radius: 8px;
+        }
+        .signature-image {
+          max-height: 60px;
+          margin: 10px 0;
+        }
+        .signature-footer {
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          height: 50px;
+          background: white;
+          border-top: 1px solid #e5e7eb;
+          padding: 8px 20px;
+          display: none;
+        }
+        @media print {
+          body { padding-bottom: 60px; }
+          .signature-footer { 
+            display: grid !important;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            position: fixed;
+            bottom: 0;
+          }
+          .signatures { display: none !important; }
+          .signature-box { text-align: center; }
+          .signature-image { max-height: 40px; }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>CAST & MODELING AGREEMENT</h1>
+        <div class="agreement-number">${agreement.agreement_number}</div>
+        <div style="margin-top: 10px; color: #6b7280;">
+          <span style="background: #8b5cf6; color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px;">
+            ${agreement.status.toUpperCase()}
+          </span>
+        </div>
+      </div>
+
+      <div class="parties">
+        <div class="party-box">
+          <h3>Agency</h3>
+          <p><strong>${agency.name}</strong></p>
+          <p>${agency.email}</p>
+          ${agency.phone ? `<p>${agency.phone}</p>` : ''}
+          ${agency.address ? `<p>${agency.address}</p>` : ''}
+        </div>
+        <div class="party-box">
+          <h3>Model</h3>
+          <p><strong>${customer.name}</strong></p>
+          <p>${customer.email}</p>
+          ${customer.phone ? `<p>${customer.phone}</p>` : ''}
+          ${customer.company ? `<p>${customer.company}</p>` : ''}
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Agreement Details</h3>
+        <p><strong>Title:</strong> ${agreement.title}</p>
+        <p><strong>Start Date:</strong> ${new Date(agreement.start_date).toLocaleDateString()}</p>
+        <p><strong>End Date:</strong> ${new Date(agreement.end_date).toLocaleDateString()}</p>
+      </div>
+
+      <div class="content">
+        <div class="section">
+          <h3>Terms and Conditions</h3>
+          ${agreement.content}
+        </div>
+      </div>
+
+      <div class="signatures">
+        <h3>Signatures</h3>
+        <div class="signature-section">
+          <h4>Agency Representative</h4>
+          ${agreement.agency_signed 
+            ? `<div>
+                <img src="${agreement.agency_signature}" class="signature-image" alt="Agency Signature" />
+                <p>Signed on: ${new Date(agreement.agency_signed_at).toLocaleDateString()}</p>
+              </div>`
+            : '<p style="color: #9ca3af;">Not signed yet</p>'}
+        </div>
+        <div class="signature-section">
+          <h4>Model</h4>
+          ${agreement.customer_signed 
+            ? `<div>
+                <img src="${agreement.customer_signature}" class="signature-image" alt="Model Signature" />
+                <p>Signed on: ${new Date(agreement.customer_signed_at).toLocaleDateString()}</p>
+              </div>`
+            : '<p style="color: #9ca3af;">Not signed yet</p>'}
+        </div>
+      </div>
+
+      <!-- Signature Footer for All Printed Pages -->
+      <div class="signature-footer">
+        <div class="signature-box">
+          <div style="font-size: 11px; font-weight: bold; margin-bottom: 2px;">Agency</div>
+          ${agreement.agency_signed 
+            ? `<img src="${agreement.agency_signature}" class="signature-image" />
+               <div style="font-size: 9px;">${new Date(agreement.agency_signed_at).toLocaleDateString()}</div>`
+            : '<div style="font-size: 10px; color: #9ca3af;">Not signed</div>'}
+        </div>
+        <div class="signature-box">
+          <div style="font-size: 11px; font-weight: bold; margin-bottom: 2px;">Model</div>
+          ${agreement.customer_signed 
+            ? `<img src="${agreement.customer_signature}" class="signature-image" />
+               <div style="font-size: 9px;">${new Date(agreement.customer_signed_at).toLocaleDateString()}</div>`
+            : '<div style="font-size: 10px; color: #9ca3af;">Not signed</div>'}
+        </div>
+      </div>
+
+      ${printVersion ? '<script>window.print();</script>' : ''}
+    </body>
+    </html>
+  `;
+}
+
 function generateAgreementHTML(agreement, agency, customer, printVersion = false, pdfMode = false) {
   const servicesHtml = agreement.services && agreement.services.length > 0
     ? agreement.services.map((s, i) => `

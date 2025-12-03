@@ -45,6 +45,9 @@
                         <button onclick="showTab('agreements')" class="nav-tab px-4 py-2 rounded-lg font-medium transition-colors hover:bg-gray-100">
                             <i class="fas fa-file-contract mr-2"></i>Agreements
                         </button>
+                        <button onclick="showTab('model-agreements')" class="nav-tab px-4 py-2 rounded-lg font-medium transition-colors hover:bg-gray-100">
+                            <i class="fas fa-camera mr-2"></i>Model Agreements
+                        </button>
                         <button onclick="showTab('customers')" class="nav-tab px-4 py-2 rounded-lg font-medium transition-colors hover:bg-gray-100">
                             <i class="fas fa-users mr-2"></i>Customers
                         </button>
@@ -126,6 +129,22 @@
                     <div class="bg-white rounded-lg shadow p-6">
                         <h2 class="text-xl font-bold text-gray-900 mb-4">All Agreements</h2>
                         <div id="agreements-list" class="space-y-4"></div>
+                    </div>
+                </div>
+
+                <!-- Model Agreements Tab -->
+                <div id="model-agreements" class="tab-content">
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <div>
+                                <h2 class="text-xl font-bold text-gray-900">Cast & Modeling Agreements</h2>
+                                <p class="text-sm text-gray-600 mt-1">Agreements between models and agencies (no pricing)</p>
+                            </div>
+                            <button onclick="showTab('new-model-agreement')" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg">
+                                <i class="fas fa-plus mr-2"></i>New Model Agreement
+                            </button>
+                        </div>
+                        <div id="model-agreements-list" class="space-y-4"></div>
                     </div>
                 </div>
 
@@ -457,6 +476,69 @@
                                 <button type="button" onclick="showTab('agreements')" class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
                                 <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                                     <i class="fas fa-check mr-2"></i>Create Agreement
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- New Model Agreement Tab -->
+                <div id="new-model-agreement" class="tab-content">
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h2 class="text-xl font-bold text-gray-900 mb-6">
+                            <i class="fas fa-camera mr-2 text-purple-600"></i>Create Cast & Modeling Agreement
+                        </h2>
+                        <form id="new-model-agreement-form" class="space-y-6">
+                            <div class="grid grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Agency *</label>
+                                    <select id="model-agreement-agency" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                        <option value="">Select Agency</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Model/Talent *</label>
+                                    <select id="model-agreement-customer" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                        <option value="">Select Model</option>
+                                    </select>
+                                </div>
+                                <div class="col-span-2">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Agreement Title *</label>
+                                    <input type="text" id="model-agreement-title" value="Cast & Modeling Agreement" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Start Date *</label>
+                                    <input type="date" id="model-agreement-start" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">End Date *</label>
+                                    <input type="date" id="model-agreement-end" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Additional Notes (Optional)</label>
+                                <textarea id="model-agreement-notes" rows="4" placeholder="Add any special terms, conditions, or notes (e.g., exclusivity, specific restrictions, etc.)" class="w-full px-3 py-2 border border-gray-300 rounded-lg"></textarea>
+                                <p class="text-xs text-gray-500 mt-1">💡 The system will automatically generate a professional cast & modeling agreement template. Add any additional notes here.</p>
+                            </div>
+
+                            <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                                <h3 class="font-semibold text-purple-900 mb-2">
+                                    <i class="fas fa-info-circle mr-2"></i>Model Agreement Details
+                                </h3>
+                                <p class="text-sm text-purple-800">This agreement type is specifically for cast and modeling contracts:</p>
+                                <ul class="text-sm text-purple-800 mt-2 space-y-1 ml-4">
+                                    <li>✓ No pricing or payment information</li>
+                                    <li>✓ Focus on usage rights and terms</li>
+                                    <li>✓ Includes signature sections for both parties</li>
+                                    <li>✓ Professional modeling contract format</li>
+                                </ul>
+                            </div>
+
+                            <div class="flex justify-end space-x-3">
+                                <button type="button" onclick="showTab('model-agreements')" class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+                                <button type="submit" class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+                                    <i class="fas fa-check mr-2"></i>Create Model Agreement
                                 </button>
                             </div>
                         </form>
