@@ -1577,8 +1577,8 @@ function openSignaturePad(agreementId, party, agreementType = 'regular') {
                 Draw your signature below using your mouse, touchscreen, or stylus
             </p>
             
-            <div class="border-2 border-gray-300 rounded-lg bg-white mb-4">
-                <canvas id="signature-canvas" class="w-full" width="500" height="150" style="touch-action: none;"></canvas>
+            <div class="border-2 border-gray-300 rounded-lg bg-white mb-4" style="max-width: 600px; margin: 0 auto;">
+                <canvas id="signature-canvas" width="600" height="200" style="touch-action: none; width: 100%; height: auto; display: block;"></canvas>
             </div>
             
             <div class="flex justify-between items-center">
@@ -1613,10 +1613,48 @@ function openSignaturePad(agreementId, party, agreementType = 'regular') {
                 return;
             }
             
+            // Properly scale canvas for high DPI displays and touch devices
+            function resizeCanvas() {
+                const ratio = Math.max(window.devicePixelRatio || 1, 1);
+                const rect = canvas.getBoundingClientRect();
+                
+                // Set display size (css pixels)
+                canvas.style.width = rect.width + 'px';
+                canvas.style.height = rect.height + 'px';
+                
+                // Set actual size in memory (scaled for retina displays)
+                canvas.width = rect.width * ratio;
+                canvas.height = rect.height * ratio;
+                
+                // Scale context to counter the scaling
+                const context = canvas.getContext('2d');
+                context.scale(ratio, ratio);
+                
+                // Reinitialize signature pad with scaled canvas
+                if (currentSignaturePad) {
+                    const data = currentSignaturePad.toData();
+                    currentSignaturePad.clear();
+                    if (data && data.length > 0) {
+                        currentSignaturePad.fromData(data);
+                    }
+                }
+            }
+            
             currentSignaturePad = new SignaturePad(canvas, {
                 backgroundColor: 'rgb(255, 255, 255)',
-                penColor: party === 'agency' ? 'rgb(37, 99, 235)' : 'rgb(22, 163, 74)'
+                penColor: party === 'agency' ? 'rgb(37, 99, 235)' : 'rgb(22, 163, 74)',
+                minWidth: 0.5,
+                maxWidth: 2.5,
+                throttle: 0,
+                velocityFilterWeight: 0.7
             });
+            
+            // Initial resize
+            resizeCanvas();
+            
+            // Handle window resize
+            window.addEventListener('resize', resizeCanvas);
+            
         } catch (error) {
             console.error('Error initializing signature pad:', error);
             showNotification('❌ Error initializing signature pad: ' + error.message, 'error');

@@ -9,7 +9,28 @@
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
         <style>
-            .signature-pad { border: 2px solid #e5e7eb; border-radius: 8px; }
+            * {
+                -webkit-tap-highlight-color: transparent;
+            }
+            
+            canvas {
+                touch-action: none;
+                -ms-touch-action: none;
+            }
+            
+            .signature-pad { 
+                border: 2px solid #e5e7eb; 
+                border-radius: 8px; 
+            }
+            
+            .signature-container {
+                position: relative;
+                user-select: none;
+                -webkit-user-select: none;
+                -moz-user-select: none;
+                -ms-user-select: none;
+            }
+            
             .tab-content { display: none; }
             .tab-content.active { display: block; }
             .nav-tab.active { background-color: #3b82f6; color: white; }

@@ -2,17 +2,29 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Sign Agreement</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
     <style>
-        .signature-pad { 
-            border: 2px solid #e5e7eb; 
-            border-radius: 8px;
-            background: white;
+        * {
+            -webkit-tap-highlight-color: transparent;
         }
+        
+        canvas {
+            touch-action: none;
+            -ms-touch-action: none;
+        }
+        
+        .signature-container {
+            position: relative;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+        
         .status-badge {
             display: inline-block;
             padding: 4px 12px;
@@ -236,8 +248,8 @@
                     </div>
 
                     <div class="max-w-2xl mx-auto">
-                        <div class="border-2 border-gray-300 rounded-lg bg-white mb-4">
-                            <canvas id="signature-canvas" width="700" height="200" class="w-full signature-pad" style="touch-action: none;"></canvas>
+                        <div class="signature-container border-2 border-gray-300 rounded-lg bg-white mb-4" style="max-width: 650px; margin: 0 auto;">
+                            <canvas id="signature-canvas" width="650" height="220" style="touch-action: none; width: 100%; height: auto; display: block;"></canvas>
                         </div>
 
                         <div class="flex justify-between items-center">
@@ -257,14 +269,51 @@
                 </div>
             `;
 
-            // Initialize signature pad
+            // Initialize signature pad with proper scaling for touch devices
             setTimeout(() => {
                 const canvas = document.getElementById('signature-canvas');
                 if (canvas && typeof SignaturePad !== 'undefined') {
+                    // Properly scale canvas for high DPI displays and touch devices
+                    function resizeCanvas() {
+                        const ratio = Math.max(window.devicePixelRatio || 1, 1);
+                        const rect = canvas.getBoundingClientRect();
+                        
+                        // Set display size (css pixels)
+                        canvas.style.width = rect.width + 'px';
+                        canvas.style.height = rect.height + 'px';
+                        
+                        // Set actual size in memory (scaled for retina displays)
+                        canvas.width = rect.width * ratio;
+                        canvas.height = rect.height * ratio;
+                        
+                        // Scale context to counter the scaling
+                        const context = canvas.getContext('2d');
+                        context.scale(ratio, ratio);
+                        
+                        // Reinitialize signature pad with scaled canvas
+                        if (signaturePad) {
+                            const data = signaturePad.toData();
+                            signaturePad.clear();
+                            if (data && data.length > 0) {
+                                signaturePad.fromData(data);
+                            }
+                        }
+                    }
+                    
                     signaturePad = new SignaturePad(canvas, {
                         backgroundColor: 'rgb(255, 255, 255)',
-                        penColor: partyColor
+                        penColor: partyColor,
+                        minWidth: 0.5,
+                        maxWidth: 2.5,
+                        throttle: 0,
+                        velocityFilterWeight: 0.7
                     });
+                    
+                    // Initial resize
+                    resizeCanvas();
+                    
+                    // Handle window resize
+                    window.addEventListener('resize', resizeCanvas);
                 }
             }, 100);
         }
