@@ -31,13 +31,25 @@ function showTab(tabName) {
     });
     
     // Show selected tab
-    document.getElementById(tabName).classList.add('active');
+    const selectedTab = document.getElementById(tabName);
+    if (selectedTab) {
+        selectedTab.classList.add('active');
+    }
     
-    // Update nav tabs
+    // Update nav tabs - remove active from all
     document.querySelectorAll('.nav-tab').forEach(tab => {
         tab.classList.remove('active');
     });
-    event.target.classList.add('active');
+    
+    // Add active to the clicked button (if it was clicked through onclick)
+    // Find the button that corresponds to this tab
+    const navButtons = document.querySelectorAll('.nav-tab');
+    navButtons.forEach(button => {
+        const onclick = button.getAttribute('onclick');
+        if (onclick && onclick.includes(`'${tabName}'`)) {
+            button.classList.add('active');
+        }
+    });
     
     // Load data for specific tabs
     if (tabName === 'agreements') loadAgreements();
