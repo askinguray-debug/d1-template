@@ -15,6 +15,9 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Initialize Resend with API key
+const resend = new Resend('re_L34baJx9_D44c6KUdsiapZPBtJXZPbc2S');
+
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
