@@ -885,24 +885,9 @@ async function viewAgreement(id) {
                         <button onclick="printAgreement(${id})" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                             <i class="fas fa-print mr-2"></i>Print
                         </button>
-                        <div class="relative inline-block">
-                            <button onclick="toggleEmailMenu(${id})" id="email-btn-${id}" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-                                <i class="fas fa-envelope mr-2"></i>Send Email
-                            </button>
-                            <div id="email-menu-${id}" class="hidden absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
-                                <div class="py-2">
-                                    <button onclick="sendEmail(${id}, 'agency')" class="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm">
-                                        <i class="fas fa-building mr-2 text-blue-600"></i>Send to Agency
-                                    </button>
-                                    <button onclick="sendEmail(${id}, 'customer')" class="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm">
-                                        <i class="fas fa-user mr-2 text-green-600"></i>Send to Customer
-                                    </button>
-                                    <button onclick="sendEmail(${id}, 'both')" class="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm">
-                                        <i class="fas fa-users mr-2 text-purple-600"></i>Send to Both Parties
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                        <button onclick="showEmailDialog(${id})" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                            <i class="fas fa-envelope mr-2"></i>Send Email
+                        </button>
                     </div>
                 </div>
             </div>
