@@ -63,6 +63,162 @@ async function initDB() {
       ],
       agreements: [],
       modelAgreements: [],
+      modelAgreementTemplates: [
+        {
+          id: 1,
+          name: 'Comprehensive Model Registration & Collaboration Agreement',
+          description: 'Full Fashion Cast Agency model agreement with all terms',
+          content: `FASHION CAST AGENCY
+
+Comprehensive Model Registration & Collaboration Agreement 
+
+This agreement is made between Fashion Cast Agency ("FCA") and the individual signing below ("the Model"). It outlines how the collaboration works, how content is produced and used, and what rights and responsibilities apply to both parties.
+
+⸻
+
+1. Purpose and Overview
+
+FCA helps build your professional presence and connects you with fashion brands, designers, lifestyle companies, and creative teams. We invest in photography, video, and AI-generated visuals to showcase your creative potential.
+
+This is a non-exclusive agreement. The Model may freely work with other agencies or accept independent jobs at any time.
+
+⸻
+
+2. How Our Process Works
+
+2.1 Registration and Promotion
+
+After signing, FCA creates promotional visuals for the Model, including photos, AI-generated composites, and short videos. These are produced at FCA's expense and used to introduce the Model to potential clients.
+
+The Model is not tied exclusively to FCA and may collaborate with others.
+
+2.2 Brand Engagement
+
+When a brand shows interest, FCA contacts the Model with full project details. No project begins without the Model's explicit approval.
+
+2.3 Concept Development
+
+Once the Model and brand agree to proceed, FCA produces draft visuals to preview the collaboration. Final production begins only after both sides fully approve the concept.
+
+2.4 Final Production
+
+FCA produces final campaign visuals and delivers them for approval. Once approved, the content is published on FCA's platforms and/or the brand's platforms.
+
+All approvals are final.
+
+⸻
+
+3. Payment and Commission
+
+FCA does not charge the Model for promotional visuals.
+For paid brand campaigns, FCA receives a commission between 15%–20%, depending on the project.
+
+⸻
+
+4. Booking Rules
+
+FCA proposes only jobs that match the Model's personality, comfort level, and goals.
+The Model may decline any job. FCA never books the Model without approval.
+
+⸻
+
+5. Image Usage Rights and Ownership
+
+Once the Model approves final campaign visuals, the Model grants FCA and the brand the permanent right to use that content for:
+	•	social media
+	•	websites
+	•	promotional materials
+	•	online advertising
+	•	lookbooks and digital campaigns
+
+The Model still owns their personal likeness, but the specific approved visuals become permanently licensed and cannot be revoked.
+
+Approved and published content can never be removed unless FCA chooses to do so voluntarily.
+
+⸻
+
+6. Contract Duration and Termination
+
+This agreement is valid for five (5) years from the date of signing.
+
+Either party may terminate the agreement with 30 days' written notice.
+
+Termination does not affect any approved and published content; such content remains permanently in FCA's archive.
+
+⸻
+
+7. Content Permanence and AI Training
+
+All approved visuals may be used permanently by FCA and collaborating brands.
+The content may also be used to train FCA's AI systems and to generate new promotional materials.
+
+Published content cannot be edited, restricted, removed, or deleted by the Model.
+
+Only FCA has the right to decide whether content remains online.
+
+⸻
+
+8. Penalty for Leaving the Agency Within First Two Years
+
+The Model is always free to leave FCA.
+However, if the Model decides to terminate their membership and leave FCA within the first two (2) years of this agreement, the Model agrees to pay a contractual exit penalty of 5,000 USD.
+
+This penalty compensates FCA for:
+	•	portfolio creation
+	•	AI training value
+	•	promotional investment
+	•	brand development work
+	•	content production costs
+
+This penalty applies ONLY if the Model chooses to leave FCA within the first 2 years.
+It does NOT apply for reporting, blocking, or removing content — because content cannot be removed under any circumstance.
+
+After two years, there is no financial penalty for leaving the agency.
+
+⸻
+
+9. Confidentiality
+
+The Model agrees to keep all unreleased campaigns and brand communication confidential until publicly released. FCA will protect the Model's data securely and respectfully.
+
+⸻
+
+10. Governing Law
+
+This agreement is governed by the laws of the United Republic of Tanzania.
+
+Any disputes will be resolved first through negotiation, then through arbitration or court proceedings in Tanzania if necessary.`,
+          created_at: new Date().toISOString()
+        },
+        {
+          id: 2,
+          name: 'Basic Model Agreement',
+          description: 'Simplified model representation agreement',
+          content: `MODEL REPRESENTATION AGREEMENT
+
+Between: {{AGENCY_NAME}} ("Agency")
+And: {{CUSTOMER_NAME}} ("Model")
+
+1. REPRESENTATION
+The Agency agrees to represent the Model for modeling opportunities. This is a non-exclusive agreement.
+
+2. TERM
+Agreement Period: {{START_DATE}} to {{END_DATE}}
+
+3. SERVICES
+The Agency will promote the Model to fashion brands, designers, and creative teams.
+
+4. COMMISSION
+Agency commission: 15-20% on booked jobs.
+
+5. RIGHTS
+All approved campaign content may be used by the Agency and brands for promotional purposes.
+
+6. TERMINATION
+Either party may terminate with 30 days written notice.`,
+          created_at: new Date().toISOString()
+        }
+      ],
       reminders: [],
       emailSettings: {
         provider: 'sendgrid',
@@ -247,6 +403,62 @@ app.put('/api/templates/:id', async (req, res) => {
 app.delete('/api/templates/:id', async (req, res) => {
   const db = await readDB();
   db.templates = db.templates.filter(t => t.id !== parseInt(req.params.id));
+  await writeDB(db);
+  res.json({ success: true });
+});
+
+// ======================
+// MODEL AGREEMENT TEMPLATES API
+// ======================
+app.get('/api/model-templates', async (req, res) => {
+  const db = await readDB();
+  if (!db.modelAgreementTemplates) db.modelAgreementTemplates = [];
+  res.json(db.modelAgreementTemplates.sort((a, b) => a.name.localeCompare(b.name)));
+});
+
+app.get('/api/model-templates/:id', async (req, res) => {
+  const db = await readDB();
+  if (!db.modelAgreementTemplates) db.modelAgreementTemplates = [];
+  const template = db.modelAgreementTemplates.find(t => t.id === parseInt(req.params.id));
+  res.json(template || {});
+});
+
+app.post('/api/model-templates', async (req, res) => {
+  const db = await readDB();
+  if (!db.modelAgreementTemplates) db.modelAgreementTemplates = [];
+  const newTemplate = {
+    id: getNextId(db.modelAgreementTemplates),
+    ...req.body,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+  db.modelAgreementTemplates.push(newTemplate);
+  await writeDB(db);
+  res.json(newTemplate);
+});
+
+app.put('/api/model-templates/:id', async (req, res) => {
+  const db = await readDB();
+  if (!db.modelAgreementTemplates) db.modelAgreementTemplates = [];
+  const index = db.modelAgreementTemplates.findIndex(t => t.id === parseInt(req.params.id));
+  if (index !== -1) {
+    db.modelAgreementTemplates[index] = {
+      ...db.modelAgreementTemplates[index],
+      ...req.body,
+      id: parseInt(req.params.id),
+      updated_at: new Date().toISOString()
+    };
+    await writeDB(db);
+    res.json(db.modelAgreementTemplates[index]);
+  } else {
+    res.status(404).json({ error: 'Model Template not found' });
+  }
+});
+
+app.delete('/api/model-templates/:id', async (req, res) => {
+  const db = await readDB();
+  if (!db.modelAgreementTemplates) db.modelAgreementTemplates = [];
+  db.modelAgreementTemplates = db.modelAgreementTemplates.filter(t => t.id !== parseInt(req.params.id));
   await writeDB(db);
   res.json({ success: true });
 });

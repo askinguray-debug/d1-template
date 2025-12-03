@@ -232,12 +232,36 @@ function loadModelAgreements() {
     document.getElementById('model-agreements-list').innerHTML = agreementsHtml || '<p class="text-gray-500">No model agreements yet</p>';
 }
 
-function loadNewModelAgreementForm() {
+async function loadNewModelAgreementForm() {
     const agencyOptions = agencies.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
     const customerOptions = customers.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
     
     document.getElementById('model-agreement-agency').innerHTML = '<option value="">Select Agency...</option>' + agencyOptions;
     document.getElementById('model-agreement-customer').innerHTML = '<option value="">Select Model...</option>' + customerOptions;
+    
+    // Load model templates
+    try {
+        const response = await axios.get('/api/model-templates');
+        const templates = response.data;
+        
+        const templateOptions = templates.map(t => 
+            `<option value="${t.id}" data-content="${encodeURIComponent(t.content)}">${t.name}</option>`
+        ).join('');
+        
+        document.getElementById('model-agreement-template').innerHTML = 
+            '<option value="">Select Template...</option>' + templateOptions;
+        
+        // Set up template change handler
+        document.getElementById('model-agreement-template').onchange = function() {
+            const selectedOption = this.options[this.selectedIndex];
+            if (selectedOption.value) {
+                const content = decodeURIComponent(selectedOption.getAttribute('data-content'));
+                document.getElementById('model-agreement-content').value = content;
+            }
+        };
+    } catch (error) {
+        console.error('Error loading model templates:', error);
+    }
 }
 
 async function handleModelAgreementSave(e) {
@@ -248,77 +272,12 @@ async function handleModelAgreementSave(e) {
     const title = document.getElementById('model-agreement-title').value;
     const startDate = document.getElementById('model-agreement-start').value;
     const endDate = document.getElementById('model-agreement-end').value;
-    const notes = document.getElementById('model-agreement-notes').value || '';
+    const content = document.getElementById('model-agreement-content').value;
     
-    if (!agencyId || !customerId || !title || !startDate) {
+    if (!agencyId || !customerId || !title || !startDate || !endDate || !content) {
         alert('Please fill all required fields');
         return;
     }
-    
-    const agency = agencies.find(a => a.id === agencyId);
-    const customer = customers.find(c => c.id === customerId);
-    
-    // Cast & Modeling Agreement Template (No Pricing)
-    const content = `
-CAST & MODELING AGREEMENT
-
-This agreement ("Agreement") is entered into as of ${new Date(startDate).toLocaleDateString()} between:
-
-AGENCY: ${agency.name}
-Address: ${agency.address || 'N/A'}
-Email: ${agency.email}
-Phone: ${agency.phone || 'N/A'}
-
-MODEL: ${customer.name}
-${customer.company ? 'Company: ' + customer.company : ''}
-Email: ${customer.email}
-Phone: ${customer.phone || 'N/A'}
-
-1. PURPOSE
-The Agency agrees to represent the Model for casting and modeling opportunities in accordance with the terms set forth in this Agreement.
-
-2. SCOPE OF REPRESENTATION
-The Agency shall use reasonable efforts to secure casting and modeling opportunities for the Model including but not limited to:
-- Fashion shows and runway modeling
-- Print advertising and editorial work
-- Commercial appearances and brand endorsements
-- Television and digital media appearances
-
-3. TERM
-This Agreement shall commence on ${new Date(startDate).toLocaleDateString()} and continue until ${new Date(endDate).toLocaleDateString()}, unless terminated earlier in accordance with the provisions herein.
-
-4. MODEL OBLIGATIONS
-The Model agrees to:
-- Maintain professional appearance and conduct
-- Attend all scheduled castings, fittings, and bookings
-- Provide accurate measurements and portfolio materials
-- Notify Agency promptly of any changes to availability or contact information
-
-5. AGENCY OBLIGATIONS
-The Agency agrees to:
-- Actively promote the Model to potential clients
-- Provide professional guidance and career development support
-- Handle negotiations and contracts on behalf of the Model
-- Maintain the Model's portfolio and promotional materials
-
-6. EXCLUSIVITY
-${notes.includes('exclusive') || notes.includes('Exclusive') ? 
-  'This is an exclusive representation agreement. The Model agrees not to seek representation from other agencies during the term of this Agreement.' :
-  'This is a non-exclusive representation agreement. The Model may seek additional representation provided there is no conflict with Agency bookings.'}
-
-7. TERMINATION
-Either party may terminate this Agreement with thirty (30) days written notice to the other party.
-
-8. CONFIDENTIALITY
-Both parties agree to maintain confidentiality of proprietary information shared during the course of this Agreement.
-
-9. GENERAL PROVISIONS
-This Agreement constitutes the entire agreement between the parties and supersedes all prior understandings. This Agreement shall be governed by the laws of the applicable jurisdiction.
-
-${notes ? '\nADDITIONAL NOTES:\n' + notes : ''}
-
-By signing below, both parties acknowledge they have read, understood, and agree to be bound by the terms of this Agreement.
-    `.trim();
     
     try {
         await axios.post('/api/model-agreements', {
@@ -331,13 +290,13 @@ By signing below, both parties acknowledge they have read, understood, and agree
             status: 'draft'
         });
         
-        alert('Model agreement created successfully!');
+        showNotification('✅ Model agreement created successfully!');
         document.getElementById('new-model-agreement-form').reset();
         await loadModelAgreementsData();
         showTab('model-agreements');
     } catch (error) {
         console.error('Error creating model agreement:', error);
-        alert('Failed to create model agreement');
+        showNotification('❌ Failed to create model agreement', 'error');
     }
 }
 
