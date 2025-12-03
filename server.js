@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import nodemailer from 'nodemailer';
 import crypto from 'crypto';
 import { Resend } from 'resend';
+import puppeteer from 'puppeteer';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -705,20 +706,113 @@ app.post('/api/model-agreements/:id/send-email', async (req, res) => {
     const { recipient, cc } = req.body;
     
     const emailSettings = db.emailSettings || {};
-    if (!emailSettings.api_key || !emailSettings.from_email) {
-      return res.status(400).json({ error: 'Email settings not configured' });
-    }
     
     let recipients = [];
     if (recipient === 'agency' || recipient === 'both') recipients.push(agency.email);
     if (recipient === 'customer' || recipient === 'both') recipients.push(customer.email);
     if (cc) recipients.push(cc);
     
+    // Generate share links for unsigned parties
+    const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
+    let agencyShareLink = '';
+    let customerShareLink = '';
+    
+    if (!agreement.agency_signed) {
+      // Generate or find existing agency share link
+      if (!db.shareTokens) db.shareTokens = [];
+      let agencyToken = db.shareTokens.find(t => 
+        t.agreementId === agreement.id && 
+        t.agreementType === 'model' && 
+        t.party === 'agency' && 
+        !t.used && 
+        new Date(t.expiresAt) > new Date()
+      );
+      
+      if (!agencyToken) {
+        const token = crypto.randomBytes(32).toString('hex');
+        agencyToken = {
+          token,
+          agreementId: agreement.id,
+          agreementType: 'model',
+          party: 'agency',
+          used: false,
+          createdAt: new Date().toISOString(),
+          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+        };
+        db.shareTokens.push(agencyToken);
+        await writeDB(db);
+      }
+      agencyShareLink = `${baseUrl}/sign/${agencyToken.token}`;
+    }
+    
+    if (!agreement.customer_signed) {
+      // Generate or find existing customer share link
+      if (!db.shareTokens) db.shareTokens = [];
+      let customerToken = db.shareTokens.find(t => 
+        t.agreementId === agreement.id && 
+        t.agreementType === 'model' && 
+        t.party === 'customer' && 
+        !t.used && 
+        new Date(t.expiresAt) > new Date()
+      );
+      
+      if (!customerToken) {
+        const token = crypto.randomBytes(32).toString('hex');
+        customerToken = {
+          token,
+          agreementId: agreement.id,
+          agreementType: 'model',
+          party: 'customer',
+          used: false,
+          createdAt: new Date().toISOString(),
+          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+        };
+        db.shareTokens.push(customerToken);
+        await writeDB(db);
+      }
+      customerShareLink = `${baseUrl}/sign/${customerToken.token}`;
+    }
+    
+    // Build signature status section
+    let signatureSection = '<div style="margin: 20px 0; padding: 20px; background-color: #f0fdf4; border-left: 4px solid #10b981; border-radius: 8px;">';
+    signatureSection += '<h3 style="color: #059669; margin-top: 0;">📝 Signature Status</h3>';
+    
+    if (agreement.agency_signed && agreement.customer_signed) {
+      signatureSection += '<p style="color: #059669;"><strong>✅ Fully Signed</strong> - This agreement has been signed by both parties.</p>';
+    } else {
+      signatureSection += '<p><strong>Pending Signatures:</strong></p><ul style="list-style: none; padding-left: 0;">';
+      
+      if (!agreement.agency_signed && agencyShareLink) {
+        signatureSection += `
+          <li style="margin: 10px 0;">
+            🏢 <strong>Agency (${agency.name}):</strong> Awaiting signature<br>
+            <a href="${agencyShareLink}" style="display: inline-block; margin-top: 8px; padding: 10px 20px; background-color: #8b5cf6; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">
+              Click Here to Sign as Agency
+            </a>
+          </li>
+        `;
+      }
+      
+      if (!agreement.customer_signed && customerShareLink) {
+        signatureSection += `
+          <li style="margin: 10px 0;">
+            👤 <strong>Model (${customer.name}):</strong> Awaiting signature<br>
+            <a href="${customerShareLink}" style="display: inline-block; margin-top: 8px; padding: 10px 20px; background-color: #8b5cf6; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">
+              Click Here to Sign as Model
+            </a>
+          </li>
+        `;
+      }
+      
+      signatureSection += '</ul>';
+    }
+    signatureSection += '</div>';
+    
     const emailContent = `
       <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
-        <h2 style="color: #8b5cf6;">Cast & Modeling Agreement</h2>
+        <h2 style="color: #8b5cf6;">📄 Cast & Modeling Agreement</h2>
         <p>Dear Recipient,</p>
-        <p>Please find the model agreement details below:</p>
+        <p>Please find the model agreement <strong>attached as a PDF</strong> with white background for easy printing.</p>
         
         <div style="background-color: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
           <p><strong>Agreement Number:</strong> ${agreement.agreement_number}</p>
@@ -730,24 +824,41 @@ app.post('/api/model-agreements/:id/send-email', async (req, res) => {
           <p><strong>Status:</strong> ${agreement.status.toUpperCase()}</p>
         </div>
         
-        <div style="margin: 20px 0;">
-          <h3>Agreement Details:</h3>
-          <div style="white-space: pre-wrap; line-height: 1.6;">${agreement.content}</div>
+        ${signatureSection}
+        
+        <div style="margin: 20px 0; padding: 15px; background-color: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 8px;">
+          <p style="margin: 0;"><strong>📎 Attachment:</strong> The complete agreement is attached as a PDF file with white background, ready for printing or digital signing.</p>
         </div>
         
         <p style="margin-top: 30px;">Best regards,<br>${emailSettings.from_name || 'Fashion Cast Agency'}</p>
+        
+        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+        <p style="color: #6b7280; font-size: 12px;">
+          This email was sent from the Agreement Management System. 
+          ${(!agreement.agency_signed || !agreement.customer_signed) ? 'Signature links are valid for 30 days and can only be used once.' : ''}
+        </p>
       </div>
     `;
     
-    // Use Resend API directly
+    // Generate PDF from HTML
+    const pdfHTML = generateModelAgreementHTML(agreement, agency, customer, true);
+    const pdfBuffer = await generatePDFBuffer(pdfHTML);
+    
+    // Send email with PDF attachment
     await resend.emails.send({
       from: emailSettings.from_email || 'onboarding@resend.dev',
       to: recipients,
-      subject: `Cast & Modeling Agreement - ${agreement.agreement_number}`,
-      html: emailContent
+      subject: `📄 Cast & Modeling Agreement - ${agreement.agreement_number}`,
+      html: emailContent,
+      attachments: [
+        {
+          filename: `Model_Agreement_${agreement.agreement_number}.pdf`,
+          content: pdfBuffer
+        }
+      ]
     });
     
-    res.json({ success: true, message: 'Email sent successfully' });
+    res.json({ success: true, message: 'Email sent successfully with PDF attachment and signature links' });
   } catch (error) {
     console.error('Email sending error:', error);
     res.status(500).json({ error: error.message });
@@ -1298,15 +1409,113 @@ app.post('/api/agreements/:id/send-email', async (req, res) => {
     if (recipient === 'customer' || recipient === 'both') {
       recipients.push(customer.email);
     }
+    if (cc) recipients.push(cc);
+
+    // Generate share links for unsigned parties
+    const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
+    let agencyShareLink = '';
+    let customerShareLink = '';
+    
+    if (!agreement.agency_signed) {
+      // Generate or find existing agency share link
+      if (!db.shareTokens) db.shareTokens = [];
+      let agencyToken = db.shareTokens.find(t => 
+        t.agreementId === agreement.id && 
+        t.agreementType === 'regular' && 
+        t.party === 'agency' && 
+        !t.used && 
+        new Date(t.expiresAt) > new Date()
+      );
+      
+      if (!agencyToken) {
+        const token = crypto.randomBytes(32).toString('hex');
+        agencyToken = {
+          token,
+          agreementId: agreement.id,
+          agreementType: 'regular',
+          party: 'agency',
+          used: false,
+          createdAt: new Date().toISOString(),
+          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+        };
+        db.shareTokens.push(agencyToken);
+        await writeDB(db);
+      }
+      agencyShareLink = `${baseUrl}/sign/${agencyToken.token}`;
+    }
+    
+    if (!agreement.customer_signed) {
+      // Generate or find existing customer share link
+      if (!db.shareTokens) db.shareTokens = [];
+      let customerToken = db.shareTokens.find(t => 
+        t.agreementId === agreement.id && 
+        t.agreementType === 'regular' && 
+        t.party === 'customer' && 
+        !t.used && 
+        new Date(t.expiresAt) > new Date()
+      );
+      
+      if (!customerToken) {
+        const token = crypto.randomBytes(32).toString('hex');
+        customerToken = {
+          token,
+          agreementId: agreement.id,
+          agreementType: 'regular',
+          party: 'customer',
+          used: false,
+          createdAt: new Date().toISOString(),
+          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+        };
+        db.shareTokens.push(customerToken);
+        await writeDB(db);
+      }
+      customerShareLink = `${baseUrl}/sign/${customerToken.token}`;
+    }
+
+    // Build signature status section
+    let signatureSection = '<div style="margin: 20px 0; padding: 20px; background-color: #f0fdf4; border-left: 4px solid #10b981; border-radius: 8px;">';
+    signatureSection += '<h3 style="color: #059669; margin-top: 0;">📝 Signature Status</h3>';
+    
+    if (agreement.agency_signed && agreement.customer_signed) {
+      signatureSection += '<p style="color: #059669;"><strong>✅ Fully Signed</strong> - This agreement has been signed by both parties.</p>';
+    } else {
+      signatureSection += '<p><strong>Pending Signatures:</strong></p><ul style="list-style: none; padding-left: 0;">';
+      
+      if (!agreement.agency_signed && agencyShareLink) {
+        signatureSection += `
+          <li style="margin: 10px 0;">
+            🏢 <strong>Agency (${agency.name}):</strong> Awaiting signature<br>
+            <a href="${agencyShareLink}" style="display: inline-block; margin-top: 8px; padding: 10px 20px; background-color: #2563eb; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">
+              Click Here to Sign as Agency
+            </a>
+          </li>
+        `;
+      }
+      
+      if (!agreement.customer_signed && customerShareLink) {
+        signatureSection += `
+          <li style="margin: 10px 0;">
+            👤 <strong>Customer (${customer.name}):</strong> Awaiting signature<br>
+            <a href="${customerShareLink}" style="display: inline-block; margin-top: 8px; padding: 10px 20px; background-color: #2563eb; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">
+              Click Here to Sign as Customer
+            </a>
+          </li>
+        `;
+      }
+      
+      signatureSection += '</ul>';
+    }
+    signatureSection += '</div>';
 
     // Email content
     const emailContent = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #2563eb;">Agreement Notification</h2>
+        <h2 style="color: #2563eb;">📄 Service Agreement</h2>
         <p>Dear ${recipient === 'agency' ? agency.name : customer.name},</p>
-        <p>This is a notification regarding the agreement: <strong>${agreement.title}</strong></p>
+        <p>Please find the agreement <strong>attached as a PDF</strong> with white background for easy printing.</p>
         <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
           <p style="margin: 5px 0;"><strong>Agreement Number:</strong> ${agreement.agreement_number}</p>
+          <p style="margin: 5px 0;"><strong>Title:</strong> ${agreement.title}</p>
           <p style="margin: 5px 0;"><strong>Agency:</strong> ${agency.name}</p>
           <p style="margin: 5px 0;"><strong>Customer:</strong> ${customer.name}</p>
           <p style="margin: 5px 0;"><strong>Start Date:</strong> ${new Date(agreement.start_date).toLocaleDateString()}</p>
@@ -1314,6 +1523,7 @@ app.post('/api/agreements/:id/send-email', async (req, res) => {
           ${agreement.monthly_payment ? `<p style="margin: 5px 0;"><strong>Monthly Payment:</strong> $${agreement.monthly_payment}</p>` : ''}
           <p style="margin: 5px 0;"><strong>Status:</strong> ${agreement.status.toUpperCase()}</p>
         </div>
+        ${signatureSection}
         ${agreement.services && agreement.services.length > 0 ? `
         <div style="margin: 20px 0;">
           <h3 style="color: #1f2937;">Services Included:</h3>
@@ -1327,25 +1537,37 @@ app.post('/api/agreements/:id/send-email', async (req, res) => {
           </ul>
         </div>
         ` : ''}
-        <p>To view the complete agreement document, please log in to the agreement management system.</p>
-        <p>If you have any questions, please don't hesitate to contact us.</p>
+        <div style="margin: 20px 0; padding: 15px; background-color: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 8px;">
+          <p style="margin: 0;"><strong>📎 Attachment:</strong> The complete agreement is attached as a PDF file with white background, ready for printing or digital signing.</p>
+        </div>
         <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
           This is an automated message from Agreement Management System.
+          ${(!agreement.agency_signed || !agreement.customer_signed) ? 'Signature links are valid for 30 days and can only be used once.' : ''}
         </p>
       </div>
     `;
 
-    // Use Resend API directly
+    // Generate PDF from HTML
+    const pdfHTML = generateAgreementHTML(agreement, agency, customer, true, true);
+    const pdfBuffer = await generatePDFBuffer(pdfHTML);
+
+    // Use Resend API directly with PDF attachment
     await resend.emails.send({
       from: emailSettings.from_email || 'onboarding@resend.dev',
       to: recipients,
-      subject: `Agreement: ${agreement.title} - ${agreement.agreement_number}`,
-      html: emailContent
+      subject: `📄 Agreement: ${agreement.title} - ${agreement.agreement_number}`,
+      html: emailContent,
+      attachments: [
+        {
+          filename: `Agreement_${agreement.agreement_number}.pdf`,
+          content: pdfBuffer
+        }
+      ]
     });
 
     res.json({ 
       success: true, 
-      message: `Agreement sent successfully to ${recipient === 'both' ? 'both parties' : recipient}`,
+      message: `Agreement sent successfully to ${recipient === 'both' ? 'both parties' : recipient} with PDF attachment and signature links`,
       recipients: recipients 
     });
   } catch (error) {
@@ -1354,8 +1576,46 @@ app.post('/api/agreements/:id/send-email', async (req, res) => {
   }
 });
 
-// Initialize Resend with API key
-const resend = new Resend('re_L34baJx9_D44c6KUdsiapZPBtJXZPbc2S');
+
+
+// Helper function to generate PDF from HTML
+async function generatePDFBuffer(html) {
+  let browser;
+  try {
+    browser = await puppeteer.launch({
+      headless: true,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu'
+      ]
+    });
+    
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: 'networkidle0' });
+    
+    const pdfBuffer = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      margin: {
+        top: '20mm',
+        right: '15mm',
+        bottom: '20mm',
+        left: '15mm'
+      }
+    });
+    
+    return pdfBuffer;
+  } catch (error) {
+    console.error('PDF Generation Error:', error);
+    throw error;
+  } finally {
+    if (browser) {
+      await browser.close();
+    }
+  }
+}
 
 // Helper function to create email transporter based on provider
 function createEmailTransporter(settings) {
