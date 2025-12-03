@@ -31,6 +31,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('agency-form').addEventListener('submit', handleAgencySave);
     document.getElementById('customer-form').addEventListener('submit', handleCustomerSave);
     document.getElementById('template-form').addEventListener('submit', handleTemplateSave);
+    document.getElementById('model-template-form').addEventListener('submit', handleModelTemplateSave);
     document.getElementById('email-settings-form').addEventListener('submit', handleEmailSettingsSave);
     document.getElementById('new-agreement-form').addEventListener('submit', handleAgreementSave);
     document.getElementById('new-model-agreement-form').addEventListener('submit', handleModelAgreementSave);
@@ -71,7 +72,10 @@ function showTab(tabName) {
     if (tabName === 'agreements') loadAgreements();
     if (tabName === 'model-agreements') loadModelAgreements();
     if (tabName === 'customers') loadCustomers();
-    if (tabName === 'templates') loadTemplates();
+    if (tabName === 'templates') {
+        loadTemplates();
+        loadModelTemplatesData().then(() => loadModelTemplates());
+    }
     if (tabName === 'reminders') loadReminders();
     if (tabName === 'services') loadServices();
     if (tabName === 'settings') loadSettings();
@@ -507,6 +511,113 @@ function loadTemplates() {
     document.getElementById('templates-list').innerHTML = templatesHtml || '<p class="text-gray-500">No templates yet</p>';
 }
 
+// Load model templates
+let modelTemplates = [];
+
+async function loadModelTemplatesData() {
+    try {
+        const response = await axios.get('/api/model-templates');
+        modelTemplates = response.data;
+    } catch (error) {
+        console.error('Error loading model templates:', error);
+    }
+}
+
+function loadModelTemplates() {
+    const templatesHtml = modelTemplates.map(template => `
+        <div class="border border-purple-200 rounded-lg p-4 bg-purple-50">
+            <div class="flex justify-between items-start">
+                <div class="flex-1">
+                    <h3 class="font-semibold text-gray-900">${template.name}</h3>
+                    ${template.description ? `<p class="text-sm text-gray-600 mt-1">${template.description}</p>` : ''}
+                    <p class="text-xs text-gray-500 mt-2">
+                        <i class="fas fa-align-left mr-1"></i>
+                        ${template.content.length} characters
+                    </p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="viewModelTemplate(${template.id})" class="text-purple-600 hover:text-purple-800 px-3 py-1 rounded" title="View">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <button onclick="editModelTemplate(${template.id})" class="text-blue-600 hover:text-blue-800 px-3 py-1 rounded" title="Edit">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button onclick="deleteModelTemplate(${template.id})" class="text-red-600 hover:text-red-800 px-3 py-1 rounded" title="Delete">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `).join('');
+    
+    document.getElementById('model-templates-list').innerHTML = templatesHtml || '<p class="text-gray-500">No model templates yet</p>';
+}
+
+function showModelTemplateForm() {
+    document.getElementById('model-template-form-modal').classList.remove('hidden');
+    document.getElementById('model-template-form').reset();
+    document.getElementById('model-template-id').value = '';
+}
+
+function closeModelTemplateForm() {
+    document.getElementById('model-template-form-modal').classList.add('hidden');
+}
+
+function viewModelTemplate(id) {
+    const template = modelTemplates.find(t => t.id === id);
+    if (!template) return;
+    
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4';
+    modal.innerHTML = `
+        <div class="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <h3 class="text-xl font-bold text-purple-900">${template.name}</h3>
+                    ${template.description ? `<p class="text-sm text-gray-600 mt-1">${template.description}</p>` : ''}
+                </div>
+                <button onclick="this.closest('.fixed').remove()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <pre class="whitespace-pre-wrap text-sm font-mono">${template.content}</pre>
+            </div>
+            <div class="mt-4 flex justify-end">
+                <button onclick="this.closest('.fixed').remove()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
+                    Close
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+function editModelTemplate(id) {
+    const template = modelTemplates.find(t => t.id === id);
+    if (!template) return;
+    
+    document.getElementById('model-template-id').value = template.id;
+    document.getElementById('model-template-name').value = template.name;
+    document.getElementById('model-template-description').value = template.description || '';
+    document.getElementById('model-template-content').value = template.content;
+    document.getElementById('model-template-form-modal').classList.remove('hidden');
+}
+
+async function deleteModelTemplate(id) {
+    if (!confirm('Are you sure you want to delete this model template?')) return;
+    
+    try {
+        await axios.delete(`/api/model-templates/${id}`);
+        await loadModelTemplatesData();
+        loadModelTemplates();
+        showNotification('✅ Model template deleted successfully');
+    } catch (error) {
+        console.error('Error deleting model template:', error);
+        showNotification('❌ Failed to delete model template', 'error');
+    }
+}
+
 // Load reminders
 function loadReminders() {
     const remindersHtml = reminders.map(reminder => `
@@ -775,17 +886,43 @@ async function handleTemplateSave(e) {
     try {
         if (id) {
             await axios.put(`/api/templates/${id}`, data);
-            showNotification('Template updated successfully');
+            showNotification('✅ Template updated successfully');
         } else {
             await axios.post('/api/templates', data);
-            showNotification('Template created successfully');
+            showNotification('✅ Template created successfully');
         }
         closeTemplateForm();
         await loadAllData();
         loadTemplates();
     } catch (error) {
         console.error('Error saving template:', error);
-        showNotification('Error saving template', 'error');
+        showNotification('❌ Error saving template', 'error');
+    }
+}
+
+async function handleModelTemplateSave(e) {
+    e.preventDefault();
+    const id = document.getElementById('model-template-id').value;
+    const data = {
+        name: document.getElementById('model-template-name').value,
+        description: document.getElementById('model-template-description').value,
+        content: document.getElementById('model-template-content').value
+    };
+    
+    try {
+        if (id) {
+            await axios.put(`/api/model-templates/${id}`, data);
+            showNotification('✅ Model template updated successfully');
+        } else {
+            await axios.post('/api/model-templates', data);
+            showNotification('✅ Model template created successfully');
+        }
+        closeModelTemplateForm();
+        await loadModelTemplatesData();
+        loadModelTemplates();
+    } catch (error) {
+        console.error('Error saving model template:', error);
+        showNotification('❌ Error saving model template', 'error');
     }
 }
 
