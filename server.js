@@ -848,13 +848,14 @@ function generateAgreementHTML(agreement, agency, customer, printVersion = false
           color: #1f2937;
         }
         .signature-image {
-          max-height: 80px;
-          margin: 10px 0;
+          max-height: 50px;
+          max-width: 150px;
+          margin: 5px 0;
         }
         .signature-date {
-          font-size: 12px;
+          font-size: 10px;
           color: #6b7280;
-          margin-top: 10px;
+          margin-top: 5px;
         }
         .status-badge {
           display: inline-block;
@@ -865,7 +866,50 @@ function generateAgreementHTML(agreement, agency, customer, printVersion = false
         }
         .status-active { background-color: #d1fae5; color: #065f46; }
         .status-draft { background-color: #fef3c7; color: #92400e; }
-        ${printVersion ? '@media print { body { margin: 0; } }' : ''}
+        
+        /* Signature footer on every page */
+        .signature-footer {
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          background-color: white;
+          border-top: 2px solid #e5e7eb;
+          padding: 10px 20px;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 20px;
+          font-size: 11px;
+        }
+        .signature-footer-box {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+        .signature-footer-box img {
+          max-height: 40px;
+          max-width: 120px;
+        }
+        .signature-footer-label {
+          font-weight: bold;
+          color: #1f2937;
+          min-width: 80px;
+        }
+        
+        @media print {
+          body { 
+            margin: 0;
+            padding-bottom: 80px;
+          }
+          .signature-footer {
+            position: fixed;
+            bottom: 0;
+          }
+          .signatures {
+            display: none !important;
+          }
+        }
+        ${!printVersion && !pdfMode ? '.signature-footer { display: none; }' : ''}
       </style>
     </head>
     <body>
@@ -953,6 +997,24 @@ function generateAgreementHTML(agreement, agency, customer, printVersion = false
         </div>
       </div>
       ` : ''}
+
+      <!-- Signature Footer (appears on every printed page) -->
+      <div class="signature-footer">
+        <div class="signature-footer-box">
+          <span class="signature-footer-label">Agency:</span>
+          ${agreement.agency_signed ? `
+            <img src="${agreement.agency_signature}" alt="Agency Signature" />
+            <span style="font-size: 9px; color: #6b7280;">${new Date(agreement.agency_signed_at).toLocaleDateString()}</span>
+          ` : '<span style="color: #9ca3af; font-size: 10px;">Not signed</span>'}
+        </div>
+        <div class="signature-footer-box">
+          <span class="signature-footer-label">Customer:</span>
+          ${agreement.customer_signed ? `
+            <img src="${agreement.customer_signature}" alt="Customer Signature" />
+            <span style="font-size: 9px; color: #6b7280;">${new Date(agreement.customer_signed_at).toLocaleDateString()}</span>
+          ` : '<span style="color: #9ca3af; font-size: 10px;">Not signed</span>'}
+        </div>
+      </div>
 
       ${(printVersion || pdfMode) ? '<script>window.print();</script>' : ''}
     </body>

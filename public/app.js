@@ -1261,7 +1261,7 @@ function openSignaturePad(agreementId, party) {
             </p>
             
             <div class="border-2 border-gray-300 rounded-lg bg-white mb-4">
-                <canvas id="signature-canvas" class="w-full" width="700" height="300" style="touch-action: none;"></canvas>
+                <canvas id="signature-canvas" class="w-full" width="500" height="150" style="touch-action: none;"></canvas>
             </div>
             
             <div class="flex justify-between items-center">
