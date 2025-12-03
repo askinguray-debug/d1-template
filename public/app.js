@@ -935,9 +935,9 @@ function printAgreement(id) {
     window.open(`/api/agreements/${id}/print`, '_blank');
 }
 
-// Download PDF
+// Download PDF (opens in new tab for print/save)
 function downloadPDF(id) {
-    window.location.href = `/api/agreements/${id}/pdf`;
+    window.open(`/api/agreements/${id}/pdf`, '_blank');
 }
 
 // Show email dialog

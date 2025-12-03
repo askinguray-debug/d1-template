@@ -4,8 +4,6 @@ import bodyParser from 'body-parser';
 import { readFile, writeFile } from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import puppeteer from 'puppeteer-core';
-import chromium from '@sparticuz/chromium';
 import nodemailer from 'nodemailer';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -537,31 +535,11 @@ app.get('/api/agreements/:id/pdf', async (req, res) => {
     const agency = db.agencies.find(a => a.id === agreement.agency_id);
     const customer = db.customers.find(c => c.id === agreement.customer_id);
 
-    // Generate HTML for PDF
-    const html = generateAgreementHTML(agreement, agency, customer);
-
-    // Launch browser and generate PDF
-    const browser = await puppeteer.launch({
-      args: chromium.args,
-      defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath(),
-      headless: chromium.headless,
-    });
-
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle0' });
+    // Generate print-friendly HTML that browser can save as PDF
+    const html = generateAgreementHTML(agreement, agency, customer, false, true);
     
-    const pdf = await page.pdf({
-      format: 'A4',
-      printBackground: true,
-      margin: { top: '20mm', right: '15mm', bottom: '20mm', left: '15mm' }
-    });
-
-    await browser.close();
-
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="Agreement-${agreement.agreement_number}.pdf"`);
-    res.send(pdf);
+    res.setHeader('Content-Type', 'text/html');
+    res.send(html);
   } catch (error) {
     console.error('PDF Generation Error:', error);
     res.status(500).json({ error: 'Failed to generate PDF', details: error.message });
@@ -611,23 +589,6 @@ app.post('/api/agreements/:id/send-email', async (req, res) => {
       return res.status(400).json({ error: 'Email settings not configured. Please configure in Settings tab.' });
     }
 
-    // Generate PDF attachment
-    const html = generateAgreementHTML(agreement, agency, customer);
-    const browser = await puppeteer.launch({
-      args: chromium.args,
-      defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath(),
-      headless: chromium.headless,
-    });
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle0' });
-    const pdfBuffer = await page.pdf({
-      format: 'A4',
-      printBackground: true,
-      margin: { top: '20mm', right: '15mm', bottom: '20mm', left: '15mm' }
-    });
-    await browser.close();
-
     // Configure email transporter
     const transporter = createEmailTransporter(emailSettings);
 
@@ -648,29 +609,38 @@ app.post('/api/agreements/:id/send-email', async (req, res) => {
       subject: `Agreement: ${agreement.title} - ${agreement.agreement_number}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #2563eb;">Agreement Document</h2>
+          <h2 style="color: #2563eb;">Agreement Notification</h2>
           <p>Dear ${recipient === 'agency' ? agency.name : customer.name},</p>
-          <p>Please find attached the agreement document: <strong>${agreement.title}</strong></p>
+          <p>This is a notification regarding the agreement: <strong>${agreement.title}</strong></p>
           <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
             <p style="margin: 5px 0;"><strong>Agreement Number:</strong> ${agreement.agreement_number}</p>
             <p style="margin: 5px 0;"><strong>Agency:</strong> ${agency.name}</p>
             <p style="margin: 5px 0;"><strong>Customer:</strong> ${customer.name}</p>
             <p style="margin: 5px 0;"><strong>Start Date:</strong> ${new Date(agreement.start_date).toLocaleDateString()}</p>
+            ${agreement.end_date ? `<p style="margin: 5px 0;"><strong>End Date:</strong> ${new Date(agreement.end_date).toLocaleDateString()}</p>` : ''}
             ${agreement.monthly_payment ? `<p style="margin: 5px 0;"><strong>Monthly Payment:</strong> $${agreement.monthly_payment}</p>` : ''}
+            <p style="margin: 5px 0;"><strong>Status:</strong> ${agreement.status.toUpperCase()}</p>
           </div>
+          ${agreement.services && agreement.services.length > 0 ? `
+          <div style="margin: 20px 0;">
+            <h3 style="color: #1f2937;">Services Included:</h3>
+            <ul style="list-style: none; padding: 0;">
+              ${agreement.services.map(s => `
+                <li style="padding: 8px; background-color: #f9fafb; margin: 5px 0; border-radius: 5px;">
+                  <strong>${s.title}</strong>${s.price ? ` - $${s.price}` : ''}
+                  ${s.description ? `<br><span style="color: #6b7280; font-size: 14px;">${s.description}</span>` : ''}
+                </li>
+              `).join('')}
+            </ul>
+          </div>
+          ` : ''}
+          <p>To view the complete agreement document, please log in to the agreement management system.</p>
           <p>If you have any questions, please don't hesitate to contact us.</p>
           <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
             This is an automated message from Agreement Management System.
           </p>
         </div>
-      `,
-      attachments: [
-        {
-          filename: `Agreement-${agreement.agreement_number}.pdf`,
-          content: pdfBuffer,
-          contentType: 'application/pdf'
-        }
-      ]
+      `
     };
 
     await transporter.sendMail(mailOptions);
@@ -767,7 +737,7 @@ function createEmailTransporter(settings) {
 }
 
 // Helper function to generate agreement HTML
-function generateAgreementHTML(agreement, agency, customer, printVersion = false) {
+function generateAgreementHTML(agreement, agency, customer, printVersion = false, pdfMode = false) {
   const servicesHtml = agreement.services && agreement.services.length > 0
     ? agreement.services.map((s, i) => `
         <tr>
@@ -984,7 +954,7 @@ function generateAgreementHTML(agreement, agency, customer, printVersion = false
       </div>
       ` : ''}
 
-      ${printVersion ? '<script>window.print();</script>' : ''}
+      ${(printVersion || pdfMode) ? '<script>window.print();</script>' : ''}
     </body>
     </html>
   `;

@@ -7,14 +7,12 @@
     "test": "curl http://localhost:3000"
   },
   "dependencies": {
-    "@sparticuz/chromium": "^141.0.0",
     "body-parser": "^2.2.1",
     "cors": "^2.8.5",
     "express": "^5.2.0",
     "hono": "^4.10.7",
     "lowdb": "^3.0.0",
-    "nodemailer": "^7.0.11",
-    "puppeteer-core": "^24.32.0"
+    "nodemailer": "^7.0.11"
   },
   "devDependencies": {
     "@hono/vite-build": "^1.2.0",
