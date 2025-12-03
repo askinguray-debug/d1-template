@@ -1873,7 +1873,6 @@ document.addEventListener('DOMContentLoaded', () => {
 let currentSignaturePad = null;
 let currentAgreementId = null;
 let currentSignatureParty = null;
-let currentAgreementType = null; // 'regular' or 'model'
 
 function openSignaturePad(agreementId, party, agreementType = 'regular') {
     currentAgreementId = agreementId;
