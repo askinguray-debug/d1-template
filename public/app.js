@@ -1169,6 +1169,7 @@ async function viewAgreement(id) {
             : '<p class="text-gray-500">No services listed</p>';
         
         const modal = document.createElement('div');
+        modal.id = 'agreement-modal';
         modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
         modal.innerHTML = `
             <div class="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -1177,7 +1178,7 @@ async function viewAgreement(id) {
                         <h2 class="text-2xl font-bold text-gray-900">${agreement.title}</h2>
                         <p class="text-sm text-gray-600 mt-1">${agreement.agreement_number}</p>
                     </div>
-                    <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-gray-600">
+                    <button onclick="closeModal('agreement-modal')" class="text-gray-400 hover:text-gray-600">
                         <i class="fas fa-times text-xl"></i>
                     </button>
                 </div>
@@ -1301,7 +1302,7 @@ async function viewAgreement(id) {
                 </div>
                 
                 <div class="flex justify-between items-center gap-3">
-                    <button onclick="this.closest('.fixed').remove()" class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+                    <button onclick="closeModal('agreement-modal')" class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
                         Close
                     </button>
                     <div class="flex gap-3">
@@ -1354,6 +1355,7 @@ function downloadPDF(id) {
 // Show email dialog
 function showEmailDialog(id) {
     const modal = document.createElement('div');
+    modal.id = 'email-dialog-modal';
     modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
     modal.innerHTML = `
         <div class="bg-white rounded-lg p-6 w-full max-w-md">
@@ -1390,7 +1392,7 @@ function showEmailDialog(id) {
                 </div>
             </div>
             <div class="flex justify-end gap-3 mt-6">
-                <button onclick="this.closest('.fixed').remove()" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+                <button onclick="closeModal('email-dialog-modal')" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
                     Cancel
                 </button>
                 <button onclick="sendAgreementEmail(${id})" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
@@ -1415,12 +1417,8 @@ async function sendAgreementEmail(id) {
             cc: cc
         });
         
-        // Close all modals
-        document.querySelectorAll('.fixed').forEach(modal => {
-            if (modal.querySelector('[onclick*="sendAgreementEmail"]')) {
-                modal.remove();
-            }
-        });
+        // Close email dialog
+        closeModal('email-dialog-modal');
         
         showNotification(`✅ ${response.data.message}`);
     } catch (error) {
@@ -1515,6 +1513,14 @@ async function handleEmailSettingsSave(e) {
 }
 
 // Utility functions
+// Close modal by ID
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.remove();
+    }
+}
+
 function formatDate(dateString) {
     if (!dateString) return '';
     const date = new Date(dateString);
