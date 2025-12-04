@@ -303,7 +303,7 @@
       "agency_id": 1,
       "customer_id": 4,
       "title": "Mixed Services Test Agreement",
-      "content": "Test agreement content",
+      "content": "SERVICE AGREEMENT\n\nThis agreement is made between Fashion Cast Agency  (\"Agency\") and Kalo (\"Client\").\n\nMONTHLY RECURRING SERVICES:\n1. Social Media Management - $1200/month\n   Monthly social media content and management\\n4 INSTAGRAM REELS\\n24 EDITED PHOTOS\\n2 EVENT SHOOTINGS\n2. Website Maintenance - $200/month\n   Monthly website updates and maintenance\n\nTOTAL MONTHLY PAYMENT: $1400.00\n\nONE-TIME SERVICES:\n1. Logo Design - $500 (one-time)\n   Professional logo design with 3 revisions\n\nTOTAL ONE-TIME PAYMENT: $500.00\n\nPAYMENT TERMS:\nMonthly Recurring Payment: $1400\nDue Date: Day 1 of each month\n\nTERM:\nStart Date: 2025-12-04\nEnd Date: 2026-01-04\n",
       "monthly_payment": 1400,
       "payment_day": 1,
       "start_date": "2025-12-04",
