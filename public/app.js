@@ -1898,12 +1898,39 @@ async function deleteAgreement(id) {
 
 // Print agreement
 function printAgreement(id) {
-    window.open(`/api/agreements/${id}/print`, '_blank');
+    // For fully signed agreements, use download page
+    // Try to find in all agreement types
+    let agreement = agreements.find(a => a.id === id);
+    if (!agreement) {
+        agreement = modelAgreements.find(a => a.id === id);
+    }
+    if (!agreement) {
+        agreement = projectAgreements.find(a => a.id === id);
+    }
+    
+    if (agreement && agreement.downloadToken) {
+        window.open(`/download/${agreement.downloadToken}`, '_blank');
+    } else {
+        showNotification('⚠️ Agreement must be fully signed by both parties to print', 'error');
+    }
 }
 
-// Download PDF (opens in new tab for print/save)
+// Download PDF (opens download page in new tab for print/save)
 function downloadPDF(id) {
-    window.open(`/api/agreements/${id}/pdf`, '_blank');
+    // Try to find in all agreement types
+    let agreement = agreements.find(a => a.id === id);
+    if (!agreement) {
+        agreement = modelAgreements.find(a => a.id === id);
+    }
+    if (!agreement) {
+        agreement = projectAgreements.find(a => a.id === id);
+    }
+    
+    if (agreement && agreement.downloadToken) {
+        window.open(`/download/${agreement.downloadToken}`, '_blank');
+    } else {
+        showNotification('⚠️ Agreement must be fully signed by both parties to download', 'error');
+    }
 }
 
 // Show email dialog

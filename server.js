@@ -934,7 +934,7 @@ app.post('/api/model-agreements/:id/send-email', async (req, res) => {
       <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
         <h2 style="color: #8b5cf6;">📄 Cast & Modeling Agreement</h2>
         <p>Dear Recipient,</p>
-        <p>Please find the model agreement <strong>attached as a PDF</strong> with white background for easy printing.</p>
+        <p>Please review the model agreement details below and use the signature link to sign digitally.</p>
         
         <div style="background-color: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
           <p><strong>Agreement Number:</strong> ${agreement.agreement_number}</p>
@@ -948,8 +948,13 @@ app.post('/api/model-agreements/:id/send-email', async (req, res) => {
         
         ${signatureSection}
         
-        <div style="margin: 20px 0; padding: 15px; background-color: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 8px;">
-          <p style="margin: 0;"><strong>📎 Attachment:</strong> The complete agreement is attached as a PDF file with white background, ready for printing or digital signing.</p>
+        <div style="margin: 20px 0; padding: 15px; background-color: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 8px;">
+          <p style="margin: 0; color: #92400e;"><strong>⚠️ AI-Generated Content Notice:</strong></p>
+          <p style="margin: 5px 0 0 0; font-size: 13px; color: #78350f;">
+            This model agreement may involve projects that utilize AI-generated content. 
+            By signing, the model acknowledges and consents to the potential use of their likeness 
+            in AI-generated materials as outlined in the agreement terms.
+          </p>
         </div>
         
         <p style="margin-top: 30px;">Best regards,<br>${emailSettings.from_name || 'Fashion Cast Agency'}</p>
