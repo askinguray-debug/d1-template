@@ -2130,6 +2130,7 @@ function toggleEmailProviderFields() {
     const provider = document.getElementById('email-provider').value;
     const gmailSettings = document.getElementById('gmail-settings');
     const apiSettings = document.getElementById('api-settings');
+    const resendGuide = document.getElementById('resend-guide');
     
     if (provider === 'gmail') {
         gmailSettings.classList.remove('hidden');
@@ -2137,6 +2138,15 @@ function toggleEmailProviderFields() {
     } else {
         gmailSettings.classList.add('hidden');
         apiSettings.classList.remove('hidden');
+        
+        // Show Resend guide if Resend is selected
+        if (resendGuide) {
+            if (provider === 'resend') {
+                resendGuide.classList.remove('hidden');
+            } else {
+                resendGuide.classList.add('hidden');
+            }
+        }
     }
 }
 

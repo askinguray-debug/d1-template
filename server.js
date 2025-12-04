@@ -23,13 +23,20 @@ async function sendEmail(emailSettings, { from, to, subject, html, attachments =
   try {
     // Check if Gmail is configured
     if (emailSettings.provider === 'gmail' && emailSettings.gmail_email && emailSettings.gmail_app_password) {
-      // Use Gmail SMTP
+      // Use Gmail SMTP with explicit configuration (works with regular passwords if Less Secure Apps enabled)
       const transporter = nodemailer.createTransport({
-        service: 'gmail', // Uses Gmail's SMTP settings automatically
+        host: 'smtp.gmail.com',
+        port: 587,
+        secure: false, // Use STARTTLS
         auth: {
           user: emailSettings.gmail_email,
           pass: emailSettings.gmail_app_password
-        }
+        },
+        tls: {
+          rejectUnauthorized: false, // Accept self-signed certificates
+          ciphers: 'SSLv3'
+        },
+        requireTLS: true
       });
       
       await transporter.sendMail({
