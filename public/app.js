@@ -2140,6 +2140,82 @@ function toggleEmailProviderFields() {
     }
 }
 
+// Submit Google verification code
+function submitGoogleVerificationCode() {
+    const code = document.getElementById('gmail-verification-code').value.trim();
+    
+    if (!code) {
+        showNotification('⚠️ Please enter the verification code sent by Google', 'error');
+        return;
+    }
+    
+    // Validate format (should be G-XXXXXX)
+    if (!code.match(/^G-\d{6}$/i)) {
+        showNotification('⚠️ Invalid format. Code should be like "G-379163"', 'error');
+        return;
+    }
+    
+    // Show instructions
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]';
+    modal.innerHTML = `
+        <div class="bg-white rounded-lg p-6 max-w-lg w-full mx-4">
+            <div class="flex justify-between items-start mb-4">
+                <h3 class="text-xl font-bold text-gray-900">
+                    <i class="fas fa-check-circle text-green-600 mr-2"></i>
+                    Verification Code Ready
+                </h3>
+                <button onclick="this.closest('.fixed').remove()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <p class="text-sm text-green-800 font-semibold mb-2">
+                        Your Verification Code:
+                    </p>
+                    <p class="text-2xl font-mono text-center py-3 bg-white rounded border border-green-300">
+                        ${code}
+                    </p>
+                </div>
+                
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <p class="text-sm text-blue-800 mb-3">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        <strong>Next Steps:</strong>
+                    </p>
+                    <ol class="text-xs text-blue-700 space-y-2 list-decimal list-inside">
+                        <li>Go back to the <strong>Google App Passwords</strong> page</li>
+                        <li>Enter this code: <code class="bg-blue-100 px-2 py-1 rounded">${code}</code></li>
+                        <li>Click "Verify" or "Next" on Google's page</li>
+                        <li>Google will show you a <strong>16-character App Password</strong></li>
+                        <li>Copy that password and paste it in the "Gmail App Password" field</li>
+                        <li>Click "Save Email Settings"</li>
+                    </ol>
+                </div>
+                
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                    <p class="text-xs text-yellow-800">
+                        <i class="fas fa-exclamation-triangle mr-1"></i>
+                        <strong>Important:</strong> The verification code (${code}) is NOT the App Password. 
+                        After entering this code on Google's page, Google will give you a separate 16-character password.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="flex justify-end gap-3 mt-6">
+                <button onclick="this.closest('.fixed').remove()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                    <i class="fas fa-check mr-2"></i>Got it!
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    showNotification('✅ Verification code ready to use!');
+}
+
 async function handleEmailSettingsSave(e) {
     e.preventDefault();
     const id = document.getElementById('email-settings-id').value;
