@@ -808,7 +808,7 @@ ${agreement.content}
                             ${agreement.agency_signed ? `
                                 <div class="text-green-600 flex items-center">
                                     <i class="fas fa-check-circle mr-2"></i>
-                                    <span class="text-sm">Signed on ${new Date(agreement.agency_signed_date).toLocaleDateString()}</span>
+                                    <span class="text-sm">Signed ${agreement.agency_signed_date ? 'on ' + new Date(agreement.agency_signed_date).toLocaleDateString() : ''}</span>
                                 </div>
                                 ${agreement.agency_signature ? `<img src="${agreement.agency_signature}" class="mt-2 max-h-16 border-t border-gray-300 pt-2">` : ''}
                             ` : `
@@ -822,7 +822,7 @@ ${agreement.content}
                             ${agreement.customer_signed ? `
                                 <div class="text-green-600 flex items-center">
                                     <i class="fas fa-check-circle mr-2"></i>
-                                    <span class="text-sm">Signed on ${new Date(agreement.customer_signed_date).toLocaleDateString()}</span>
+                                    <span class="text-sm">Signed ${agreement.customer_signed_date ? 'on ' + new Date(agreement.customer_signed_date).toLocaleDateString() : ''}</span>
                                 </div>
                                 ${agreement.customer_signature ? `<img src="${agreement.customer_signature}" class="mt-2 max-h-16 border-t border-gray-300 pt-2">` : ''}
                             ` : `
