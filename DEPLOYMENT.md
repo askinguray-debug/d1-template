@@ -1,229 +1,205 @@
-# Easy Deployment Guide
+# Deployment Guide
 
-## 🎉 No API Keys Required!
+## 🌐 The Sandbox URL Issue
 
-This application has been migrated to use a **simple JSON file database** so you can deploy it **anywhere** without needing Cloudflare API keys or complex database setup.
+The sandbox URL (`https://3000-ipmaf4jd9cziaxxnq9sow-b237eb32.sandbox.novita.ai`) **only works inside GenSpark**. 
 
----
-
-## 📦 What You Need
-
-1. **GitHub account** (free)
-2. **Account on deployment platform** (all free tiers available):
-   - Vercel ⭐ (Recommended)
-   - Netlify
-   - Railway
-   - Render
+For external access, you need to deploy to a public hosting platform.
 
 ---
 
-## 🚀 Option 1: Deploy to Vercel (Easiest!)
+## 🚀 Option 1: Deploy to Render.com (FREE - Recommended)
 
-### Step 1: Push to GitHub
-```bash
-# If not already done
-git remote add origin https://github.com/YOUR_USERNAME/webapp.git
-git push -u origin main
-```
-
-### Step 2: Deploy to Vercel
-1. Go to [vercel.com](https://vercel.com)
-2. Sign in with GitHub
-3. Click **"Add New Project"**
-4. Click **"Import"** next to your repository
-5. **No configuration needed!** Vercel auto-detects everything
-6. Click **"Deploy"**
-7. Wait ~1 minute
-8. **Done!** Your app is live at `your-app.vercel.app`
-
-### Vercel Features:
+**Why Render?**
+- ✅ Free tier available
 - ✅ Automatic HTTPS
-- ✅ Global CDN
-- ✅ Auto-deploys on git push
-- ✅ Free custom domain
-- ✅ Instant rollbacks
+- ✅ Public URL works everywhere
+- ✅ Easy GitHub integration
+- ✅ Automatic deploys from GitHub
 
----
+### Steps:
 
-## 🌐 Option 2: Deploy to Netlify
-
-### Step 1: Push to GitHub (same as above)
-
-### Step 2: Deploy to Netlify
-1. Go to [netlify.com](https://netlify.com)
-2. Sign in with GitHub
-3. Click **"Add new site"** → **"Import an existing project"**
-4. Choose **"GitHub"**
-5. Select your repository
-6. Build settings (auto-detected):
-   - Build command: `npm install`
-   - Publish directory: `public`
-   - Leave other fields default
-7. Click **"Deploy site"**
-8. **Done!** Your app is live
-
----
-
-## 🚂 Option 3: Deploy to Railway
-
-### Step 1: Push to GitHub (same as above)
-
-### Step 2: Deploy to Railway
-1. Go to [railway.app](https://railway.app)
-2. Sign in with GitHub
-3. Click **"New Project"**
-4. Choose **"Deploy from GitHub repo"**
-5. Select your repository
-6. Railway automatically:
-   - Detects Node.js
-   - Installs dependencies
-   - Starts your server
-7. **Done!** Your app is live with a Railway URL
-
-### Railway Features:
-- ✅ Built-in PostgreSQL (if needed later)
-- ✅ Environment variables UI
-- ✅ Logs dashboard
-- ✅ Free $5/month credit
-
----
-
-## 🎨 Option 4: Deploy to Render
-
-### Step 1: Push to GitHub (same as above)
-
-### Step 2: Deploy to Render
-1. Go to [render.com](https://render.com)
-2. Sign in with GitHub
-3. Click **"New +"** → **"Web Service"**
-4. Connect your repository
-5. Configure:
-   - **Name**: webapp (or your choice)
-   - **Build Command**: `npm install`
-   - **Start Command**: `npm start`
-   - Leave other fields default
-6. Click **"Create Web Service"**
-7. Wait for deployment (~2-3 minutes)
-8. **Done!** Your app is live
-
----
-
-## 🔍 Verify Deployment
-
-After deployment, test your app:
-
-1. **Open the URL** provided by your platform
-2. **Check the dashboard** - should show statistics
-3. **Test creating a customer**:
-   - Go to Customers tab
-   - Click "Add Customer"
-   - Fill in details
-   - Save
-4. **Test creating an agreement**:
-   - Click "New Agreement"
-   - Select agency and customer
-   - Fill in details
-   - Save
-
-If everything works, **you're done!** 🎉
-
----
-
-## 📊 After Deployment
-
-### Managing Your Data
-
-Your data is stored in `database.json` file. To backup:
-
-**On Vercel/Netlify/Render:**
-- Data persists during runtime only
-- For permanent storage, consider adding:
-  - Vercel KV (key-value storage)
-  - Supabase (PostgreSQL)
-  - MongoDB Atlas (document database)
-
-**On Railway:**
-- File system is ephemeral
-- Recommended: Use Railway PostgreSQL addon
-
-### For Production Use
-
-If you want persistent data storage, I recommend:
-
-**Option A: Keep It Simple (File-based)**
-- Use a persistent disk service
-- Regular automated backups
-- Works great for small teams
-
-**Option B: Upgrade to Real Database**
-- Supabase (PostgreSQL - free tier)
-- PlanetScale (MySQL - free tier)
-- MongoDB Atlas (free tier)
-- I can help you migrate if needed!
-
----
-
-## 🔐 Environment Variables (Optional)
-
-If you want to add email sending later:
-
-1. **Go to your platform's dashboard**
-2. **Find "Environment Variables" or "Settings"**
-3. **Add these variables**:
+1. **Push your code to GitHub** (already done)
    ```
-   EMAIL_API_KEY=your_sendgrid_api_key
-   EMAIL_FROM=noreply@yourdomain.com
+   Repository: https://github.com/askinguray-debug/d1-template
    ```
-4. **Redeploy** (Vercel/Netlify auto-redeploy on env change)
+
+2. **Sign up at Render.com**
+   - Go to: https://render.com/
+   - Click "Get Started"
+   - Sign up with GitHub (easiest)
+
+3. **Create New Web Service**
+   - Click "New +" → "Web Service"
+   - Connect your GitHub repository: `askinguray-debug/d1-template`
+   - Render will auto-detect `render.yaml` configuration
+
+4. **Configure (Auto-filled from render.yaml)**
+   - Name: `agreement-management`
+   - Region: `Oregon (US West)`
+   - Branch: `main`
+   - Build Command: `npm install`
+   - Start Command: `npm start`
+   - Plan: **Free**
+
+5. **Add Environment Variables** (Important!)
+   - Go to "Environment" tab
+   - Add these variables:
+     ```
+     NODE_ENV=production
+     PORT=10000
+     ```
+
+6. **Deploy**
+   - Click "Create Web Service"
+   - Wait 2-3 minutes for deployment
+   - Your app will be live at: `https://agreement-management.onrender.com`
+
+7. **Configure Email Settings in App**
+   - Visit your deployed app
+   - Go to Settings → Email Settings
+   - Configure Gmail or Resend (see EMAIL_SETUP.md)
 
 ---
 
-## 🆘 Troubleshooting
+## 🚀 Option 2: Deploy to Railway.app (Free Trial)
 
-### Problem: App shows "Application Error"
-**Solution**: Check your platform's logs
-- Vercel: Deployments → View Function Logs
-- Netlify: Deploys → Deploy log
-- Railway: Deployments → Logs
-- Render: Logs tab
+**Why Railway?**
+- ✅ $5 free credit per month
+- ✅ Very fast deployments
+- ✅ Great performance
 
-### Problem: Database resets on every deploy
-**Solution**: This is normal for file-based storage on serverless platforms
-- Upgrade to a real database (Supabase recommended)
-- Or use a platform with persistent storage (Railway)
+### Steps:
 
-### Problem: API calls return 404
-**Solution**: Check that `server.js` is in the root directory
-- Ensure `vercel.json` is properly configured
-- For Netlify, check `netlify.toml` configuration
+1. **Sign up at Railway.app**
+   - Go to: https://railway.app/
+   - Sign in with GitHub
 
----
+2. **Create New Project**
+   - Click "New Project"
+   - Select "Deploy from GitHub repo"
+   - Choose: `askinguray-debug/d1-template`
 
-## 📞 Need Help?
+3. **Configure**
+   - Railway auto-detects Node.js
+   - Start Command: `npm start`
+   - Add Environment Variable: `NODE_ENV=production`
 
-If you run into issues:
-1. Check the platform's documentation
-2. Check deployment logs for errors
-3. Verify all files are committed to git
-4. Make sure `package.json` has the correct start script
+4. **Deploy**
+   - Railway automatically deploys
+   - Get public URL from Settings → Domains
 
 ---
 
-## 🎯 Quick Comparison
+## 🚀 Option 3: Deploy to Heroku (Paid)
 
-| Platform | Setup Time | Free Tier | Auto-Deploy | Persistent Storage |
-|----------|-----------|-----------|-------------|-------------------|
-| **Vercel** | 2 min | ✅ Generous | ✅ Yes | ⚠️ Requires addon |
-| **Netlify** | 3 min | ✅ Good | ✅ Yes | ⚠️ Requires addon |
-| **Railway** | 3 min | ✅ $5/month | ✅ Yes | ✅ Yes (ephemeral) |
-| **Render** | 4 min | ✅ Good | ✅ Yes | ✅ Yes (limited) |
+**Why Heroku?**
+- ✅ Very reliable
+- ✅ Industry standard
+- ❌ No free tier (starts at $5/month)
 
-**My Recommendation**: Start with **Vercel** for fastest deployment, then upgrade to **Railway** + PostgreSQL if you need persistent storage.
+### Steps:
+
+1. **Install Heroku CLI**
+   ```bash
+   npm install -g heroku
+   ```
+
+2. **Login and Create App**
+   ```bash
+   heroku login
+   heroku create agreement-management-app
+   ```
+
+3. **Deploy**
+   ```bash
+   git push heroku main
+   ```
+
+4. **Open App**
+   ```bash
+   heroku open
+   ```
 
 ---
 
-## ✅ You're Done!
+## 🚀 Option 4: Use Your Own VPS
 
-Your Agreement Management System is now deployed and accessible worldwide! 
+If you have a VPS (DigitalOcean, AWS EC2, Linode, etc.):
 
-**Share your deployment URL** and start managing agreements! 🎉
+1. **SSH into your server**
+2. **Install Node.js 18+**
+3. **Clone repository**
+   ```bash
+   git clone https://github.com/askinguray-debug/d1-template.git
+   cd d1-template
+   npm install
+   ```
+
+4. **Use PM2 for process management**
+   ```bash
+   npm install -g pm2
+   pm2 start server.js --name agreement-app
+   pm2 save
+   pm2 startup
+   ```
+
+5. **Configure Nginx reverse proxy** (for port 80/443)
+
+---
+
+## 📧 After Deployment: Email Configuration
+
+Once deployed, you MUST configure email settings:
+
+1. **Visit your deployed app**
+2. **Go to Settings tab → Email Settings**
+3. **Choose email provider:**
+   - **Resend** (Recommended - no 2FA needed)
+     - Sign up: https://resend.com/signup
+     - Get API key
+     - Configure in app
+   
+   - **Gmail** (Requires 2FA + App Password)
+     - Enable 2-Step Verification
+     - Generate App Password: https://myaccount.google.com/apppasswords
+     - Configure in app
+
+4. **Test email sending** from any agreement
+
+---
+
+## 🔒 Security Notes
+
+- **Never commit `.env` files** (already in .gitignore)
+- **Use environment variables** for sensitive data on hosting platform
+- **Keep database.json in .gitignore** for production (use real database)
+
+---
+
+## 💡 Recommended: Render.com Free Tier
+
+For your use case, **Render.com** is the best option:
+- ✅ Free forever (with some limitations)
+- ✅ Automatic HTTPS
+- ✅ Public URL that works everywhere
+- ✅ Easy GitHub integration
+- ✅ Auto-deploy on git push
+
+**Start here:** https://render.com/
+
+---
+
+## 📊 What You'll Get
+
+After deployment, you'll have:
+- ✅ Public URL accessible from anywhere (e.g., `https://agreement-management.onrender.com`)
+- ✅ Automatic HTTPS
+- ✅ Share links in emails will work correctly
+- ✅ No more sandbox limitations
+
+---
+
+## ❓ Questions?
+
+If you need help with deployment, let me know which platform you prefer!
