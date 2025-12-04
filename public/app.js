@@ -1760,22 +1760,12 @@ async function viewAgreement(id) {
                         <p class="text-gray-800">${agreement.agency_name}</p>
                         ${agreement.agency_email ? `<p class="text-sm text-gray-600">${agreement.agency_email}</p>` : ''}
                         ${agreement.agency_address ? `<p class="text-sm text-gray-600 mt-1">${agreement.agency_address}</p>` : ''}
-                        ${agreement.agency_signed ? `
-                            <div class="mt-3 text-green-600 text-sm">
-                                <i class="fas fa-check-circle mr-1"></i>Signed on ${formatDate(agreement.agency_signed_at)}
-                            </div>
-                        ` : ''}
                     </div>
                     <div class="border border-gray-200 rounded-lg p-4">
                         <h3 class="font-semibold text-gray-900 mb-2">Customer</h3>
                         <p class="text-gray-800">${agreement.customer_name}</p>
                         ${agreement.customer_email ? `<p class="text-sm text-gray-600">${agreement.customer_email}</p>` : ''}
                         ${agreement.customer_company ? `<p class="text-sm text-gray-600">${agreement.customer_company}</p>` : ''}
-                        ${agreement.customer_signed ? `
-                            <div class="mt-3 text-green-600 text-sm">
-                                <i class="fas fa-check-circle mr-1"></i>Signed on ${formatDate(agreement.customer_signed_at)}
-                            </div>
-                        ` : ''}
                     </div>
                 </div>
                 
@@ -1812,7 +1802,7 @@ async function viewAgreement(id) {
                     </div>
                 </div>
                 
-                <!-- Signature Sections -->
+                <!-- Signature Sections (at bottom after content) -->
                 <div class="grid grid-cols-2 gap-6 mb-6">
                     <div class="border border-gray-200 rounded-lg p-4">
                         <h3 class="font-semibold text-gray-900 mb-3">
