@@ -68,6 +68,7 @@ async function initDB() {
       ],
       agreements: [],
       modelAgreements: [],
+      projectAgreements: [],
       modelAgreementTemplates: [
         {
           id: 1,
@@ -890,6 +891,407 @@ app.post('/api/model-agreements/:id/send-email', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// ======================
+// PROJECT AGREEMENTS API (Brand Projects - Permanent Rights)
+// ======================
+
+// Get all project agreements
+app.get('/api/project-agreements', async (req, res) => {
+  const db = await readDB();
+  if (!db.projectAgreements) db.projectAgreements = [];
+  res.json(db.projectAgreements);
+});
+
+// Get single project agreement
+app.get('/api/project-agreements/:id', async (req, res) => {
+  const db = await readDB();
+  if (!db.projectAgreements) db.projectAgreements = [];
+  const agreement = db.projectAgreements.find(a => a.id === parseInt(req.params.id));
+  if (!agreement) {
+    return res.status(404).json({ error: 'Project Agreement not found' });
+  }
+  res.json(agreement);
+});
+
+// Create project agreement
+app.post('/api/project-agreements', async (req, res) => {
+  try {
+    const db = await readDB();
+    if (!db.projectAgreements) db.projectAgreements = [];
+    
+    const { agency_id, model_id, project_name, company_name, platforms, content_types, description } = req.body;
+    
+    const newAgreement = {
+      id: db.projectAgreements.length > 0 ? Math.max(...db.projectAgreements.map(a => a.id)) + 1 : 1,
+      agreement_number: `PROJ-${Date.now()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`,
+      agency_id: parseInt(agency_id),
+      model_id: parseInt(model_id),
+      project_name,
+      company_name,
+      platforms: platforms || [],
+      content_types: content_types || [],
+      description,
+      title: `${project_name} - ${company_name}`,
+      status: 'draft',
+      agency_signed: false,
+      customer_signed: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    
+    // Generate agreement content
+    const agency = db.agencies.find(a => a.id === newAgreement.agency_id);
+    const model = db.customers.find(c => c.id === newAgreement.model_id);
+    
+    newAgreement.content = generateProjectAgreementContent(newAgreement, agency, model);
+    
+    db.projectAgreements.push(newAgreement);
+    await writeDB(db);
+    
+    res.json(newAgreement);
+  } catch (error) {
+    console.error('Error creating project agreement:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update project agreement
+app.put('/api/project-agreements/:id', async (req, res) => {
+  try {
+    const db = await readDB();
+    if (!db.projectAgreements) db.projectAgreements = [];
+    
+    const index = db.projectAgreements.findIndex(a => a.id === parseInt(req.params.id));
+    if (index === -1) {
+      return res.status(404).json({ error: 'Project Agreement not found' });
+    }
+    
+    db.projectAgreements[index] = {
+      ...db.projectAgreements[index],
+      ...req.body,
+      updated_at: new Date().toISOString()
+    };
+    
+    await writeDB(db);
+    res.json(db.projectAgreements[index]);
+  } catch (error) {
+    console.error('Error updating project agreement:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Delete project agreement
+app.delete('/api/project-agreements/:id', async (req, res) => {
+  try {
+    const db = await readDB();
+    if (!db.projectAgreements) db.projectAgreements = [];
+    
+    const index = db.projectAgreements.findIndex(a => a.id === parseInt(req.params.id));
+    if (index === -1) {
+      return res.status(404).json({ error: 'Project Agreement not found' });
+    }
+    
+    db.projectAgreements.splice(index, 1);
+    await writeDB(db);
+    
+    res.json({ success: true, message: 'Project agreement deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting project agreement:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Sign project agreement
+app.post('/api/project-agreements/:id/sign', async (req, res) => {
+  try {
+    const db = await readDB();
+    if (!db.projectAgreements) db.projectAgreements = [];
+    
+    const agreement = db.projectAgreements.find(a => a.id === parseInt(req.params.id));
+    if (!agreement) {
+      return res.status(404).json({ error: 'Project Agreement not found' });
+    }
+    
+    const { party, signature } = req.body;
+    
+    if (party === 'agency') {
+      agreement.agency_signed = true;
+      agreement.agency_signature = signature;
+      agreement.agency_signed_date = new Date().toISOString();
+    } else if (party === 'customer') {
+      agreement.customer_signed = true;
+      agreement.customer_signature = signature;
+      agreement.customer_signed_date = new Date().toISOString();
+    }
+    
+    if (agreement.agency_signed && agreement.customer_signed) {
+      agreement.status = 'active';
+    }
+    
+    agreement.updated_at = new Date().toISOString();
+    await writeDB(db);
+    
+    res.json(agreement);
+  } catch (error) {
+    console.error('Error signing project agreement:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Send project agreement email
+app.post('/api/project-agreements/:id/send-email', async (req, res) => {
+  try {
+    const db = await readDB();
+    if (!db.projectAgreements) db.projectAgreements = [];
+    const agreement = db.projectAgreements.find(a => a.id === parseInt(req.params.id));
+    if (!agreement) {
+      return res.status(404).json({ error: 'Project Agreement not found' });
+    }
+    
+    const agency = db.agencies.find(a => a.id === agreement.agency_id);
+    const model = db.customers.find(c => c.id === agreement.model_id);
+    let { recipients, cc } = req.body;
+    
+    const emailSettings = db.emailSettings || {};
+    
+    // Support both new array format and old recipient format
+    if (!recipients || !Array.isArray(recipients)) {
+      const { recipient } = req.body;
+      recipients = [];
+      if (recipient === 'agency' || recipient === 'both') recipients.push(agency.email);
+      if (recipient === 'customer' || recipient === 'both') recipients.push(model.email);
+    }
+    
+    // Add CC addresses to recipients
+    if (cc && Array.isArray(cc)) {
+      recipients = [...recipients, ...cc];
+    } else if (cc && typeof cc === 'string') {
+      recipients.push(cc);
+    }
+    
+    // Validate recipients
+    if (!recipients || recipients.length === 0) {
+      return res.status(400).json({ error: 'At least one recipient email is required' });
+    }
+    
+    // Generate share links for unsigned parties
+    const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
+    let agencyShareLink = '';
+    let modelShareLink = '';
+    
+    if (!agreement.agency_signed) {
+      if (!db.shareTokens) db.shareTokens = [];
+      let agencyToken = db.shareTokens.find(t => 
+        t.agreementId === agreement.id && 
+        t.agreementType === 'project' && 
+        t.party === 'agency' && 
+        !t.used && 
+        new Date(t.expiresAt) > new Date()
+      );
+      
+      if (!agencyToken) {
+        const token = crypto.randomBytes(32).toString('hex');
+        agencyToken = {
+          token,
+          agreementId: agreement.id,
+          agreementType: 'project',
+          party: 'agency',
+          used: false,
+          createdAt: new Date().toISOString(),
+          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+        };
+        db.shareTokens.push(agencyToken);
+        await writeDB(db);
+      }
+      agencyShareLink = `${baseUrl}/sign/${agencyToken.token}`;
+    }
+    
+    if (!agreement.customer_signed) {
+      if (!db.shareTokens) db.shareTokens = [];
+      let modelToken = db.shareTokens.find(t => 
+        t.agreementId === agreement.id && 
+        t.agreementType === 'project' && 
+        t.party === 'customer' && 
+        !t.used && 
+        new Date(t.expiresAt) > new Date()
+      );
+      
+      if (!modelToken) {
+        const token = crypto.randomBytes(32).toString('hex');
+        modelToken = {
+          token,
+          agreementId: agreement.id,
+          agreementType: 'project',
+          party: 'customer',
+          used: false,
+          createdAt: new Date().toISOString(),
+          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+        };
+        db.shareTokens.push(modelToken);
+        await writeDB(db);
+      }
+      modelShareLink = `${baseUrl}/sign/${modelToken.token}`;
+    }
+    
+    // Build signature status section
+    let signatureSection = '<div style="margin: 20px 0; padding: 20px; background-color: #f0fdf4; border-left: 4px solid #10b981; border-radius: 8px;">';
+    signatureSection += '<h3 style="color: #059669; margin-top: 0;">📝 Signature Status</h3>';
+    
+    if (agreement.agency_signed && agreement.customer_signed) {
+      signatureSection += '<p style="color: #059669;"><strong>✅ Fully Signed</strong> - This project agreement has been signed by both parties.</p>';
+    } else {
+      signatureSection += '<p><strong>Pending Signatures:</strong></p><ul style="list-style: none; padding-left: 0;">';
+      
+      if (!agreement.agency_signed && agencyShareLink) {
+        signatureSection += `
+          <li style="margin: 10px 0;">
+            🏢 <strong>Agency (${agency.name}):</strong> Awaiting signature<br>
+            <a href="${agencyShareLink}" style="display: inline-block; margin-top: 8px; padding: 10px 20px; background-color: #10b981; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">
+              Click Here to Sign as Agency
+            </a>
+          </li>
+        `;
+      }
+      
+      if (!agreement.customer_signed && modelShareLink) {
+        signatureSection += `
+          <li style="margin: 10px 0;">
+            👤 <strong>Model (${model.name}):</strong> Awaiting signature<br>
+            <a href="${modelShareLink}" style="display: inline-block; margin-top: 8px; padding: 10px 20px; background-color: #10b981; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">
+              Click Here to Sign as Model
+            </a>
+          </li>
+        `;
+      }
+      
+      signatureSection += '</ul>';
+    }
+    signatureSection += '</div>';
+    
+    const emailContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #10b981;">📄 Project Agreement</h2>
+        <p>Dear Recipient,</p>
+        <p>Please find the project agreement details below.</p>
+        
+        <div style="background-color: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <p><strong>Agreement Number:</strong> ${agreement.agreement_number}</p>
+          <p><strong>Project:</strong> ${agreement.project_name}</p>
+          <p><strong>Company/Brand:</strong> ${agreement.company_name}</p>
+          <p><strong>Agency:</strong> ${agency.name}</p>
+          <p><strong>Model:</strong> ${model.name}</p>
+          <p><strong>Usage Platforms:</strong> ${agreement.platforms.join(', ')}</p>
+          <p><strong>Status:</strong> ${agreement.status.toUpperCase()}</p>
+        </div>
+        
+        ${signatureSection}
+        
+        <div style="margin: 20px 0;">
+          <h3>Project Description:</h3>
+          <p style="white-space: pre-wrap; line-height: 1.6;">${agreement.description}</p>
+        </div>
+        
+        <div style="margin: 20px 0; padding: 15px; background-color: #dcfce7; border-left: 4px solid: #10b981; border-radius: 8px;">
+          <p style="margin: 0;"><strong>⚠️ Important:</strong> This agreement grants <strong>permanent usage rights</strong> for both real and AI-generated content. Rights cannot be revoked after signing.</p>
+        </div>
+        
+        <p style="margin-top: 30px;">Best regards,<br>${emailSettings.from_name || 'Fashion Cast Agency'}</p>
+        
+        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+        <p style="color: #6b7280; font-size: 12px;">
+          This email was sent from the Agreement Management System. 
+          ${(!agreement.agency_signed || !agreement.customer_signed) ? 'Signature links are valid for 30 days and can only be used once.' : ''}
+        </p>
+      </div>
+    `;
+    
+    // Send email
+    await resend.emails.send({
+      from: emailSettings.from_email || 'onboarding@resend.dev',
+      to: recipients,
+      subject: `📄 Project Agreement - ${agreement.project_name}`,
+      html: emailContent
+    });
+    
+    res.json({ success: true, message: 'Email sent successfully with signature links' });
+  } catch (error) {
+    console.error('Email sending error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Generate project agreement content
+function generateProjectAgreementContent(agreement, agency, model) {
+  const platforms = agreement.platforms.join(', ');
+  const contentTypes = agreement.content_types.join(' and ');
+  
+  return `PROJECT PARTICIPATION AGREEMENT
+
+This Project Participation Agreement ("Agreement") is entered into as of ${new Date().toLocaleDateString()} between:
+
+AGENCY: ${agency.name}
+Address: ${agency.address || 'N/A'}
+Email: ${agency.email}
+
+MODEL/TALENT: ${model.name}
+Email: ${model.email}
+
+PROJECT DETAILS:
+
+Project Name: ${agreement.project_name}
+Company/Brand: ${agreement.company_name}
+Usage Platforms: ${platforms}
+Content Type: ${contentTypes}
+
+PROJECT DESCRIPTION:
+${agreement.description}
+
+TERMS AND CONDITIONS:
+
+1. PERMANENT USAGE RIGHTS
+The Model hereby grants ${agreement.company_name} and ${agency.name} perpetual, irrevocable, worldwide rights to use, reproduce, modify, publish, and distribute all content (including but not limited to photographs, videos, images, and AI-generated content) created for this project.
+
+2. SCOPE OF USAGE
+The content may be used on the following platforms and media: ${platforms}
+
+3. IRREVOCABILITY
+These rights are PERMANENT and CANNOT BE REVOKED once this agreement is signed. The Model acknowledges and agrees that:
+- Content may be used indefinitely across all specified platforms
+- ${agreement.company_name} may modify, edit, or enhance the content
+- Content may be used for AI training and future AI-generated content
+- The Model cannot request removal or deletion of published content
+
+4. CONTENT TYPES
+This agreement covers:
+${agreement.content_types.map(type => `- ${type}`).join('\n')}
+
+5. COMMERCIAL USE
+${agreement.company_name} has the right to use the content for commercial purposes including but not limited to:
+- Marketing and advertising campaigns
+- Social media promotion
+- Website and digital marketing
+- Print and broadcast media
+- Product packaging and displays
+
+6. MODEL APPROVAL
+The Model approves ${agreement.company_name}'s participation in this project and use of their likeness and content as described in this agreement.
+
+7. NO COMPENSATION TERMS
+This agreement focuses solely on usage rights and project participation terms. Financial compensation, if any, is covered under a separate agreement between the parties.
+
+8. WARRANTY
+The Model warrants that they have the full right and authority to grant these rights and that the content does not infringe on any third-party rights.
+
+9. GOVERNING LAW
+This Agreement shall be governed by and construed in accordance with the laws of the United Republic of Tanzania.
+
+10. ACKNOWLEDGMENT
+By signing below, the Model acknowledges that they have read, understood, and agree to all terms of this Agreement, including the permanent and irrevocable nature of the usage rights granted.
+
+_______________________________________________
+This is a legally binding agreement. Please read carefully before signing.`;
+}
 
 // ======================
 // SHARE LINK API (Secure One-Time Signing)

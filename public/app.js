@@ -188,6 +188,7 @@ function loadAgreements() {
 
 // Load model agreements
 let modelAgreements = [];
+let projectAgreements = [];
 
 async function loadModelAgreementsData() {
     try {

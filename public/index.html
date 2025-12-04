@@ -69,6 +69,9 @@
                         <button onclick="showTab('model-agreements')" class="nav-tab px-4 py-2 rounded-lg font-medium transition-colors hover:bg-gray-100">
                             <i class="fas fa-camera mr-2"></i>Model Agreements
                         </button>
+                        <button onclick="showTab('project-agreements')" class="nav-tab px-4 py-2 rounded-lg font-medium transition-colors hover:bg-gray-100">
+                            <i class="fas fa-briefcase mr-2 text-green-600"></i>Project Agreements
+                        </button>
                         <button onclick="showTab('customers')" class="nav-tab px-4 py-2 rounded-lg font-medium transition-colors hover:bg-gray-100">
                             <i class="fas fa-users mr-2"></i>Customers
                         </button>
@@ -166,6 +169,22 @@
                             </button>
                         </div>
                         <div id="model-agreements-list" class="space-y-4"></div>
+                    </div>
+                </div>
+
+                <!-- Project Agreements Tab -->
+                <div id="project-agreements" class="tab-content">
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <div>
+                                <h2 class="text-xl font-bold text-gray-900">Project Agreements</h2>
+                                <p class="text-sm text-gray-600 mt-1">Model participation in brand/company projects with permanent usage rights</p>
+                            </div>
+                            <button onclick="showTab('new-project-agreement')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
+                                <i class="fas fa-plus mr-2"></i>New Project Agreement
+                            </button>
+                        </div>
+                        <div id="project-agreements-list" class="space-y-4"></div>
                     </div>
                 </div>
 
@@ -632,6 +651,136 @@
                                 <button type="button" onclick="showTab('model-agreements')" class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
                                 <button type="submit" class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
                                     <i class="fas fa-check mr-2"></i>Create Model Agreement
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- New Project Agreement Form -->
+                <div id="new-project-agreement" class="tab-content">
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h2 class="text-xl font-bold text-gray-900 mb-6">
+                            <i class="fas fa-briefcase mr-2 text-green-600"></i>Create Project Agreement
+                        </h2>
+                        <form id="new-project-agreement-form" class="space-y-6">
+                            <div class="grid grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Agency *</label>
+                                    <select id="project-agreement-agency" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                        <option value="">Select Agency</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Model/Talent *</label>
+                                    <select id="project-agreement-model" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                        <option value="">Select Model</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Project Name *</label>
+                                    <input type="text" id="project-name" required placeholder="e.g., Summer Fashion Campaign 2025" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Company/Brand Name *</label>
+                                    <input type="text" id="project-company" required placeholder="e.g., Nike, Adidas, H&M" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Usage Platforms *</label>
+                                <div class="grid grid-cols-3 gap-3">
+                                    <label class="flex items-center p-3 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">
+                                        <input type="checkbox" name="platform" value="Instagram" class="mr-2">
+                                        <i class="fab fa-instagram mr-2 text-pink-600"></i>
+                                        <span>Instagram</span>
+                                    </label>
+                                    <label class="flex items-center p-3 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">
+                                        <input type="checkbox" name="platform" value="YouTube" class="mr-2">
+                                        <i class="fab fa-youtube mr-2 text-red-600"></i>
+                                        <span>YouTube</span>
+                                    </label>
+                                    <label class="flex items-center p-3 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">
+                                        <input type="checkbox" name="platform" value="Twitter/X" class="mr-2">
+                                        <i class="fab fa-twitter mr-2 text-blue-400"></i>
+                                        <span>Twitter/X</span>
+                                    </label>
+                                    <label class="flex items-center p-3 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">
+                                        <input type="checkbox" name="platform" value="Facebook" class="mr-2">
+                                        <i class="fab fa-facebook mr-2 text-blue-600"></i>
+                                        <span>Facebook</span>
+                                    </label>
+                                    <label class="flex items-center p-3 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">
+                                        <input type="checkbox" name="platform" value="TikTok" class="mr-2">
+                                        <i class="fab fa-tiktok mr-2 text-gray-800"></i>
+                                        <span>TikTok</span>
+                                    </label>
+                                    <label class="flex items-center p-3 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">
+                                        <input type="checkbox" name="platform" value="LinkedIn" class="mr-2">
+                                        <i class="fab fa-linkedin mr-2 text-blue-700"></i>
+                                        <span>LinkedIn</span>
+                                    </label>
+                                    <label class="flex items-center p-3 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">
+                                        <input type="checkbox" name="platform" value="Website" class="mr-2">
+                                        <i class="fas fa-globe mr-2 text-gray-600"></i>
+                                        <span>Website</span>
+                                    </label>
+                                    <label class="flex items-center p-3 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">
+                                        <input type="checkbox" name="platform" value="Print Media" class="mr-2">
+                                        <i class="fas fa-newspaper mr-2 text-gray-600"></i>
+                                        <span>Print Media</span>
+                                    </label>
+                                    <label class="flex items-center p-3 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">
+                                        <input type="checkbox" name="platform" value="TV/Broadcast" class="mr-2">
+                                        <i class="fas fa-tv mr-2 text-gray-600"></i>
+                                        <span>TV/Broadcast</span>
+                                    </label>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-2">Select all platforms where the content will be used</p>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Content Type</label>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <label class="flex items-center p-3 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">
+                                        <input type="checkbox" name="content-type" value="Real Photos/Videos" class="mr-2">
+                                        <i class="fas fa-camera mr-2 text-gray-600"></i>
+                                        <span>Real Photos/Videos</span>
+                                    </label>
+                                    <label class="flex items-center p-3 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">
+                                        <input type="checkbox" name="content-type" value="AI-Generated Content" class="mr-2" checked>
+                                        <i class="fas fa-robot mr-2 text-purple-600"></i>
+                                        <span>AI-Generated Content</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Project Description *</label>
+                                <textarea id="project-description" rows="6" required placeholder="Describe the project, campaign goals, target audience, creative direction, and how the model's image will be used..." class="w-full px-3 py-2 border border-gray-300 rounded-lg"></textarea>
+                            </div>
+
+                            <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                                <h3 class="font-semibold text-green-900 mb-2">
+                                    <i class="fas fa-info-circle mr-2"></i>Project Agreement Details
+                                </h3>
+                                <p class="text-sm text-green-800">This agreement grants the company permanent rights to use model's content:</p>
+                                <ul class="text-sm text-green-800 mt-2 space-y-1 ml-4">
+                                    <li>✓ <strong>Permanent usage rights</strong> for both real and AI-generated content</li>
+                                    <li>✓ Rights cannot be revoked by the model after signing</li>
+                                    <li>✓ Company owns perpetual license to use, modify, and distribute</li>
+                                    <li>✓ Content may be used for AI training and future projects</li>
+                                    <li>✓ Model approves company's use across all selected platforms</li>
+                                </ul>
+                            </div>
+
+                            <div class="flex justify-end space-x-3">
+                                <button type="button" onclick="showTab('project-agreements')" class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+                                <button type="submit" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                                    <i class="fas fa-check mr-2"></i>Create Project Agreement
                                 </button>
                             </div>
                         </form>
