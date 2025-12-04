@@ -174,17 +174,17 @@
   ],
   "agreements": [
     {
-      "id": 1,
-      "agreement_number": "AGR-1764885717642-152",
+      "id": 2,
+      "agreement_number": "AGR-1764886449804-611",
       "agency_id": 2,
       "customer_id": 6,
       "template_id": "4",
-      "title": "88",
-      "content": "SOCIAL MEDIA SERVICES AGREEMENT\n\nThis agreement is entered into between Recluma Creative Agency (\"Agency\") and Ag (\"Client\").\n\nSERVICES PROVIDED:\n1. Website Design - Complete website design and development ($2500)\n2. Logo Design - Professional logo design with 3 revisions ($500)\n3. Social Media Management - Monthly social media content and management4 INSTAGRAM REELS 24 EDITED PHOTOS 2 EVENT SHOOTINGS  ($1200)\n4. Website Maintenance - Monthly website updates and maintenance ($200)\n\nPAYMENT TERMS:\nMonthly Payment: $1400.00\nPayment Due: Day 6 of each month\n\nTERM:\nStart Date: 2025-12-05\nEnd Date: 2026-01-05\n\nBoth parties agree to the terms outlined in this agreement.",
+      "title": "99",
+      "content": "SERVICE AGREEMENT\n\nThis agreement is entered into between Recluma Creative Agency (\"Agency\") and Ag (\"Client\").\n\nMONTHLY RECURRING SERVICES:\n1. Social Media Management - Monthly social media content and management4 INSTAGRAM REELS 24 EDITED PHOTOS 2 EVENT SHOOTINGS  ($1200/month)\n2. Website Maintenance - Monthly website updates and maintenance ($200/month)\n\nMonthly Total: $1400.00\n\nONE-TIME SERVICES:\n1. Website Design - Complete website design and development ($2500)\n2. SEO Optimization - Search engine optimization services ($800)\n\nOne-Time Total: $3300.00\n\nGRAND TOTAL (All Services): $4700.00\n\nPAYMENT TERMS:\nMonthly Recurring Payment: $1400.00\nDue Date: Day 7 of each month\n\nOne-Time Payment Due: $3300.00\n\nTERM:\nStart Date: 2025-12-05\nEnd Date: 2026-05-05\n\nBoth parties agree to the terms outlined in this agreement.",
       "monthly_payment": "1400",
-      "payment_day": 6,
+      "payment_day": 7,
       "start_date": "2025-12-05",
-      "end_date": "2026-01-05",
+      "end_date": "2026-05-05",
       "status": "draft",
       "services": [
         {
@@ -194,16 +194,16 @@
           "payment_type": "one-time"
         },
         {
-          "title": "Logo Design",
-          "description": "Professional logo design with 3 revisions",
-          "price": 500,
-          "payment_type": "one-time"
-        },
-        {
           "title": "Social Media Management",
           "description": "Monthly social media content and management4 INSTAGRAM REELS 24 EDITED PHOTOS 2 EVENT SHOOTINGS ",
           "price": 1200,
           "payment_type": "monthly"
+        },
+        {
+          "title": "SEO Optimization",
+          "description": "Search engine optimization services",
+          "price": 800,
+          "payment_type": "one-time"
         },
         {
           "title": "Website Maintenance",
@@ -214,9 +214,9 @@
       ],
       "agency_signed": 0,
       "customer_signed": 0,
-      "created_at": "2025-12-04T22:01:57.643Z",
-      "updated_at": "2025-12-04T22:01:57.643Z",
-      "downloadToken": "a555637e4102d8a2770dc7a781bbfb97ca99a6c26729e144fa0676cd7254c764"
+      "created_at": "2025-12-04T22:14:09.805Z",
+      "updated_at": "2025-12-04T22:14:09.805Z",
+      "downloadToken": "a28f045f19171eba498095e5ac0233d52ee74872127317c370dd7ec0f99a4dbd"
     }
   ],
   "reminders": [],
@@ -752,6 +752,13 @@
       "agreementType": "regular",
       "createdAt": "2025-12-04T22:01:58.050Z",
       "expiresAt": "2026-12-04T22:01:58.050Z"
+    },
+    {
+      "token": "a28f045f19171eba498095e5ac0233d52ee74872127317c370dd7ec0f99a4dbd",
+      "agreementId": 2,
+      "agreementType": "regular",
+      "createdAt": "2025-12-04T22:14:10.307Z",
+      "expiresAt": "2026-12-04T22:14:10.307Z"
     }
   ]
 }

@@ -2580,7 +2580,6 @@ app.post('/api/agreements/:id/send-email', async (req, res) => {
           <p style="margin: 5px 0;"><strong>Customer:</strong> ${customer.name}</p>
           <p style="margin: 5px 0;"><strong>Start Date:</strong> ${new Date(agreement.start_date).toLocaleDateString()}</p>
           ${agreement.end_date ? `<p style="margin: 5px 0;"><strong>End Date:</strong> ${new Date(agreement.end_date).toLocaleDateString()}</p>` : ''}
-          ${agreement.monthly_payment ? `<p style="margin: 5px 0;"><strong>Monthly Payment:</strong> $${agreement.monthly_payment}</p>` : ''}
           <p style="margin: 5px 0;"><strong>Status:</strong> ${agreement.status.toUpperCase()}</p>
         </div>
         ${signatureSection}
@@ -2629,6 +2628,23 @@ app.post('/api/agreements/:id/send-email', async (req, res) => {
                   </ul>
                   <p style="text-align: right; font-weight: bold; color: #2563eb; margin-top: 10px;">
                     💰 One-Time Total: $${oneTimeTotal.toFixed(2)}
+                  </p>
+                </div>
+              `;
+            }
+            
+            // Grand Total (if both types exist)
+            if (monthlyServices.length > 0 && oneTimeServices.length > 0) {
+              const monthlyTotal = monthlyServices.reduce((sum, s) => sum + (parseFloat(s.price) || 0), 0);
+              const oneTimeTotal = oneTimeServices.reduce((sum, s) => sum + (parseFloat(s.price) || 0), 0);
+              const grandTotal = monthlyTotal + oneTimeTotal;
+              html += `
+                <div style="margin-top: 20px; padding: 15px; background-color: #fef3c7; border-radius: 8px; border: 2px solid #f59e0b;">
+                  <p style="margin: 0; text-align: center; font-size: 18px; font-weight: bold; color: #92400e;">
+                    💰 GRAND TOTAL: $${grandTotal.toFixed(2)}
+                  </p>
+                  <p style="margin: 5px 0 0 0; text-align: center; font-size: 12px; color: #78350f;">
+                    (Monthly: $${monthlyTotal.toFixed(2)} + One-Time: $${oneTimeTotal.toFixed(2)})
                   </p>
                 </div>
               `;
