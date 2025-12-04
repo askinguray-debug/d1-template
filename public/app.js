@@ -301,7 +301,7 @@ async function handleModelAgreementSave(e) {
     }
     
     try {
-        await axios.post('/api/model-agreements', {
+        const response = await axios.post('/api/model-agreements', {
             agency_id: agencyId,
             customer_id: customerId,
             title: title,
@@ -311,9 +311,37 @@ async function handleModelAgreementSave(e) {
             status: 'draft'
         });
         
+        const newAgreement = response.data;
         showNotification('✅ Model agreement created successfully!');
+        
+        // Check if user wants to send email
+        const sendEmail = document.getElementById('send-email-after-create-model')?.checked;
+        
         document.getElementById('new-model-agreement-form').reset();
         await loadModelAgreementsData();
+        
+        // If checkbox was checked, send email automatically to model
+        if (sendEmail) {
+            showNotification('📧 Sending email to model...');
+            try {
+                // Get model email
+                const model = customers.find(c => c.id === newAgreement.customer_id);
+                if (model && model.email) {
+                    // Send email directly to model with signature link
+                    await axios.post(`/api/model-agreements/${newAgreement.id}/send-email`, {
+                        recipients: [model.email],
+                        cc: []
+                    });
+                    showNotification('✅ Model agreement created and email sent to model!');
+                } else {
+                    showNotification('⚠️ Model agreement created but model email not found', 'warning');
+                }
+            } catch (emailError) {
+                console.error('Error sending email:', emailError);
+                showNotification('⚠️ Model agreement created but email failed to send', 'warning');
+            }
+        }
+        
         showTab('model-agreements');
     } catch (error) {
         console.error('Error creating model agreement:', error);
@@ -726,7 +754,7 @@ async function handleProjectAgreementSave(e) {
     }
     
     try {
-        await axios.post('/api/project-agreements', {
+        const response = await axios.post('/api/project-agreements', {
             agency_id: agencyId,
             model_id: modelId,
             project_name: projectName,
@@ -736,14 +764,41 @@ async function handleProjectAgreementSave(e) {
             description: description
         });
         
-        await loadProjectAgreementsData();
-        showTab('project-agreements');
-        loadProjectAgreements();
+        const newAgreement = response.data;
+        showNotification('✅ Project agreement created successfully!');
+        
+        // Check if user wants to send email
+        const sendEmail = document.getElementById('send-email-after-create-project')?.checked;
         
         // Reset form
         document.getElementById('new-project-agreement-form').reset();
         
-        showNotification('✅ Project agreement created successfully!');
+        await loadProjectAgreementsData();
+        
+        // If checkbox was checked, send email automatically to model
+        if (sendEmail) {
+            showNotification('📧 Sending email to model...');
+            try {
+                // Get model email
+                const model = customers.find(c => c.id === newAgreement.model_id);
+                if (model && model.email) {
+                    // Send email directly to model with signature link
+                    await axios.post(`/api/project-agreements/${newAgreement.id}/send-email`, {
+                        recipients: [model.email],
+                        cc: []
+                    });
+                    showNotification('✅ Project agreement created and email sent to model!');
+                } else {
+                    showNotification('⚠️ Project agreement created but model email not found', 'warning');
+                }
+            } catch (emailError) {
+                console.error('Error sending email:', emailError);
+                showNotification('⚠️ Project agreement created but email failed to send', 'warning');
+            }
+        }
+        
+        showTab('project-agreements');
+        loadProjectAgreements();
     } catch (error) {
         console.error('Error creating project agreement:', error);
         showNotification('❌ Failed to create project agreement', 'error');
@@ -1758,10 +1813,38 @@ async function handleAgreementSave(e) {
     
     try {
         const response = await axios.post('/api/agreements', data);
+        const newAgreement = response.data;
         showNotification('✅ Agreement created successfully!');
+        
+        // Check if user wants to send email
+        const sendEmail = document.getElementById('send-email-after-create')?.checked;
+        
         document.getElementById('new-agreement-form').reset();
         document.getElementById('service-sections').innerHTML = '';
         await loadAllData();
+        
+        // If checkbox was checked, send email automatically to customer
+        if (sendEmail) {
+            showNotification('📧 Sending email to customer...');
+            try {
+                // Get customer email
+                const customer = customers.find(c => c.id === newAgreement.customer_id);
+                if (customer && customer.email) {
+                    // Send email directly to customer with signature link
+                    await axios.post(`/api/agreements/${newAgreement.id}/send-email`, {
+                        recipients: [customer.email],
+                        cc: []
+                    });
+                    showNotification('✅ Agreement created and email sent to customer!');
+                } else {
+                    showNotification('⚠️ Agreement created but customer email not found', 'warning');
+                }
+            } catch (emailError) {
+                console.error('Error sending email:', emailError);
+                showNotification('⚠️ Agreement created but email failed to send', 'warning');
+            }
+        }
+        
         showTab('agreements');
         updateDashboard();
     } catch (error) {

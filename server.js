@@ -2182,10 +2182,38 @@ app.post('/api/agreements/:id/payment-reminder', async (req, res) => {
       return res.status(500).json({ error: 'Payment reminder template not found' });
     }
     
-    // Format services list
-    const servicesList = agreement.services?.map((s, i) => 
-      `${i + 1}. ${s.title}${s.price ? ` - $${s.price}` : ''}${s.description ? `\n   ${s.description}` : ''}`
-    ).join('\n') || 'No services listed';
+    // Format services list - separate by payment type
+    const monthlyServices = agreement.services?.filter(s => s.payment_type === 'monthly') || [];
+    const oneTimeServices = agreement.services?.filter(s => s.payment_type !== 'monthly') || [];
+    
+    let servicesList = '';
+    
+    // Monthly recurring services
+    if (monthlyServices.length > 0) {
+      servicesList += '📅 MONTHLY RECURRING SERVICES:\n';
+      monthlyServices.forEach((s, i) => {
+        servicesList += `${i + 1}. ${s.title} - $${s.price}/month\n`;
+        if (s.description) servicesList += `   ${s.description}\n`;
+      });
+      const monthlyTotal = monthlyServices.reduce((sum, s) => sum + (parseFloat(s.price) || 0), 0);
+      servicesList += `\n💰 Monthly Total: $${monthlyTotal.toFixed(2)}\n`;
+    }
+    
+    // One-time services
+    if (oneTimeServices.length > 0) {
+      if (monthlyServices.length > 0) servicesList += '\n';
+      servicesList += '💵 ONE-TIME SERVICES:\n';
+      oneTimeServices.forEach((s, i) => {
+        servicesList += `${i + 1}. ${s.title} - $${s.price} (one-time)\n`;
+        if (s.description) servicesList += `   ${s.description}\n`;
+      });
+      const oneTimeTotal = oneTimeServices.reduce((sum, s) => sum + (parseFloat(s.price) || 0), 0);
+      servicesList += `\n💰 One-Time Total: $${oneTimeTotal.toFixed(2)}\n`;
+    }
+    
+    if (servicesList === '') {
+      servicesList = 'No services listed';
+    }
     
     // Replace template variables
     let subject = template.subject
