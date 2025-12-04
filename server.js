@@ -1000,21 +1000,20 @@ app.post('/api/model-agreements/:id/send-email', async (req, res) => {
       </div>
     `;
     
-    // Try to generate PDF, but send email even if it fails
+    // Skip PDF generation for faster email sending
     let attachments = [];
-    try {
-      const pdfHTML = generateModelAgreementHTML(agreement, agency, customer, true);
-      const pdfBuffer = await generatePDFBuffer(pdfHTML);
-      attachments = [
-        {
-          filename: `Model_Agreement_${agreement.agreement_number}.pdf`,
-          content: pdfBuffer
-        }
-      ];
-    } catch (pdfError) {
-      console.error('PDF generation failed, sending email without PDF:', pdfError.message);
-      // Continue without PDF attachment
-    }
+    
+    // DISABLED: PDF attachment (too slow in sandbox, users can view via link)
+    // try {
+    //   const pdfHTML = generateModelAgreementHTML(agreement, agency, customer, true);
+    //   const pdfBuffer = await generatePDFBuffer(pdfHTML);
+    //   attachments = [{
+    //     filename: `Model_Agreement_${agreement.agreement_number}.pdf`,
+    //     content: pdfBuffer
+    //   }];
+    // } catch (pdfError) {
+    //   console.error('PDF generation failed:', pdfError.message);
+    // }
     
     // Send email with or without PDF attachment using universal email function
     await sendEmail(emailSettings, {
@@ -2671,21 +2670,22 @@ app.post('/api/agreements/:id/send-email', async (req, res) => {
       </div>
     `;
 
-    // Try to generate PDF, but send email even if it fails
+    // Skip PDF generation for faster email sending
+    // PDF generation takes too long and often fails in sandbox environment
+    // Users can view/download PDF via the link in email instead
     let attachments = [];
-    try {
-      const pdfHTML = generateAgreementHTML(agreement, agency, customer, true, true);
-      const pdfBuffer = await generatePDFBuffer(pdfHTML);
-      attachments = [
-        {
-          filename: `Agreement_${agreement.agreement_number}.pdf`,
-          content: pdfBuffer
-        }
-      ];
-    } catch (pdfError) {
-      console.error('PDF generation failed, sending email without PDF:', pdfError.message);
-      // Continue without PDF attachment
-    }
+    
+    // DISABLED: PDF attachment generation (too slow)
+    // try {
+    //   const pdfHTML = generateAgreementHTML(agreement, agency, customer, true, true);
+    //   const pdfBuffer = await generatePDFBuffer(pdfHTML);
+    //   attachments = [{
+    //     filename: `Agreement_${agreement.agreement_number}.pdf`,
+    //     content: pdfBuffer
+    //   }];
+    // } catch (pdfError) {
+    //   console.error('PDF generation failed:', pdfError.message);
+    // }
 
     // Send email using universal email function with or without PDF attachment
     await sendEmail(emailSettings, {

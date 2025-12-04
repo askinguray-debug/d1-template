@@ -107,17 +107,6 @@
       "updated_at": "2025-12-03T14:36:28.221Z"
     },
     {
-      "id": 5,
-      "name": "Pocky ",
-      "email": "Georgiev.kalojan@gmail.com",
-      "phone": "0076555667",
-      "company": "null",
-      "tax_id": "",
-      "address": "paje",
-      "created_at": "2025-12-03T20:57:04.164Z",
-      "updated_at": "2025-12-03T20:57:04.164Z"
-    },
-    {
       "id": 6,
       "name": "Ag",
       "email": "kanalmedyainternational@gmail.com",
@@ -174,23 +163,23 @@
   ],
   "agreements": [
     {
-      "id": 2,
-      "agreement_number": "AGR-1764886449804-611",
+      "id": 3,
+      "agreement_number": "AGR-1764887480333-192",
       "agency_id": 2,
       "customer_id": 6,
       "template_id": "4",
-      "title": "99",
-      "content": "SERVICE AGREEMENT\n\nThis agreement is entered into between Recluma Creative Agency (\"Agency\") and Ag (\"Client\").\n\nMONTHLY RECURRING SERVICES:\n1. Social Media Management - Monthly social media content and management4 INSTAGRAM REELS 24 EDITED PHOTOS 2 EVENT SHOOTINGS  ($1200/month)\n2. Website Maintenance - Monthly website updates and maintenance ($200/month)\n\nMonthly Total: $1400.00\n\nONE-TIME SERVICES:\n1. Website Design - Complete website design and development ($2500)\n2. SEO Optimization - Search engine optimization services ($800)\n\nOne-Time Total: $3300.00\n\nGRAND TOTAL (All Services): $4700.00\n\nPAYMENT TERMS:\nMonthly Recurring Payment: $1400.00\nDue Date: Day 7 of each month\n\nOne-Time Payment Due: $3300.00\n\nTERM:\nStart Date: 2025-12-05\nEnd Date: 2026-05-05\n\nBoth parties agree to the terms outlined in this agreement.",
+      "title": "11",
+      "content": "SERVICE AGREEMENT\n\nThis agreement is entered into between Recluma Creative Agency (\"Agency\") and Ag (\"Client\").\n\nMONTHLY RECURRING SERVICES:\n1. Social Media Management - Monthly social media content and management4 INSTAGRAM REELS 24 EDITED PHOTOS 2 EVENT SHOOTINGS  ($1200/month)\n2. Website Maintenance - Monthly website updates and maintenance ($200/month)\n\nMonthly Total: $1400.00\n\nONE-TIME SERVICES:\n1. SEO Optimization - Search engine optimization services ($800)\n2. Email Marketing - Email campaign setup and management ($600)\n3. Logo Design - Professional logo design with 3 revisions ($500)\n\nOne-Time Total: $1900.00\n\nGRAND TOTAL (All Services): $3300.00\n\nPAYMENT TERMS:\nMonthly Recurring Payment: $1400.00\nDue Date: Day 1 of each month\n\nOne-Time Payment Due: $1900.00\n\nTERM:\nStart Date: 2025-12-05\nEnd Date: 2026-01-05\n\nBoth parties agree to the terms outlined in this agreement.",
       "monthly_payment": "1400",
-      "payment_day": 7,
+      "payment_day": 1,
       "start_date": "2025-12-05",
-      "end_date": "2026-05-05",
+      "end_date": "2026-01-05",
       "status": "draft",
       "services": [
         {
-          "title": "Website Design",
-          "description": "Complete website design and development",
-          "price": 2500,
+          "title": "SEO Optimization",
+          "description": "Search engine optimization services",
+          "price": 800,
           "payment_type": "one-time"
         },
         {
@@ -200,9 +189,9 @@
           "payment_type": "monthly"
         },
         {
-          "title": "SEO Optimization",
-          "description": "Search engine optimization services",
-          "price": 800,
+          "title": "Email Marketing",
+          "description": "Email campaign setup and management",
+          "price": 600,
           "payment_type": "one-time"
         },
         {
@@ -210,13 +199,19 @@
           "description": "Monthly website updates and maintenance",
           "price": 200,
           "payment_type": "monthly"
+        },
+        {
+          "title": "Logo Design",
+          "description": "Professional logo design with 3 revisions",
+          "price": 500,
+          "payment_type": "one-time"
         }
       ],
       "agency_signed": 0,
       "customer_signed": 0,
-      "created_at": "2025-12-04T22:14:09.805Z",
-      "updated_at": "2025-12-04T22:14:09.805Z",
-      "downloadToken": "a28f045f19171eba498095e5ac0233d52ee74872127317c370dd7ec0f99a4dbd"
+      "created_at": "2025-12-04T22:31:20.334Z",
+      "updated_at": "2025-12-04T22:31:20.334Z",
+      "downloadToken": "0eb1e41a6b821e8d101f624e2641464c441c968426a685de9766888eb1de015f"
     }
   ],
   "reminders": [],
@@ -624,6 +619,24 @@
       "used": false,
       "createdAt": "2025-12-04T22:01:58.057Z",
       "expiresAt": "2026-01-03T22:01:58.057Z"
+    },
+    {
+      "token": "99e09dede9771c28a89cfcae63f160b7e175edf4befb66d1d5c5dcfb185f1741",
+      "agreementId": 3,
+      "agreementType": "regular",
+      "party": "agency",
+      "used": false,
+      "createdAt": "2025-12-04T22:31:20.940Z",
+      "expiresAt": "2026-01-03T22:31:20.940Z"
+    },
+    {
+      "token": "5f168f67d19aa4c3ea084b1fceacf73e3e937bf2304d35c27bc6ea2e46ee8c54",
+      "agreementId": 3,
+      "agreementType": "regular",
+      "party": "customer",
+      "used": false,
+      "createdAt": "2025-12-04T22:31:20.945Z",
+      "expiresAt": "2026-01-03T22:31:20.945Z"
     }
   ],
   "projectAgreements": [
@@ -759,6 +772,13 @@
       "agreementType": "regular",
       "createdAt": "2025-12-04T22:14:10.307Z",
       "expiresAt": "2026-12-04T22:14:10.307Z"
+    },
+    {
+      "token": "0eb1e41a6b821e8d101f624e2641464c441c968426a685de9766888eb1de015f",
+      "agreementId": 3,
+      "agreementType": "regular",
+      "createdAt": "2025-12-04T22:31:20.934Z",
+      "expiresAt": "2026-12-04T22:31:20.934Z"
     }
   ]
 }
