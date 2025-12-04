@@ -1719,7 +1719,7 @@ async function handleAgreementSave(e) {
     
     if (templateId) {
         const template = templates.find(t => t.id == templateId);
-        if (template) {
+        if (template && template.content && template.content.trim().length > 20) {
             // Build services text for template
             let servicesText = '';
             services.forEach((s, i) => {
