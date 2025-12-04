@@ -21,8 +21,29 @@ const resend = new Resend('re_L34baJx9_D44c6KUdsiapZPBtJXZPbc2S');
 // Universal email sending function - supports both Resend and SMTP
 async function sendEmail(emailSettings, { from, to, subject, html, attachments = [] }) {
   try {
+    // Check if Gmail is configured
+    if (emailSettings.provider === 'gmail' && emailSettings.gmail_email && emailSettings.gmail_app_password) {
+      // Use Gmail SMTP
+      const transporter = nodemailer.createTransport({
+        service: 'gmail', // Uses Gmail's SMTP settings automatically
+        auth: {
+          user: emailSettings.gmail_email,
+          pass: emailSettings.gmail_app_password
+        }
+      });
+      
+      await transporter.sendMail({
+        from: from || `"${emailSettings.from_name || 'Fashion Cast Agency'}" <${emailSettings.gmail_email}>`,
+        to: Array.isArray(to) ? to.join(', ') : to,
+        subject,
+        html,
+        attachments
+      });
+      
+      return { success: true, provider: 'Gmail' };
+    }
     // Check if custom SMTP is configured
-    if (emailSettings.smtp_host && emailSettings.smtp_username && emailSettings.smtp_password) {
+    else if (emailSettings.smtp_host && emailSettings.smtp_username && emailSettings.smtp_password) {
       // Use SMTP (nodemailer)
       const transporter = nodemailer.createTransport({
         host: emailSettings.smtp_host,
@@ -47,7 +68,7 @@ async function sendEmail(emailSettings, { from, to, subject, html, attachments =
       
       return { success: true, provider: 'SMTP' };
     } else {
-      // Use Resend API
+      // Use Resend API as fallback
       await resend.emails.send({
         from: from || 'onboarding@resend.dev',
         to: Array.isArray(to) ? to : [to],

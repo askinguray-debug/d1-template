@@ -1218,11 +1218,22 @@ async function loadSettings() {
         const res = await axios.get('/api/email-settings');
         if (res.data && res.data.id) {
             document.getElementById('email-settings-id').value = res.data.id;
-            document.getElementById('email-provider').value = res.data.provider;
-            document.getElementById('email-api-key').value = res.data.api_key;
-            document.getElementById('email-from').value = res.data.from_email;
+            document.getElementById('email-provider').value = res.data.provider || 'gmail';
+            
+            // Load provider-specific fields
+            if (res.data.provider === 'gmail') {
+                document.getElementById('gmail-email').value = res.data.gmail_email || '';
+                document.getElementById('gmail-app-password').value = res.data.gmail_app_password || '';
+            } else {
+                document.getElementById('email-api-key').value = res.data.api_key || '';
+                document.getElementById('email-from').value = res.data.from_email || '';
+            }
+            
             document.getElementById('email-from-name').value = res.data.from_name || '';
             document.getElementById('email-reminder-days').value = res.data.reminder_days_before || 3;
+            
+            // Toggle fields based on provider
+            toggleEmailProviderFields();
         }
     } catch (error) {
         console.error('Error loading email settings:', error);
@@ -2109,29 +2120,54 @@ async function markReminderPaid(id) {
 }
 
 // Email settings save
+// Toggle email provider fields based on selection
+function toggleEmailProviderFields() {
+    const provider = document.getElementById('email-provider').value;
+    const gmailSettings = document.getElementById('gmail-settings');
+    const apiSettings = document.getElementById('api-settings');
+    
+    if (provider === 'gmail') {
+        gmailSettings.classList.remove('hidden');
+        apiSettings.classList.add('hidden');
+    } else {
+        gmailSettings.classList.add('hidden');
+        apiSettings.classList.remove('hidden');
+    }
+}
+
 async function handleEmailSettingsSave(e) {
     e.preventDefault();
     const id = document.getElementById('email-settings-id').value;
+    const provider = document.getElementById('email-provider').value;
+    
     const data = {
-        provider: document.getElementById('email-provider').value,
-        api_key: document.getElementById('email-api-key').value,
-        from_email: document.getElementById('email-from').value,
+        provider: provider,
         from_name: document.getElementById('email-from-name').value,
         reminder_days_before: parseInt(document.getElementById('email-reminder-days').value)
     };
     
+    // Add provider-specific fields
+    if (provider === 'gmail') {
+        data.gmail_email = document.getElementById('gmail-email').value;
+        data.gmail_app_password = document.getElementById('gmail-app-password').value;
+        data.from_email = document.getElementById('gmail-email').value; // Use Gmail as from email
+    } else {
+        data.api_key = document.getElementById('email-api-key').value;
+        data.from_email = document.getElementById('email-from').value;
+    }
+    
     try {
         if (id) {
             await axios.put(`/api/email-settings/${id}`, data);
-            showNotification('Email settings updated successfully');
+            showNotification('✅ Email settings updated successfully');
         } else {
             await axios.post('/api/email-settings', data);
-            showNotification('Email settings saved successfully');
+            showNotification('✅ Email settings saved successfully');
         }
         await loadSettings();
     } catch (error) {
         console.error('Error saving email settings:', error);
-        showNotification('Error saving email settings', 'error');
+        showNotification('❌ Error saving email settings', 'error');
     }
 }
 
