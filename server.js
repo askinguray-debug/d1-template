@@ -1721,16 +1721,37 @@ app.post('/api/share/:token/sign', async (req, res) => {
     db.shareTokens[tokenIndex].usedAt = new Date().toISOString();
     
     // Update status if both parties signed
-    if (agreements[agreementIndex].agency_signed && agreements[agreementIndex].customer_signed) {
+    const bothSigned = agreements[agreementIndex].agency_signed && agreements[agreementIndex].customer_signed;
+    if (bothSigned) {
       agreements[agreementIndex].status = 'active';
+      
+      // Generate download token for completed agreement
+      const downloadToken = crypto.randomBytes(32).toString('hex');
+      if (!db.downloadTokens) db.downloadTokens = [];
+      
+      db.downloadTokens.push({
+        token: downloadToken,
+        agreementId: tokenData.agreementId,
+        agreementType: agreementType,
+        createdAt: new Date().toISOString(),
+        expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() // 1 year expiry
+      });
+      
+      agreements[agreementIndex].downloadToken = downloadToken;
     }
     
     await writeDB(db);
     
+    const host = req.get('x-forwarded-host') || req.get('host');
+    const protocol = req.get('x-forwarded-proto') || req.protocol;
+    const downloadUrl = bothSigned ? `${protocol}://${host}/download/${agreements[agreementIndex].downloadToken}` : null;
+    
     res.json({ 
       success: true, 
-      message: 'Signature saved successfully',
-      agreement: agreements[agreementIndex]
+      message: bothSigned ? 'Agreement fully signed! Download link generated.' : 'Signature saved successfully',
+      agreement: agreements[agreementIndex],
+      downloadUrl: downloadUrl,
+      bothSigned: bothSigned
     });
   } catch (error) {
     console.error('Error signing via share link:', error);
@@ -2972,6 +2993,143 @@ initDB().then(() => {
     } catch (error) {
       console.error('Error sending WhatsApp message:', error);
       res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ======================
+  // DOWNLOAD AGREEMENT ENDPOINT
+  // ======================
+  app.get('/download/:token', async (req, res) => {
+    try {
+      const db = await readDB();
+      const { token } = req.params;
+      
+      // Find download token
+      if (!db.downloadTokens) {
+        return res.status(404).send('<h1>Invalid download link</h1><p>This download link is not valid.</p>');
+      }
+      
+      const downloadToken = db.downloadTokens.find(t => t.token === token);
+      if (!downloadToken) {
+        return res.status(404).send('<h1>Invalid download link</h1><p>This download link is not valid.</p>');
+      }
+      
+      // Check expiry
+      if (new Date(downloadToken.expiresAt) < new Date()) {
+        return res.status(403).send('<h1>Link Expired</h1><p>This download link has expired.</p>');
+      }
+      
+      // Find the agreement
+      let agreement = null;
+      let agency = null;
+      let customer = null;
+      
+      if (downloadToken.agreementType === 'model') {
+        agreement = (db.modelAgreements || []).find(a => a.id === downloadToken.agreementId);
+      } else if (downloadToken.agreementType === 'regular') {
+        agreement = (db.agreements || []).find(a => a.id === downloadToken.agreementId);
+      } else if (downloadToken.agreementType === 'project') {
+        agreement = (db.projectAgreements || []).find(a => a.id === downloadToken.agreementId);
+      }
+      
+      if (!agreement) {
+        return res.status(404).send('<h1>Agreement Not Found</h1><p>The agreement could not be found.</p>');
+      }
+      
+      // Get agency and customer/model info
+      agency = db.agencies.find(a => a.id === agreement.agency_id);
+      if (downloadToken.agreementType === 'model' || downloadToken.agreementType === 'project') {
+        customer = db.models.find(m => m.id === agreement.model_id);
+      } else {
+        customer = db.customers.find(c => c.id === agreement.customer_id);
+      }
+      
+      // Generate HTML for the agreement
+      const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>${agreement.agreement_number} - Agreement</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; line-height: 1.6; }
+    h1 { color: #333; border-bottom: 3px solid #8b5cf6; padding-bottom: 10px; }
+    h2 { color: #8b5cf6; margin-top: 30px; }
+    .info { background: #f0f0f0; padding: 15px; border-radius: 5px; margin: 20px 0; }
+    .signature-box { border: 1px solid #ddd; padding: 15px; margin: 20px 0; border-radius: 5px; }
+    .signature-img { max-width: 300px; border: 1px solid #ccc; }
+    .status { display: inline-block; padding: 5px 15px; border-radius: 20px; font-weight: bold; }
+    .status-active { background: #10b981; color: white; }
+    .download-btn { display: inline-block; background: #8b5cf6; color: white; padding: 12px 24px; 
+                    text-decoration: none; border-radius: 6px; margin: 20px 0; }
+    @media print { .no-print { display: none; } }
+  </style>
+</head>
+<body>
+  <h1>📄 ${agreement.title || 'Agreement'}</h1>
+  
+  <div class="info">
+    <strong>Agreement Number:</strong> ${agreement.agreement_number}<br>
+    <strong>Status:</strong> <span class="status status-active">${agreement.status}</span><br>
+    <strong>Created:</strong> ${new Date(agreement.created_at).toLocaleDateString()}<br>
+    ${agreement.agency_signed_at ? `<strong>Fully Signed:</strong> ${new Date(agreement.agency_signed_at).toLocaleDateString()}<br>` : ''}
+  </div>
+  
+  <h2>📋 Parties</h2>
+  <div class="info">
+    <strong>🏢 Agency:</strong> ${agency?.name || 'N/A'}<br>
+    <strong>Email:</strong> ${agency?.email || 'N/A'}<br>
+    <strong>Phone:</strong> ${agency?.phone || 'N/A'}<br><br>
+    
+    <strong>👤 ${downloadToken.agreementType === 'project' ? 'Model' : 'Customer'}:</strong> ${customer?.name || 'N/A'}<br>
+    <strong>Email:</strong> ${customer?.email || 'N/A'}<br>
+    ${customer?.phone ? `<strong>Phone:</strong> ${customer.phone}<br>` : ''}
+  </div>
+  
+  <h2>📝 Agreement Content</h2>
+  <div style="white-space: pre-wrap; background: #f9f9f9; padding: 20px; border-radius: 5px; border-left: 4px solid #8b5cf6;">
+${agreement.content}
+  </div>
+  
+  <h2>✍️ Signatures</h2>
+  
+  ${agreement.agency_signature ? `
+  <div class="signature-box">
+    <strong>🏢 Agency Signature</strong><br>
+    <img src="${agreement.agency_signature}" class="signature-img" alt="Agency Signature"><br>
+    <small>Signed on: ${new Date(agreement.agency_signed_at).toLocaleString()}</small>
+  </div>
+  ` : '<p>⏳ Agency signature pending</p>'}
+  
+  ${agreement.customer_signature ? `
+  <div class="signature-box">
+    <strong>👤 ${downloadToken.agreementType === 'project' ? 'Model' : 'Customer'} Signature</strong><br>
+    <img src="${agreement.customer_signature}" class="signature-img" alt="Customer Signature"><br>
+    <small>Signed on: ${new Date(agreement.customer_signed_at).toLocaleString()}</small>
+  </div>
+  ` : `<p>⏳ ${downloadToken.agreementType === 'project' ? 'Model' : 'Customer'} signature pending</p>`}
+  
+  <div class="no-print" style="margin-top: 40px; padding: 20px; background: #f0fdf4; border-radius: 8px;">
+    <h3>📥 Download Options</h3>
+    <p><strong>Print as PDF:</strong> Use your browser's print function (Ctrl+P / Cmd+P) and select "Save as PDF"</p>
+    <button onclick="window.print()" class="download-btn">🖨️ Print / Save as PDF</button>
+  </div>
+  
+  <div style="margin-top: 40px; padding: 20px; background: #f9fafb; border-top: 2px solid #e5e7eb; font-size: 12px; color: #6b7280;">
+    <p><strong>Agreement Management System</strong></p>
+    <p>This is a legally binding agreement. Both parties have digitally signed this document.</p>
+    <p>Download Link Generated: ${new Date(downloadToken.createdAt).toLocaleString()}</p>
+    <p>Link Expires: ${new Date(downloadToken.expiresAt).toLocaleDateString()}</p>
+  </div>
+</body>
+</html>
+      `;
+      
+      res.send(html);
+      
+    } catch (error) {
+      console.error('Error generating download:', error);
+      res.status(500).send('<h1>Error</h1><p>An error occurred while generating the download.</p>');
     }
   });
 

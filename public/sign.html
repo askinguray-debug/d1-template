@@ -387,13 +387,36 @@
                 event.target.disabled = true;
                 event.target.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Saving...';
 
-                await axios.post(`/api/share/${currentToken}/sign`, {
+                const response = await axios.post(`/api/share/${currentToken}/sign`, {
                     signature: signatureData
                 });
 
                 // Show success message
                 document.getElementById('signature-section').classList.add('hidden');
-                document.getElementById('success-message').classList.remove('hidden');
+                const successDiv = document.getElementById('success-message');
+                successDiv.classList.remove('hidden');
+                
+                // If both parties signed, show download link
+                if (response.data.bothSigned && response.data.downloadUrl) {
+                    const downloadLinkHTML = `
+                        <div class="mt-6 p-4 bg-green-50 border-2 border-green-500 rounded-lg">
+                            <h3 class="text-lg font-bold text-green-800 mb-2">
+                                <i class="fas fa-check-circle mr-2"></i>
+                                Agreement Fully Signed! 🎉
+                            </h3>
+                            <p class="text-green-700 mb-4">
+                                Both parties have signed the agreement. You can now download the completed agreement.
+                            </p>
+                            <a href="${response.data.downloadUrl}" 
+                               target="_blank"
+                               class="inline-block bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition">
+                                <i class="fas fa-download mr-2"></i>
+                                Download Signed Agreement
+                            </a>
+                        </div>
+                    `;
+                    successDiv.innerHTML += downloadLinkHTML;
+                }
 
             } catch (error) {
                 console.error('Error saving signature:', error);
