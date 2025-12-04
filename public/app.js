@@ -88,6 +88,7 @@ function showTab(tabName) {
     }
     if (tabName === 'reminders') loadReminders();
     if (tabName === 'services') loadServices();
+    if (tabName === 'categories') loadCategories();
     if (tabName === 'settings') loadSettings();
     if (tabName === 'new-agreement') loadNewAgreementForm();
     if (tabName === 'new-model-agreement') loadNewModelAgreementForm();
@@ -97,7 +98,7 @@ function showTab(tabName) {
 // Load all data
 async function loadAllData() {
     try {
-        const [agenciesRes, customersRes, templatesRes, agreementsRes, modelAgreementsRes, projectAgreementsRes, remindersRes, serviceLibraryRes] = await Promise.all([
+        const [agenciesRes, customersRes, templatesRes, agreementsRes, modelAgreementsRes, projectAgreementsRes, remindersRes, serviceLibraryRes, categoriesRes] = await Promise.all([
             axios.get('/api/agencies'),
             axios.get('/api/customers'),
             axios.get('/api/templates'),
@@ -105,7 +106,8 @@ async function loadAllData() {
             axios.get('/api/model-agreements'),
             axios.get('/api/project-agreements'),
             axios.get('/api/reminders/pending'),
-            axios.get('/api/service-library')
+            axios.get('/api/service-library'),
+            axios.get('/api/categories')
         ]);
         
         agencies = agenciesRes.data;
@@ -116,6 +118,7 @@ async function loadAllData() {
         projectAgreements = projectAgreementsRes.data;
         reminders = remindersRes.data;
         serviceLibrary = serviceLibraryRes.data;
+        categories = categoriesRes.data;
     } catch (error) {
         console.error('Error loading data:', error);
         showNotification('Error loading data', 'error');
@@ -2466,7 +2469,132 @@ async function deleteService(id) {
 // Add service form handler on load
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('service-form')?.addEventListener('submit', handleServiceSave);
+    document.getElementById('category-form')?.addEventListener('submit', handleCategorySave);
 });
+
+// ======================
+// CATEGORY MANAGEMENT
+// ======================
+let categories = [];
+
+async function loadCategories() {
+    try {
+        const response = await axios.get('/api/categories');
+        categories = response.data;
+        displayCategories();
+        updateServiceCategoryDropdown();
+    } catch (error) {
+        console.error('Error loading categories:', error);
+    }
+}
+
+function displayCategories() {
+    const list = document.getElementById('categories-list');
+    if (!list) return;
+    
+    if (categories.length === 0) {
+        list.innerHTML = '<p class="text-gray-500 text-center py-8 col-span-full">No categories yet. Create your first category!</p>';
+        return;
+    }
+    
+    list.innerHTML = categories.map(category => `
+        <div class="bg-white border rounded-lg p-4 hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center space-x-2">
+                    <div class="w-4 h-4 rounded" style="background-color: ${category.color}"></div>
+                    <h3 class="font-semibold text-gray-900">${category.name}</h3>
+                </div>
+                <div class="flex space-x-2">
+                    <button onclick="editCategory(${category.id})" class="text-blue-600 hover:text-blue-800">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button onclick="deleteCategory(${category.id})" class="text-red-600 hover:text-red-800">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+            <p class="text-xs text-gray-500">
+                <i class="far fa-calendar mr-1"></i>
+                Created ${new Date(category.created_at).toLocaleDateString()}
+            </p>
+        </div>
+    `).join('');
+}
+
+function updateServiceCategoryDropdown() {
+    const select = document.getElementById('service-category');
+    if (!select) return;
+    
+    select.innerHTML = categories.map(cat => 
+        `<option value="${cat.name}">${cat.name}</option>`
+    ).join('');
+}
+
+function showCategoryForm(id = null) {
+    document.getElementById('category-form-modal').classList.remove('hidden');
+    
+    if (id) {
+        const category = categories.find(c => c.id == id);
+        if (category) {
+            document.getElementById('category-id').value = category.id;
+            document.getElementById('category-name').value = category.name;
+            const colorRadio = document.querySelector(`input[name="category-color"][value="${category.color}"]`);
+            if (colorRadio) colorRadio.checked = true;
+        }
+    } else {
+        document.getElementById('category-form').reset();
+        document.querySelector('input[name="category-color"][value="#6b7280"]').checked = true;
+    }
+}
+
+function closeCategoryForm() {
+    document.getElementById('category-form-modal').classList.add('hidden');
+    document.getElementById('category-form').reset();
+}
+
+async function handleCategorySave(e) {
+    e.preventDefault();
+    const id = document.getElementById('category-id').value;
+    const selectedColor = document.querySelector('input[name="category-color"]:checked');
+    
+    const data = {
+        name: document.getElementById('category-name').value,
+        color: selectedColor ? selectedColor.value : '#6b7280'
+    };
+    
+    try {
+        if (id) {
+            await axios.put(`/api/categories/${id}`, data);
+            showNotification('Category updated successfully');
+        } else {
+            await axios.post('/api/categories', data);
+            showNotification('Category created successfully');
+        }
+        
+        closeCategoryForm();
+        await loadCategories();
+    } catch (error) {
+        console.error('Error saving category:', error);
+        showNotification('Error saving category', 'error');
+    }
+}
+
+function editCategory(id) {
+    showCategoryForm(id);
+}
+
+async function deleteCategory(id) {
+    if (!confirm('Are you sure you want to delete this category?')) return;
+    
+    try {
+        await axios.delete(`/api/categories/${id}`);
+        showNotification('Category deleted successfully');
+        await loadCategories();
+    } catch (error) {
+        console.error('Error deleting category:', error);
+        showNotification('Error deleting category', 'error');
+    }
+}
 
 // ======================
 // SIGNATURE PAD FUNCTIONS

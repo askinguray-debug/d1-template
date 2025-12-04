@@ -2034,6 +2034,67 @@ app.delete('/api/service-library/:id', async (req, res) => {
 });
 
 // ======================
+// CATEGORY MANAGEMENT API
+// ======================
+app.get('/api/categories', async (req, res) => {
+  const db = await readDB();
+  if (!db.categories) {
+    db.categories = [];
+  }
+  res.json(db.categories);
+});
+
+app.get('/api/categories/:id', async (req, res) => {
+  const db = await readDB();
+  const category = db.categories?.find(c => c.id === parseInt(req.params.id));
+  res.json(category || {});
+});
+
+app.post('/api/categories', async (req, res) => {
+  const db = await readDB();
+  if (!db.categories) {
+    db.categories = [];
+  }
+  const newCategory = {
+    id: getNextId(db.categories),
+    name: req.body.name,
+    color: req.body.color || '#6b7280',
+    created_at: new Date().toISOString()
+  };
+  db.categories.push(newCategory);
+  await writeDB(db);
+  res.json(newCategory);
+});
+
+app.put('/api/categories/:id', async (req, res) => {
+  const db = await readDB();
+  if (!db.categories) {
+    db.categories = [];
+  }
+  const index = db.categories.findIndex(c => c.id === parseInt(req.params.id));
+  if (index === -1) {
+    return res.status(404).json({ error: 'Category not found' });
+  }
+  db.categories[index] = {
+    ...db.categories[index],
+    name: req.body.name,
+    color: req.body.color
+  };
+  await writeDB(db);
+  res.json(db.categories[index]);
+});
+
+app.delete('/api/categories/:id', async (req, res) => {
+  const db = await readDB();
+  if (!db.categories) {
+    return res.status(404).json({ error: 'Categories not found' });
+  }
+  db.categories = db.categories.filter(c => c.id !== parseInt(req.params.id));
+  await writeDB(db);
+  res.json({ success: true });
+});
+
+// ======================
 // EMAIL SETTINGS API
 // ======================
 app.get('/api/email-settings', async (req, res) => {
