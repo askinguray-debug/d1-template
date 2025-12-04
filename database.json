@@ -299,5 +299,36 @@
       "createdAt": "2025-12-03T21:50:43.178Z",
       "expiresAt": "2026-01-02T21:50:43.178Z"
     }
+  ],
+  "projectAgreements": [
+    {
+      "id": 1,
+      "agreement_number": "PROJ-1764850976323-2I4QZ",
+      "agency_id": 1,
+      "model_id": 5,
+      "project_name": "Summer Jam",
+      "company_name": "The Nest",
+      "platforms": [
+        "Instagram",
+        "YouTube",
+        "Twitter/X",
+        "Facebook",
+        "TikTok",
+        "LinkedIn",
+        "Website"
+      ],
+      "content_types": [
+        "Real Photos/Videos",
+        "AI-Generated Content"
+      ],
+      "description": "Test",
+      "title": "Summer Jam - The Nest",
+      "status": "draft",
+      "agency_signed": false,
+      "customer_signed": false,
+      "created_at": "2025-12-04T12:22:56.323Z",
+      "updated_at": "2025-12-04T12:22:56.323Z",
+      "content": "PROJECT PARTICIPATION AGREEMENT\n\nThis Project Participation Agreement (\"Agreement\") is entered into as of 12/4/2025 between:\n\nAGENCY: Fashion Cast Agency \nAddress: No: 47 B - 2601 Folkart Towers  Symirna Tr. \n\nEmail: info@fashioncast.agency\n\nMODEL/TALENT: Pocky \nEmail: Georgiev.kalojan@gmail.com\n\nPROJECT DETAILS:\n\nProject Name: Summer Jam\nCompany/Brand: The Nest\nUsage Platforms: Instagram, YouTube, Twitter/X, Facebook, TikTok, LinkedIn, Website\nContent Type: Real Photos/Videos and AI-Generated Content\n\nPROJECT DESCRIPTION:\nTest\n\nTERMS AND CONDITIONS:\n\n1. PERMANENT USAGE RIGHTS\nThe Model hereby grants The Nest and Fashion Cast Agency  perpetual, irrevocable, worldwide rights to use, reproduce, modify, publish, and distribute all content (including but not limited to photographs, videos, images, and AI-generated content) created for this project.\n\n2. SCOPE OF USAGE\nThe content may be used on the following platforms and media: Instagram, YouTube, Twitter/X, Facebook, TikTok, LinkedIn, Website\n\n3. IRREVOCABILITY\nThese rights are PERMANENT and CANNOT BE REVOKED once this agreement is signed. The Model acknowledges and agrees that:\n- Content may be used indefinitely across all specified platforms\n- The Nest may modify, edit, or enhance the content\n- Content may be used for AI training and future AI-generated content\n- The Model cannot request removal or deletion of published content\n\n4. CONTENT TYPES\nThis agreement covers:\n- Real Photos/Videos\n- AI-Generated Content\n\n5. COMMERCIAL USE\nThe Nest has the right to use the content for commercial purposes including but not limited to:\n- Marketing and advertising campaigns\n- Social media promotion\n- Website and digital marketing\n- Print and broadcast media\n- Product packaging and displays\n\n6. MODEL APPROVAL\nThe Model approves The Nest's participation in this project and use of their likeness and content as described in this agreement.\n\n7. NO COMPENSATION TERMS\nThis agreement focuses solely on usage rights and project participation terms. Financial compensation, if any, is covered under a separate agreement between the parties.\n\n8. WARRANTY\nThe Model warrants that they have the full right and authority to grant these rights and that the content does not infringe on any third-party rights.\n\n9. GOVERNING LAW\nThis Agreement shall be governed by and construed in accordance with the laws of the United Republic of Tanzania.\n\n10. ACKNOWLEDGMENT\nBy signing below, the Model acknowledges that they have read, understood, and agree to all terms of this Agreement, including the permanent and irrevocable nature of the usage rights granted.\n\n_______________________________________________\nThis is a legally binding agreement. Please read carefully before signing."
+    }
   ]
 }

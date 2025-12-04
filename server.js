@@ -18,6 +18,52 @@ const PORT = process.env.PORT || 3000;
 // Initialize Resend with API key
 const resend = new Resend('re_L34baJx9_D44c6KUdsiapZPBtJXZPbc2S');
 
+// Universal email sending function - supports both Resend and SMTP
+async function sendEmail(emailSettings, { from, to, subject, html, attachments = [] }) {
+  try {
+    // Check if custom SMTP is configured
+    if (emailSettings.smtp_host && emailSettings.smtp_username && emailSettings.smtp_password) {
+      // Use SMTP (nodemailer)
+      const transporter = nodemailer.createTransport({
+        host: emailSettings.smtp_host,
+        port: parseInt(emailSettings.smtp_port) || 465,
+        secure: emailSettings.smtp_encryption === 'SSL', // true for SSL, false for TLS
+        auth: {
+          user: emailSettings.smtp_username,
+          pass: emailSettings.smtp_password
+        },
+        tls: {
+          rejectUnauthorized: !emailSettings.disable_ssl_verification
+        }
+      });
+      
+      await transporter.sendMail({
+        from: from || emailSettings.from_email || emailSettings.smtp_username,
+        to: Array.isArray(to) ? to.join(', ') : to,
+        subject,
+        html,
+        attachments
+      });
+      
+      return { success: true, provider: 'SMTP' };
+    } else {
+      // Use Resend API
+      await resend.emails.send({
+        from: from || 'onboarding@resend.dev',
+        to: Array.isArray(to) ? to : [to],
+        subject,
+        html,
+        attachments
+      });
+      
+      return { success: true, provider: 'Resend' };
+    }
+  } catch (error) {
+    console.error('Email sending error:', error);
+    throw error;
+  }
+}
+
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
@@ -227,10 +273,16 @@ Either party may terminate with 30 days written notice.`,
       ],
       reminders: [],
       emailSettings: {
-        provider: 'sendgrid',
-        api_key: '',
-        from_email: 'noreply@yourcompany.com',
-        from_name: 'Agreement System',
+        provider: 'smtp',
+        smtp_host: 'mail.fashioncast.agency',
+        smtp_port: '465',
+        smtp_encryption: 'SSL',
+        smtp_username: 'info@fashioncast.agency',
+        smtp_password: '123123Ag.',
+        smtp_authentication: true,
+        disable_ssl_verification: false,
+        from_email: 'info@fashioncast.agency',
+        from_name: 'Fashion Cast Agency',
         reminder_days_before: 3
       }
     };
@@ -875,8 +927,8 @@ app.post('/api/model-agreements/:id/send-email', async (req, res) => {
       // Continue without PDF attachment
     }
     
-    // Send email with or without PDF attachment
-    await resend.emails.send({
+    // Send email with or without PDF attachment using universal email function
+    await sendEmail(emailSettings, {
       from: emailSettings.from_email || 'onboarding@resend.dev',
       to: recipients,
       subject: `📄 Cast & Modeling Agreement - ${agreement.agreement_number}`,
@@ -1206,8 +1258,8 @@ app.post('/api/project-agreements/:id/send-email', async (req, res) => {
       </div>
     `;
     
-    // Send email
-    await resend.emails.send({
+    // Send email using universal email function
+    await sendEmail(emailSettings, {
       from: emailSettings.from_email || 'onboarding@resend.dev',
       to: recipients,
       subject: `📄 Project Agreement - ${agreement.project_name}`,
@@ -2005,8 +2057,8 @@ app.post('/api/agreements/:id/send-email', async (req, res) => {
       // Continue without PDF attachment
     }
 
-    // Use Resend API directly with or without PDF attachment
-    await resend.emails.send({
+    // Send email using universal email function with or without PDF attachment
+    await sendEmail(emailSettings, {
       from: emailSettings.from_email || 'onboarding@resend.dev',
       to: recipients,
       subject: `📄 Agreement: ${agreement.title} - ${agreement.agreement_number}`,
