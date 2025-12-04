@@ -284,6 +284,13 @@ Either party may terminate with 30 days written notice.`,
         from_email: 'info@fashioncast.agency',
         from_name: 'Fashion Cast Agency',
         reminder_days_before: 3
+      },
+      whatsappSettings: {
+        enabled: false,
+        api_key: '',
+        phone_number_id: '',
+        business_account_id: '',
+        api_version: 'v18.0'
       }
     };
     await writeFile(DB_FILE, JSON.stringify(initialData, null, 2));
@@ -2713,6 +2720,180 @@ app.get('/sign/:token', (req, res) => {
 
 // Start server
 initDB().then(() => {
+  // ===============================
+  // WHATSAPP API
+  // ===============================
+
+  // Get WhatsApp settings
+  app.get('/api/whatsapp/settings', async (req, res) => {
+    try {
+      const db = await readDB();
+      const settings = db.whatsappSettings || {
+        enabled: false,
+        api_key: '',
+        phone_number_id: '',
+        business_account_id: '',
+        api_version: 'v18.0'
+      };
+      // Don't expose the API key in response
+      res.json({ ...settings, api_key: settings.api_key ? '***' : '' });
+    } catch (error) {
+      console.error('Error fetching WhatsApp settings:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Update WhatsApp settings
+  app.put('/api/whatsapp/settings', async (req, res) => {
+    try {
+      const db = await readDB();
+      db.whatsappSettings = {
+        ...db.whatsappSettings,
+        ...req.body,
+        updated_at: new Date().toISOString()
+      };
+      await writeDB(db);
+      res.json({ success: true, message: 'WhatsApp settings updated' });
+    } catch (error) {
+      console.error('Error updating WhatsApp settings:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Send WhatsApp message with signature link
+  app.post('/api/whatsapp/send-signature-link', async (req, res) => {
+    try {
+      const db = await readDB();
+      const { agreementId, agreementType, party, phoneNumber } = req.body;
+
+      if (!phoneNumber) {
+        return res.status(400).json({ error: 'Phone number is required' });
+      }
+
+      const whatsappSettings = db.whatsappSettings;
+      if (!whatsappSettings || !whatsappSettings.enabled) {
+        return res.status(400).json({ error: 'WhatsApp integration is not enabled' });
+      }
+
+      if (!whatsappSettings.api_key || !whatsappSettings.phone_number_id) {
+        return res.status(400).json({ error: 'WhatsApp API credentials are not configured' });
+      }
+
+      // Find or create share token
+      if (!db.shareTokens) db.shareTokens = [];
+      let shareToken = db.shareTokens.find(t => 
+        t.agreementId === agreementId && 
+        t.agreementType === agreementType && 
+        t.party === party && 
+        !t.used && 
+        new Date(t.expiresAt) > new Date()
+      );
+
+      if (!shareToken) {
+        const token = crypto.randomBytes(32).toString('hex');
+        shareToken = {
+          token,
+          agreementId,
+          agreementType,
+          party,
+          used: false,
+          createdAt: new Date().toISOString(),
+          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+        };
+        db.shareTokens.push(shareToken);
+        await writeDB(db);
+      }
+
+      const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
+      const shareUrl = `${baseUrl}/sign/${shareToken.token}`;
+
+      // Get agreement details for message
+      let agreement;
+      if (agreementType === 'model') {
+        agreement = db.modelAgreements?.find(a => a.id === agreementId);
+      } else if (agreementType === 'project') {
+        agreement = db.projectAgreements?.find(a => a.id === agreementId);
+      } else {
+        agreement = db.agreements?.find(a => a.id === agreementId);
+      }
+
+      if (!agreement) {
+        return res.status(404).json({ error: 'Agreement not found' });
+      }
+
+      // Send WhatsApp message using Meta Cloud API
+      const whatsappApiUrl = `https://graph.facebook.com/${whatsappSettings.api_version}/${whatsappSettings.phone_number_id}/messages`;
+      
+      const message = {
+        messaging_product: 'whatsapp',
+        to: phoneNumber.replace(/[^0-9]/g, ''), // Remove non-numeric characters
+        type: 'template',
+        template: {
+          name: 'signature_request', // You need to create this template in WhatsApp Business Manager
+          language: {
+            code: 'en'
+          },
+          components: [
+            {
+              type: 'body',
+              parameters: [
+                {
+                  type: 'text',
+                  text: agreement.agreement_number || 'Agreement'
+                },
+                {
+                  type: 'text',
+                  text: shareUrl
+                }
+              ]
+            },
+            {
+              type: 'button',
+              sub_type: 'url',
+              index: 0,
+              parameters: [
+                {
+                  type: 'text',
+                  text: shareToken.token
+                }
+              ]
+            }
+          ]
+        }
+      };
+
+      const whatsappResponse = await fetch(whatsappApiUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${whatsappSettings.api_key}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(message)
+      });
+
+      const result = await whatsappResponse.json();
+
+      if (!whatsappResponse.ok) {
+        console.error('WhatsApp API error:', result);
+        return res.status(500).json({ 
+          error: 'Failed to send WhatsApp message', 
+          details: result.error?.message || 'Unknown error'
+        });
+      }
+
+      res.json({ 
+        success: true, 
+        message: 'WhatsApp message sent successfully',
+        messageId: result.messages[0].id,
+        shareUrl
+      });
+
+    } catch (error) {
+      console.error('Error sending WhatsApp message:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ Agreement Management System running on http://0.0.0.0:${PORT}`);
     console.log(`📊 Database: ${DB_FILE}`);

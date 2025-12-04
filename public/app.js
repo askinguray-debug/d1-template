@@ -816,8 +816,11 @@ ${agreement.content}
                                 </div>
                                 ${agreement.customer_signature ? `<img src="${agreement.customer_signature}" class="mt-2 max-h-16 border-t border-gray-300 pt-2">` : ''}
                             ` : `
-                                <button onclick="openSignaturePad(${id}, 'customer', 'project')" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm w-full">
+                                <button onclick="openSignaturePad(${id}, 'customer', 'project')" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm w-full mb-2">
                                     <i class="fas fa-signature mr-2"></i>Sign Now
+                                </button>
+                                <button onclick="generateShareLink(${id}, 'customer', 'project'); closeModal('project-agreement-modal')" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm w-full">
+                                    <i class="fas fa-share-alt mr-2"></i>Share Link
                                 </button>
                             `}
                         </div>
@@ -827,6 +830,9 @@ ${agreement.content}
                 <div class="flex justify-end gap-3 mt-6">
                     <button onclick="closeModal('project-agreement-modal')" class="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50">
                         Close
+                    </button>
+                    <button onclick="showWhatsAppDialog(${id}, 'project')" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+                        <i class="fab fa-whatsapp mr-2"></i>Send via WhatsApp
                     </button>
                     <button onclick="showProjectEmailDialog(${id}); closeModal('project-agreement-modal')" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
                         <i class="fas fa-envelope mr-2"></i>Send Email
@@ -2426,9 +2432,14 @@ async function saveSignature() {
         console.log('Saving signature for agreement:', currentAgreementId, 'party:', currentSignatureParty, 'type:', currentAgreementType);
         
         // Determine API endpoint based on agreement type
-        const apiEndpoint = currentAgreementType === 'model' 
-            ? `/api/model-agreements/${currentAgreementId}/sign`
-            : `/api/agreements/${currentAgreementId}/sign`;
+        let apiEndpoint;
+        if (currentAgreementType === 'model') {
+            apiEndpoint = `/api/model-agreements/${currentAgreementId}/sign`;
+        } else if (currentAgreementType === 'project') {
+            apiEndpoint = `/api/project-agreements/${currentAgreementId}/sign`;
+        } else {
+            apiEndpoint = `/api/agreements/${currentAgreementId}/sign`;
+        }
         
         const response = await axios.post(apiEndpoint, {
             party: currentSignatureParty,
@@ -2452,8 +2463,10 @@ async function saveSignature() {
         
         // Reload data and close any open agreement modals
         await loadAllData();
-        if (currentAgreementType === 'model') {
+        if (agreementTypeToReopen === 'model') {
             await loadModelAgreementsData();
+        } else if (agreementTypeToReopen === 'project') {
+            await loadProjectAgreementsData();
         }
         document.querySelectorAll('.fixed').forEach(modal => {
             if (modal.id !== 'signature-modal') modal.remove();
@@ -2462,6 +2475,8 @@ async function saveSignature() {
         // Reopen the agreement to show the signature
         if (agreementTypeToReopen === 'model') {
             viewModelAgreement(agreementIdToReopen);
+        } else if (agreementTypeToReopen === 'project') {
+            viewProjectAgreement(agreementIdToReopen);
         } else {
             viewAgreement(agreementIdToReopen);
         }
@@ -2478,9 +2493,14 @@ async function generateShareLink(agreementId, party, agreementType = 'regular') 
     try {
         showNotification('🔗 Generating share link...', 'info');
         
-        const endpoint = agreementType === 'model' 
-            ? `/api/model-agreements/${agreementId}/generate-share-link`
-            : `/api/agreements/${agreementId}/generate-share-link`;
+        let endpoint;
+        if (agreementType === 'model') {
+            endpoint = `/api/model-agreements/${agreementId}/generate-share-link`;
+        } else if (agreementType === 'project') {
+            endpoint = `/api/project-agreements/${agreementId}/generate-share-link`;
+        } else {
+            endpoint = `/api/agreements/${agreementId}/generate-share-link`;
+        }
         
         const response = await axios.post(endpoint, { party });
         const { shareUrl } = response.data;
@@ -2502,7 +2522,7 @@ async function generateShareLink(agreementId, party, agreementType = 'regular') 
                 
                 <div class="mb-6">
                     <p class="text-sm text-gray-600 mb-4">
-                        Share this link with the ${party === 'agency' ? 'Agency Representative' : (agreementType === 'model' ? 'Model' : 'Customer')} to sign the agreement. 
+                        Share this link with the ${party === 'agency' ? 'Agency Representative' : (agreementType === 'model' || agreementType === 'project' ? 'Model' : 'Customer')} to sign the agreement. 
                         This link can only be used once and expires in 30 days.
                     </p>
                     
@@ -2535,6 +2555,147 @@ async function generateShareLink(agreementId, party, agreementType = 'regular') 
     } catch (error) {
         console.error('Error generating share link:', error);
         const errorMsg = error.response?.data?.error || error.message || 'Failed to generate share link';
+        showNotification(`❌ Error: ${errorMsg}`, 'error');
+    }
+}
+
+// Show WhatsApp dialog
+async function showWhatsAppDialog(agreementId, agreementType = 'regular') {
+    try {
+        // Get agreement to find phone numbers
+        let agreement, agency, customer;
+        if (agreementType === 'model') {
+            const response = await axios.get(`/api/model-agreements/${agreementId}`);
+            agreement = response.data;
+            agency = agencies.find(a => a.id === agreement.agency_id);
+            customer = customers.find(c => c.id === agreement.customer_id);
+        } else if (agreementType === 'project') {
+            const response = await axios.get(`/api/project-agreements/${agreementId}`);
+            agreement = response.data;
+            agency = agencies.find(a => a.id === agreement.agency_id);
+            customer = customers.find(c => c.id === agreement.model_id);
+        } else {
+            const response = await axios.get(`/api/agreements/${agreementId}`);
+            agreement = response.data;
+            agency = agencies.find(a => a.id === agreement.agency_id);
+            customer = customers.find(c => c.id === agreement.customer_id);
+        }
+
+        const modal = document.createElement('div');
+        modal.id = 'whatsapp-dialog';
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]';
+        modal.innerHTML = `
+            <div class="bg-white rounded-lg p-6 max-w-lg w-full mx-4">
+                <div class="flex justify-between items-start mb-4">
+                    <h3 class="text-xl font-bold text-gray-900">
+                        <i class="fab fa-whatsapp mr-2 text-green-600"></i>
+                        Send Signature Link via WhatsApp
+                    </h3>
+                    <button onclick="this.closest('.fixed').remove()" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+
+                <p class="text-sm text-gray-600 mb-4">
+                    Select a party and send them a WhatsApp message with a secure signature link.
+                </p>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Send to:</label>
+                        <div class="space-y-2">
+                            ${!agreement.agency_signed ? `
+                            <button onclick="sendWhatsAppLink(${agreementId}, '${agreementType}', 'agency', '${agency?.phone || ''}')" 
+                                    class="w-full px-4 py-3 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 text-left">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="font-semibold text-gray-900">${agency?.name || 'Agency'}</p>
+                                        <p class="text-sm text-gray-600">${agency?.phone || 'No phone number'}</p>
+                                    </div>
+                                    <i class="fab fa-whatsapp text-2xl text-green-600"></i>
+                                </div>
+                            </button>
+                            ` : `
+                            <div class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="font-semibold text-gray-900">${agency?.name || 'Agency'}</p>
+                                        <p class="text-sm text-green-600"><i class="fas fa-check-circle mr-1"></i>Already signed</p>
+                                    </div>
+                                </div>
+                            </div>
+                            `}
+
+                            ${!agreement.customer_signed ? `
+                            <button onclick="sendWhatsAppLink(${agreementId}, '${agreementType}', 'customer', '${customer?.phone || ''}')" 
+                                    class="w-full px-4 py-3 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 text-left">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="font-semibold text-gray-900">${customer?.name || (agreementType === 'model' || agreementType === 'project' ? 'Model' : 'Customer')}</p>
+                                        <p class="text-sm text-gray-600">${customer?.phone || 'No phone number'}</p>
+                                    </div>
+                                    <i class="fab fa-whatsapp text-2xl text-green-600"></i>
+                                </div>
+                            </button>
+                            ` : `
+                            <div class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="font-semibold text-gray-900">${customer?.name || (agreementType === 'model' || agreementType === 'project' ? 'Model' : 'Customer')}</p>
+                                        <p class="text-sm text-green-600"><i class="fas fa-check-circle mr-1"></i>Already signed</p>
+                                    </div>
+                                </div>
+                            </div>
+                            `}
+                        </div>
+                    </div>
+
+                    <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <p class="text-xs text-blue-800">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            <strong>Note:</strong> WhatsApp integration must be configured in settings. The recipient will receive a message with a secure link to sign the agreement.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-3 mt-6">
+                    <button onclick="this.closest('.fixed').remove()" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+                        Close
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+    } catch (error) {
+        console.error('Error showing WhatsApp dialog:', error);
+        showNotification('❌ Failed to load agreement details', 'error');
+    }
+}
+
+// Send WhatsApp signature link
+async function sendWhatsAppLink(agreementId, agreementType, party, phoneNumber) {
+    if (!phoneNumber) {
+        showNotification('❌ No phone number available for this party', 'error');
+        return;
+    }
+
+    try {
+        showNotification('📱 Sending WhatsApp message...', 'info');
+
+        const response = await axios.post('/api/whatsapp/send-signature-link', {
+            agreementId,
+            agreementType,
+            party,
+            phoneNumber
+        });
+
+        showNotification('✅ WhatsApp message sent successfully!');
+        document.getElementById('whatsapp-dialog')?.remove();
+
+    } catch (error) {
+        console.error('Error sending WhatsApp message:', error);
+        const errorMsg = error.response?.data?.error || error.response?.data?.details || error.message || 'Failed to send WhatsApp message';
         showNotification(`❌ Error: ${errorMsg}`, 'error');
     }
 }

@@ -270,11 +270,11 @@
       "agency_signed_at": "2025-12-03T22:17:53.318Z",
       "shareTokens": {
         "customer": {
-          "token": "2b8d326f108b03a0e68d3f81f608941d44f2ce58b0e9b7e1d0fb2024507b41a2",
+          "token": "3c859f252d13af8950740d8370d77ed4167189a48bb5d59001b5f3bcd39b1a07",
           "party": "customer",
           "used": false,
-          "createdAt": "2025-12-04T12:36:42.461Z",
-          "expiresAt": "2026-01-03T12:36:42.461Z"
+          "createdAt": "2025-12-04T12:41:35.285Z",
+          "expiresAt": "2026-01-03T12:41:35.285Z"
         }
       }
     }
