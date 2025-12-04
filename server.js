@@ -1384,10 +1384,11 @@ app.post('/api/project-agreements/:id/generate-share-link', async (req, res) => 
     );
     
     if (existingToken) {
-      const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
+      // Use req.protocol and req.get('host') like other agreement types
+      const shareUrl = `${req.protocol}://${req.get('host')}/sign/${existingToken.token}`;
       return res.json({ 
         success: true, 
-        shareUrl: `${baseUrl}/sign/${existingToken.token}`,
+        shareUrl: shareUrl,
         token: existingToken.token,
         expiresAt: existingToken.expiresAt
       });
@@ -1408,10 +1409,11 @@ app.post('/api/project-agreements/:id/generate-share-link', async (req, res) => 
     db.shareTokens.push(shareToken);
     await writeDB(db);
     
-    const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
+    // Use req.protocol and req.get('host') to get the correct URL (same as other agreement types)
+    const shareUrl = `${req.protocol}://${req.get('host')}/sign/${token}`;
     res.json({ 
       success: true, 
-      shareUrl: `${baseUrl}/sign/${token}`,
+      shareUrl: shareUrl,
       token: token,
       expiresAt: shareToken.expiresAt
     });

@@ -270,11 +270,11 @@
       "agency_signed_at": "2025-12-03T22:17:53.318Z",
       "shareTokens": {
         "customer": {
-          "token": "3c859f252d13af8950740d8370d77ed4167189a48bb5d59001b5f3bcd39b1a07",
+          "token": "9e75972a8cc7bc60467f51bbea10f2f2639f310b32a8f173b7524ee8492cca2a",
           "party": "customer",
           "used": false,
-          "createdAt": "2025-12-04T12:41:35.285Z",
-          "expiresAt": "2026-01-03T12:41:35.285Z"
+          "createdAt": "2025-12-04T12:50:29.379Z",
+          "expiresAt": "2026-01-03T12:50:29.379Z"
         }
       }
     }
@@ -361,6 +361,15 @@
       "used": false,
       "createdAt": "2025-12-04T12:39:04.255Z",
       "expiresAt": "2026-01-03T12:39:04.255Z"
+    },
+    {
+      "token": "8f429f3f654809793565337661e9a87df0eec55438c4c9997f4ae5d08ec3f3a9",
+      "agreementId": 4,
+      "agreementType": "project",
+      "party": "customer",
+      "used": false,
+      "createdAt": "2025-12-04T12:48:18.050Z",
+      "expiresAt": "2026-01-03T12:48:18.050Z"
     }
   ],
   "projectAgreements": [
