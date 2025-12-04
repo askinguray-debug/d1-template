@@ -811,6 +811,23 @@ app.post('/api/model-agreements/:id/send-email', async (req, res) => {
     
     const emailSettings = db.emailSettings || {};
     
+    // Ensure download token exists for agreement preview
+    if (!agreement.downloadToken) {
+      const downloadToken = crypto.randomBytes(32).toString('hex');
+      if (!db.downloadTokens) db.downloadTokens = [];
+      
+      db.downloadTokens.push({
+        token: downloadToken,
+        agreementId: agreement.id,
+        agreementType: 'model',
+        createdAt: new Date().toISOString(),
+        expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
+      });
+      
+      agreement.downloadToken = downloadToken;
+      await writeDB(db);
+    }
+    
     // Support both new array format and old recipient format
     if (!recipients || !Array.isArray(recipients)) {
       const { recipient } = req.body;
@@ -947,6 +964,17 @@ app.post('/api/model-agreements/:id/send-email', async (req, res) => {
         </div>
         
         ${signatureSection}
+        
+        <div style="margin: 20px 0; padding: 15px; background-color: #e0f2fe; border-left: 4px solid #0284c7; border-radius: 8px;">
+          <p style="margin: 0; color: #075985;"><strong>📄 View Full Agreement</strong></p>
+          <p style="margin: 10px 0; font-size: 13px; color: #0c4a6e;">
+            Click below to view the complete agreement document with all terms and conditions:
+          </p>
+          <a href="${baseUrl}/download/${agreement.downloadToken || 'temp'}" 
+             style="display: inline-block; margin: 10px 0; padding: 10px 20px; background-color: #0284c7; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">
+            📄 View Full Agreement Document
+          </a>
+        </div>
         
         <div style="margin: 20px 0; padding: 15px; background-color: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 8px;">
           <p style="margin: 0; color: #92400e;"><strong>⚠️ AI-Generated Content Notice:</strong></p>
@@ -1163,6 +1191,23 @@ app.post('/api/project-agreements/:id/send-email', async (req, res) => {
     
     const emailSettings = db.emailSettings || {};
     
+    // Ensure download token exists for agreement preview
+    if (!agreement.downloadToken) {
+      const downloadToken = crypto.randomBytes(32).toString('hex');
+      if (!db.downloadTokens) db.downloadTokens = [];
+      
+      db.downloadTokens.push({
+        token: downloadToken,
+        agreementId: agreement.id,
+        agreementType: 'project',
+        createdAt: new Date().toISOString(),
+        expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
+      });
+      
+      agreement.downloadToken = downloadToken;
+      await writeDB(db);
+    }
+    
     // Support both new array format and old recipient format
     if (!recipients || !Array.isArray(recipients)) {
       const { recipient } = req.body;
@@ -1297,6 +1342,17 @@ app.post('/api/project-agreements/:id/send-email', async (req, res) => {
         </div>
         
         ${signatureSection}
+        
+        <div style="margin: 20px 0; padding: 15px; background-color: #e0f2fe; border-left: 4px solid #0284c7; border-radius: 8px;">
+          <p style="margin: 0; color: #075985;"><strong>📄 View Full Agreement</strong></p>
+          <p style="margin: 10px 0; font-size: 13px; color: #0c4a6e;">
+            Click below to view the complete agreement document with all terms and conditions:
+          </p>
+          <a href="${baseUrl}/download/${agreement.downloadToken || 'temp'}" 
+             style="display: inline-block; margin: 10px 0; padding: 10px 20px; background-color: #0284c7; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">
+            📄 View Full Agreement Document
+          </a>
+        </div>
         
         <div style="margin: 20px 0;">
           <h3>Project Description:</h3>
@@ -2099,6 +2155,23 @@ app.post('/api/agreements/:id/send-email', async (req, res) => {
     const agency = db.agencies.find(a => a.id === agreement.agency_id);
     const customer = db.customers.find(c => c.id === agreement.customer_id);
     const emailSettings = db.emailSettings || {};
+    
+    // Ensure download token exists for agreement preview
+    if (!agreement.downloadToken) {
+      const downloadToken = crypto.randomBytes(32).toString('hex');
+      if (!db.downloadTokens) db.downloadTokens = [];
+      
+      db.downloadTokens.push({
+        token: downloadToken,
+        agreementId: agreement.id,
+        agreementType: 'regular',
+        createdAt: new Date().toISOString(),
+        expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
+      });
+      
+      agreement.downloadToken = downloadToken;
+      await writeDB(db);
+    }
 
     // Support both new array format and old recipient format
     if (!recipients || !Array.isArray(recipients)) {
@@ -2253,8 +2326,15 @@ app.post('/api/agreements/:id/send-email', async (req, res) => {
           </ul>
         </div>
         ` : ''}
-        <div style="margin: 20px 0; padding: 15px; background-color: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 8px;">
-          <p style="margin: 0;"><strong>📎 Attachment:</strong> The complete agreement is attached as a PDF file with white background, ready for printing or digital signing.</p>
+        <div style="margin: 20px 0; padding: 15px; background-color: #e0f2fe; border-left: 4px solid #0284c7; border-radius: 8px;">
+          <p style="margin: 0; color: #075985;"><strong>📄 View Full Agreement</strong></p>
+          <p style="margin: 10px 0; font-size: 13px; color: #0c4a6e;">
+            Click below to view the complete agreement document with all terms and conditions:
+          </p>
+          <a href="${baseUrl}/download/${agreement.downloadToken || 'temp'}" 
+             style="display: inline-block; margin: 10px 0; padding: 10px 20px; background-color: #0284c7; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">
+            📄 View Full Agreement Document
+          </a>
         </div>
         <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
           This is an automated message from Agreement Management System.
