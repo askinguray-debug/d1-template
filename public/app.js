@@ -2474,7 +2474,12 @@ function loadServices() {
             <div class="flex justify-between items-start mb-2">
                 <div>
                     <h3 class="font-semibold text-gray-900">${service.name}</h3>
-                    <span class="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">${service.category}</span>
+                    <div class="flex gap-2 mt-1">
+                        <span class="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">${service.category}</span>
+                        <span class="text-xs px-2 py-1 ${service.payment_type === 'monthly' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'} rounded">
+                            ${service.payment_type === 'monthly' ? '🔄 Monthly' : '💰 One-Time'}
+                        </span>
+                    </div>
                 </div>
                 <div class="text-lg font-bold text-blue-600">$${service.default_price}</div>
             </div>
@@ -2503,6 +2508,7 @@ function showServiceForm(id = null) {
             document.getElementById('service-category').value = service.category || 'Other';
             document.getElementById('service-description').value = service.description || '';
             document.getElementById('service-price').value = service.default_price || '';
+            document.getElementById('service-payment-type').value = service.payment_type || 'monthly';
         }
     } else {
         document.getElementById('service-form').reset();
@@ -2522,7 +2528,8 @@ async function handleServiceSave(e) {
         name: document.getElementById('service-name').value,
         category: document.getElementById('service-category').value,
         description: document.getElementById('service-description').value,
-        default_price: parseFloat(document.getElementById('service-price').value) || 0
+        default_price: parseFloat(document.getElementById('service-price').value) || 0,
+        payment_type: document.getElementById('service-payment-type').value
     };
     
     try {
