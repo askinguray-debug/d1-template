@@ -36,6 +36,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('email-settings-form').addEventListener('submit', handleEmailSettingsSave);
     document.getElementById('new-agreement-form').addEventListener('submit', handleAgreementSave);
     document.getElementById('new-model-agreement-form').addEventListener('submit', handleModelAgreementSave);
+    document.getElementById('new-project-agreement-form').addEventListener('submit', handleProjectAgreementSave);
     
     // Template change handler
     document.getElementById('agreement-template').addEventListener('change', handleTemplateChange);
@@ -72,6 +73,7 @@ function showTab(tabName) {
     // Load data for specific tabs
     if (tabName === 'agreements') loadAgreements();
     if (tabName === 'model-agreements') loadModelAgreements();
+    if (tabName === 'project-agreements') loadProjectAgreements();
     if (tabName === 'customers') loadCustomers();
     if (tabName === 'templates') {
         loadTemplates();
@@ -82,17 +84,19 @@ function showTab(tabName) {
     if (tabName === 'settings') loadSettings();
     if (tabName === 'new-agreement') loadNewAgreementForm();
     if (tabName === 'new-model-agreement') loadNewModelAgreementForm();
+    if (tabName === 'new-project-agreement') loadNewProjectAgreementForm();
 }
 
 // Load all data
 async function loadAllData() {
     try {
-        const [agenciesRes, customersRes, templatesRes, agreementsRes, modelAgreementsRes, remindersRes, serviceLibraryRes] = await Promise.all([
+        const [agenciesRes, customersRes, templatesRes, agreementsRes, modelAgreementsRes, projectAgreementsRes, remindersRes, serviceLibraryRes] = await Promise.all([
             axios.get('/api/agencies'),
             axios.get('/api/customers'),
             axios.get('/api/templates'),
             axios.get('/api/agreements'),
             axios.get('/api/model-agreements'),
+            axios.get('/api/project-agreements'),
             axios.get('/api/reminders/pending'),
             axios.get('/api/service-library')
         ]);
@@ -102,6 +106,7 @@ async function loadAllData() {
         templates = templatesRes.data;
         agreements = agreementsRes.data;
         modelAgreements = modelAgreementsRes.data;
+        projectAgreements = projectAgreementsRes.data;
         reminders = remindersRes.data;
         serviceLibrary = serviceLibraryRes.data;
     } catch (error) {
@@ -591,6 +596,403 @@ async function deleteModelAgreement(id) {
     } catch (error) {
         console.error('Error deleting model agreement:', error);
         alert('Failed to delete model agreement');
+    }
+}
+
+// ======================
+// PROJECT AGREEMENTS FUNCTIONS
+// ======================
+
+// Load project agreements data
+async function loadProjectAgreementsData() {
+    try {
+        const response = await axios.get('/api/project-agreements');
+        projectAgreements = response.data;
+    } catch (error) {
+        console.error('Error loading project agreements:', error);
+    }
+}
+
+// Load project agreements list
+function loadProjectAgreements() {
+    const listHtml = projectAgreements.map(agreement => {
+        const agency = agencies.find(a => a.id === agreement.agency_id);
+        const model = customers.find(c => c.id === agreement.model_id);
+        
+        const statusColors = {
+            'draft': 'bg-gray-100 text-gray-800',
+            'pending': 'bg-yellow-100 text-yellow-800',
+            'active': 'bg-green-100 text-green-800',
+            'completed': 'bg-blue-100 text-blue-800'
+        };
+        
+        return `
+            <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                <div class="flex justify-between items-start">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="text-xs font-mono text-gray-500">${agreement.agreement_number}</span>
+                            <span class="px-2 py-1 rounded text-xs font-semibold ${statusColors[agreement.status] || 'bg-gray-100 text-gray-800'}">
+                                ${agreement.status.toUpperCase()}
+                            </span>
+                        </div>
+                        <h3 class="font-bold text-lg text-gray-900">${agreement.project_name}</h3>
+                        <p class="text-sm text-gray-600 mt-1">
+                            <i class="fas fa-building mr-1 text-green-600"></i>${agreement.company_name}
+                        </p>
+                        <div class="flex gap-4 mt-2 text-sm text-gray-600">
+                            <span><i class="fas fa-briefcase mr-1"></i>${agency ? agency.name : 'N/A'}</span>
+                            <span><i class="fas fa-user mr-1"></i>${model ? model.name : 'N/A'}</span>
+                        </div>
+                        <div class="flex flex-wrap gap-1 mt-2">
+                            ${agreement.platforms.map(p => `<span class="px-2 py-1 bg-green-50 text-green-700 rounded text-xs">${p}</span>`).join('')}
+                        </div>
+                        <div class="flex items-center gap-4 mt-3 text-sm">
+                            <span class="${agreement.agency_signed ? 'text-green-600' : 'text-gray-400'}">
+                                <i class="fas fa-check-circle mr-1"></i>Agency ${agreement.agency_signed ? 'Signed' : 'Pending'}
+                            </span>
+                            <span class="${agreement.customer_signed ? 'text-green-600' : 'text-gray-400'}">
+                                <i class="fas fa-check-circle mr-1"></i>Model ${agreement.customer_signed ? 'Signed' : 'Pending'}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <button onclick="viewProjectAgreement(${agreement.id})" class="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm">
+                            <i class="fas fa-eye mr-1"></i>View
+                        </button>
+                        <button onclick="showProjectEmailDialog(${agreement.id})" class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
+                            <i class="fas fa-envelope mr-1"></i>Email
+                        </button>
+                        <button onclick="deleteProjectAgreement(${agreement.id})" class="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-sm">
+                            <i class="fas fa-trash mr-1"></i>Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    document.getElementById('project-agreements-list').innerHTML = listHtml || '<p class="text-gray-500">No project agreements yet. Click "New Project Agreement" to create one.</p>';
+}
+
+// Load new project agreement form
+function loadNewProjectAgreementForm() {
+    const agencySelect = document.getElementById('project-agreement-agency');
+    const modelSelect = document.getElementById('project-agreement-model');
+    
+    agencySelect.innerHTML = '<option value="">Select Agency</option>' +
+        agencies.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+    
+    modelSelect.innerHTML = '<option value="">Select Model</option>' +
+        customers.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+}
+
+// Handle project agreement form submission
+async function handleProjectAgreementSave(e) {
+    e.preventDefault();
+    
+    const agencyId = document.getElementById('project-agreement-agency').value;
+    const modelId = document.getElementById('project-agreement-model').value;
+    const projectName = document.getElementById('project-name').value;
+    const companyName = document.getElementById('project-company').value;
+    const description = document.getElementById('project-description').value;
+    
+    // Get selected platforms
+    const platforms = Array.from(document.querySelectorAll('input[name="platform"]:checked'))
+        .map(cb => cb.value);
+    
+    // Get selected content types
+    const contentTypes = Array.from(document.querySelectorAll('input[name="content-type"]:checked'))
+        .map(cb => cb.value);
+    
+    if (!agencyId || !modelId || !projectName || !companyName || !description) {
+        alert('Please fill in all required fields');
+        return;
+    }
+    
+    if (platforms.length === 0) {
+        alert('Please select at least one usage platform');
+        return;
+    }
+    
+    try {
+        await axios.post('/api/project-agreements', {
+            agency_id: agencyId,
+            model_id: modelId,
+            project_name: projectName,
+            company_name: companyName,
+            platforms: platforms,
+            content_types: contentTypes,
+            description: description
+        });
+        
+        await loadProjectAgreementsData();
+        showTab('project-agreements');
+        loadProjectAgreements();
+        
+        // Reset form
+        document.getElementById('new-project-agreement-form').reset();
+        
+        showNotification('✅ Project agreement created successfully!');
+    } catch (error) {
+        console.error('Error creating project agreement:', error);
+        showNotification('❌ Failed to create project agreement', 'error');
+    }
+}
+
+// View project agreement
+async function viewProjectAgreement(id) {
+    try {
+        const response = await axios.get(`/api/project-agreements/${id}`);
+        const agreement = response.data;
+        const agency = agencies.find(a => a.id === agreement.agency_id);
+        const model = customers.find(c => c.id === agreement.model_id);
+        
+        const modal = document.createElement('div');
+        modal.id = 'project-agreement-modal';
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto';
+        modal.innerHTML = `
+            <div class="bg-white rounded-lg p-6 max-w-4xl w-full m-4 max-h-[90vh] overflow-y-auto">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-900">${agreement.project_name}</h2>
+                        <p class="text-sm text-gray-600 mt-1">${agreement.agreement_number}</p>
+                    </div>
+                    <button onclick="closeModal('project-agreement-modal')" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <div class="bg-green-50 p-4 rounded-lg mb-4">
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div><strong>Company/Brand:</strong> ${agreement.company_name}</div>
+                        <div><strong>Status:</strong> ${agreement.status.toUpperCase()}</div>
+                        <div><strong>Agency:</strong> ${agency?.name || 'N/A'}</div>
+                        <div><strong>Model:</strong> ${model?.name || 'N/A'}</div>
+                    </div>
+                    <div class="mt-3">
+                        <strong>Usage Platforms:</strong> ${agreement.platforms.join(', ')}
+                    </div>
+                    <div class="mt-2">
+                        <strong>Content Types:</strong> ${agreement.content_types.join(', ')}
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <h3 class="font-semibold mb-2">Project Description:</h3>
+                    <p class="text-sm text-gray-700 whitespace-pre-wrap">${agreement.description}</p>
+                </div>
+                
+                <div class="border-t border-gray-200 pt-4 mb-4">
+                    <h3 class="font-semibold mb-2">Agreement Content:</h3>
+                    <div class="bg-gray-50 p-4 rounded text-sm whitespace-pre-wrap font-mono max-h-96 overflow-y-auto">
+${agreement.content}
+                    </div>
+                </div>
+                
+                <div class="border-t border-gray-200 pt-4">
+                    <h3 class="font-semibold mb-3">Signatures:</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="border border-gray-200 rounded p-3">
+                            <p class="font-medium text-sm mb-2">Agency: ${agency?.name || 'N/A'}</p>
+                            ${agreement.agency_signed ? `
+                                <div class="text-green-600 flex items-center">
+                                    <i class="fas fa-check-circle mr-2"></i>
+                                    <span class="text-sm">Signed on ${new Date(agreement.agency_signed_date).toLocaleDateString()}</span>
+                                </div>
+                                ${agreement.agency_signature ? `<img src="${agreement.agency_signature}" class="mt-2 max-h-16 border-t border-gray-300 pt-2">` : ''}
+                            ` : `
+                                <button onclick="openSignaturePad(${id}, 'agency', 'project')" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm w-full">
+                                    <i class="fas fa-signature mr-2"></i>Sign Now
+                                </button>
+                            `}
+                        </div>
+                        <div class="border border-gray-200 rounded p-3">
+                            <p class="font-medium text-sm mb-2">Model: ${model?.name || 'N/A'}</p>
+                            ${agreement.customer_signed ? `
+                                <div class="text-green-600 flex items-center">
+                                    <i class="fas fa-check-circle mr-2"></i>
+                                    <span class="text-sm">Signed on ${new Date(agreement.customer_signed_date).toLocaleDateString()}</span>
+                                </div>
+                                ${agreement.customer_signature ? `<img src="${agreement.customer_signature}" class="mt-2 max-h-16 border-t border-gray-300 pt-2">` : ''}
+                            ` : `
+                                <button onclick="openSignaturePad(${id}, 'customer', 'project')" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm w-full">
+                                    <i class="fas fa-signature mr-2"></i>Sign Now
+                                </button>
+                            `}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end gap-3 mt-6">
+                    <button onclick="closeModal('project-agreement-modal')" class="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50">
+                        Close
+                    </button>
+                    <button onclick="showProjectEmailDialog(${id}); closeModal('project-agreement-modal')" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                        <i class="fas fa-envelope mr-2"></i>Send Email
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+    } catch (error) {
+        console.error('Error viewing project agreement:', error);
+        showNotification('❌ Failed to load project agreement', 'error');
+    }
+}
+
+// Show project email dialog
+function showProjectEmailDialog(id) {
+    currentAgreementType = 'project';
+    const modal = document.createElement('div');
+    modal.id = 'project-email-dialog-modal';
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    modal.innerHTML = `
+        <div class="bg-white rounded-lg p-6 w-full max-w-lg">
+            <h3 class="text-xl font-bold text-gray-900 mb-4">
+                <i class="fas fa-envelope mr-2 text-green-600"></i>Send Project Agreement via Email
+            </h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Quick Select Recipients:</label>
+                    <div class="space-y-2">
+                        <label class="flex items-center">
+                            <input type="checkbox" id="select-project-agency" class="mr-2" onchange="updateProjectRecipientList()">
+                            <span>Agency</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="select-project-model" class="mr-2" checked onchange="updateProjectRecipientList()">
+                            <span>Model</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Recipients (To:)
+                        <span class="text-xs text-gray-500 ml-2">One email per line</span>
+                    </label>
+                    <textarea 
+                        id="project-email-recipients" 
+                        rows="3"
+                        placeholder="email1@example.com&#10;email2@example.com"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg font-mono text-sm resize-none focus:ring-2 focus:ring-green-500"
+                    ></textarea>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        CC (Carbon Copy) - Optional
+                    </label>
+                    <textarea 
+                        id="project-email-cc" 
+                        rows="2"
+                        placeholder="cc@example.com"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg font-mono text-sm resize-none focus:ring-2 focus:ring-green-500"
+                    ></textarea>
+                </div>
+                
+                <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+                    <p class="text-sm text-green-800">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        The project agreement will be sent with signature links.
+                    </p>
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 mt-6">
+                <button onclick="closeModal('project-email-dialog-modal')" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+                    Cancel
+                </button>
+                <button onclick="sendProjectAgreementEmail(${id})" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                    <i class="fas fa-paper-plane mr-2"></i>Send Email
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    
+    window.currentProjectEmailAgreementId = id;
+    updateProjectRecipientList();
+}
+
+// Update project recipient list
+function updateProjectRecipientList() {
+    const recipientsField = document.getElementById('project-email-recipients');
+    if (!recipientsField) return;
+    
+    const includeAgency = document.getElementById('select-project-agency')?.checked;
+    const includeModel = document.getElementById('select-project-model')?.checked;
+    
+    let emails = [];
+    
+    const agreementId = window.currentProjectEmailAgreementId;
+    const agreement = projectAgreements.find(a => a.id === agreementId);
+    
+    if (agreement) {
+        const agency = agencies.find(a => a.id === agreement.agency_id);
+        const model = customers.find(c => c.id === agreement.model_id);
+        
+        if (includeAgency && agency?.email) {
+            emails.push(agency.email);
+        }
+        if (includeModel && model?.email) {
+            emails.push(model.email);
+        }
+    }
+    
+    recipientsField.value = emails.join('\n');
+}
+
+// Send project agreement email
+async function sendProjectAgreementEmail(id) {
+    const recipientsText = document.getElementById('project-email-recipients').value;
+    const ccText = document.getElementById('project-email-cc').value;
+    
+    const recipients = recipientsText
+        .split('\n')
+        .map(email => email.trim())
+        .filter(email => email.length > 0 && email.includes('@'));
+    
+    const cc = ccText
+        .split('\n')
+        .map(email => email.trim())
+        .filter(email => email.length > 0 && email.includes('@'));
+    
+    if (recipients.length === 0) {
+        showNotification('❌ Please enter at least one recipient email address', 'error');
+        return;
+    }
+    
+    try {
+        showNotification('📧 Sending email...', 'info');
+        
+        await axios.post(`/api/project-agreements/${id}/send-email`, {
+            recipients: recipients,
+            cc: cc
+        });
+        
+        closeModal('project-email-dialog-modal');
+        showNotification('✅ Project agreement email sent successfully!');
+    } catch (error) {
+        console.error('Error sending email:', error);
+        const errorMsg = error.response?.data?.error || 'Failed to send email';
+        showNotification(`❌ ${errorMsg}`, 'error');
+    }
+}
+
+// Delete project agreement
+async function deleteProjectAgreement(id) {
+    if (!confirm('Are you sure you want to delete this project agreement?')) return;
+    
+    try {
+        await axios.delete(`/api/project-agreements/${id}`);
+        await loadProjectAgreementsData();
+        loadProjectAgreements();
+        showNotification('✅ Project agreement deleted successfully');
+    } catch (error) {
+        console.error('Error deleting project agreement:', error);
+        showNotification('❌ Failed to delete project agreement', 'error');
     }
 }
 
