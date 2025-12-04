@@ -151,7 +151,7 @@ async function initDB() {
           id: 3,
           name: 'Web Development Agreement',
           description: 'Website development and maintenance agreement',
-          content: 'WEB DEVELOPMENT & MAINTENANCE AGREEMENT\n\nAgency: {{AGENCY_NAME}}\nClient: {{CUSTOMER_NAME}}\n\nSCOPE OF WORK:\n{{SERVICES}}\n\nMONTHLY MAINTENANCE FEE: {{MONTHLY_PAYMENT}}\nDue Date: {{PAYMENT_DAY}} of each month\nAgreement Duration: {{START_DATE}} - {{END_DATE}}',
+          content: 'SERVICE AGREEMENT\n\nThis Agreement is made between:\n\nAgency: {{AGENCY_NAME}}\nClient: {{CUSTOMER_NAME}}\n\nAgreement Period: {{START_DATE}} to {{END_DATE}}\n\nSERVICES PROVIDED:\n{{SERVICES}}\n\n{{PAYMENT_TERMS}}\n\nBoth parties agree to the terms and conditions outlined in this agreement.',
           created_at: new Date().toISOString()
         }
       ],

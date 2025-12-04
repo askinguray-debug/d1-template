@@ -12,6 +12,12 @@ let currentAgreementType = 'regular'; // 'regular' or 'model'
 function processTemplate(content, data) {
     if (!content) return '';
     
+    // Build payment terms section only if there's a monthly payment
+    let paymentTerms = '';
+    if (data.monthlyPayment && parseFloat(data.monthlyPayment) > 0) {
+        paymentTerms = `PAYMENT TERMS:\nMonthly Fee: $${data.monthlyPayment}\nDue Date: ${data.paymentDay || '1'} of each month`;
+    }
+    
     // Replace all template variables with actual data
     return content
         .replace(/\{\{AGENCY_NAME\}\}/g, data.agencyName || '[Agency Name]')
@@ -20,7 +26,8 @@ function processTemplate(content, data) {
         .replace(/\{\{MONTHLY_PAYMENT\}\}/g, data.monthlyPayment || '[Payment Amount]')
         .replace(/\{\{PAYMENT_DAY\}\}/g, data.paymentDay || '[Payment Day]')
         .replace(/\{\{START_DATE\}\}/g, data.startDate || '[Start Date]')
-        .replace(/\{\{END_DATE\}\}/g, data.endDate || '[End Date]');
+        .replace(/\{\{END_DATE\}\}/g, data.endDate || '[End Date]')
+        .replace(/\{\{PAYMENT_TERMS\}\}/g, paymentTerms);
 }
 
 // Initialize app
@@ -1795,13 +1802,6 @@ async function viewAgreement(id) {
                             <span class="text-gray-600">Status:</span>
                             <p class="font-medium">${agreement.status}</p>
                         </div>
-                    </div>
-                </div>
-                
-                <div class="mb-6">
-                    <h3 class="font-semibold text-gray-900 mb-3">Services</h3>
-                    <div class="space-y-2">
-                        ${servicesHtml}
                     </div>
                 </div>
                 
