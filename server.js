@@ -2997,16 +2997,71 @@ function generateModelAgreementHTML(agreement, agency, customer, printVersion = 
 }
 
 function generateAgreementHTML(agreement, agency, customer, printVersion = false, pdfMode = false) {
-  const servicesHtml = agreement.services && agreement.services.length > 0
-    ? agreement.services.map((s, i) => `
-        <tr>
-          <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${i + 1}</td>
-          <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${s.title}</td>
-          <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${s.description || '-'}</td>
-          <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: right;">${s.price ? '$' + s.price : '-'}</td>
+  // Generate services HTML separated by payment type
+  let servicesHtml = '';
+  
+  if (agreement.services && agreement.services.length > 0) {
+    const monthlyServices = agreement.services.filter(s => s.payment_type === 'monthly');
+    const oneTimeServices = agreement.services.filter(s => s.payment_type !== 'monthly');
+    
+    // Monthly recurring services
+    if (monthlyServices.length > 0) {
+      const monthlyTotal = monthlyServices.reduce((sum, s) => sum + (parseFloat(s.price) || 0), 0);
+      servicesHtml += `
+        <tr style="background-color: #f0fdf4;">
+          <td colspan="4" style="padding: 10px; font-weight: bold; color: #059669; border-bottom: 2px solid #059669;">
+            📅 MONTHLY RECURRING SERVICES
+          </td>
         </tr>
-      `).join('')
-    : '<tr><td colspan="4" style="padding: 8px; text-align: center;">No services listed</td></tr>';
+      `;
+      monthlyServices.forEach((s, i) => {
+        servicesHtml += `
+          <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${i + 1}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${s.title}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${s.description || '-'}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: right; color: #059669; font-weight: bold;">$${s.price}/month</td>
+          </tr>
+        `;
+      });
+      servicesHtml += `
+        <tr style="background-color: #f0fdf4;">
+          <td colspan="3" style="padding: 8px; text-align: right; font-weight: bold; color: #059669;">💰 Monthly Total:</td>
+          <td style="padding: 8px; text-align: right; font-weight: bold; color: #059669; border-bottom: 2px solid #059669;">$${monthlyTotal.toFixed(2)}</td>
+        </tr>
+      `;
+    }
+    
+    // One-time services
+    if (oneTimeServices.length > 0) {
+      const oneTimeTotal = oneTimeServices.reduce((sum, s) => sum + (parseFloat(s.price) || 0), 0);
+      servicesHtml += `
+        <tr style="background-color: #eff6ff;">
+          <td colspan="4" style="padding: 10px; font-weight: bold; color: #2563eb; border-bottom: 2px solid #2563eb; border-top: 2px solid #e5e7eb;">
+            💵 ONE-TIME SERVICES
+          </td>
+        </tr>
+      `;
+      oneTimeServices.forEach((s, i) => {
+        servicesHtml += `
+          <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${i + 1}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${s.title}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${s.description || '-'}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: right; color: #2563eb; font-weight: bold;">$${s.price}</td>
+          </tr>
+        `;
+      });
+      servicesHtml += `
+        <tr style="background-color: #eff6ff;">
+          <td colspan="3" style="padding: 8px; text-align: right; font-weight: bold; color: #2563eb;">💰 One-Time Total:</td>
+          <td style="padding: 8px; text-align: right; font-weight: bold; color: #2563eb; border-bottom: 2px solid #2563eb;">$${oneTimeTotal.toFixed(2)}</td>
+        </tr>
+      `;
+    }
+  } else {
+    servicesHtml = '<tr><td colspan="4" style="padding: 8px; text-align: center;">No services listed</td></tr>';
+  }
 
   return `
     <!DOCTYPE html>
