@@ -817,7 +817,10 @@ app.post('/api/model-agreements/:id/send-email', async (req, res) => {
     }
     
     // Generate share links for unsigned parties
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    // Use X-Forwarded headers if available (for proxied requests)
+    const host = req.get('x-forwarded-host') || req.get('host');
+    const protocol = req.get('x-forwarded-proto') || req.protocol;
+    const baseUrl = `${protocol}://${host}`;
     let agencyShareLink = '';
     let customerShareLink = '';
     
@@ -1161,7 +1164,10 @@ app.post('/api/project-agreements/:id/send-email', async (req, res) => {
     }
     
     // Generate share links for unsigned parties
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    // Use X-Forwarded-Host if available (for proxied requests), otherwise use HOST header
+    const host = req.get('x-forwarded-host') || req.get('host');
+    const protocol = req.get('x-forwarded-proto') || req.protocol;
+    const baseUrl = `${protocol}://${host}`;
     let agencyShareLink = '';
     let modelShareLink = '';
     
@@ -2001,7 +2007,10 @@ app.post('/api/agreements/:id/send-email', async (req, res) => {
     }
 
     // Generate share links for unsigned parties
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    // Use X-Forwarded headers if available (for proxied requests)
+    const host = req.get('x-forwarded-host') || req.get('host');
+    const protocol = req.get('x-forwarded-proto') || req.protocol;
+    const baseUrl = `${protocol}://${host}`;
     let agencyShareLink = '';
     let customerShareLink = '';
     
@@ -2858,7 +2867,10 @@ initDB().then(() => {
         await writeDB(db);
       }
 
-      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      // Use X-Forwarded headers if available (for proxied requests)
+    const host = req.get('x-forwarded-host') || req.get('host');
+    const protocol = req.get('x-forwarded-proto') || req.protocol;
+    const baseUrl = `${protocol}://${host}`;
       const shareUrl = `${baseUrl}/sign/${shareToken.token}`;
 
       // Get agreement details for message
