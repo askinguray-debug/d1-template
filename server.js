@@ -294,17 +294,15 @@ Either party may terminate with 30 days written notice.`,
       ],
       reminders: [],
       emailSettings: {
-        provider: 'smtp',
-        smtp_host: 'mail.fashioncast.agency',
-        smtp_port: '465',
-        smtp_encryption: 'SSL',
-        smtp_username: 'info@fashioncast.agency',
-        smtp_password: '123123Ag.',
-        smtp_authentication: true,
-        disable_ssl_verification: false,
-        from_email: 'info@fashioncast.agency',
+        id: 1,
+        provider: 'gmail',
+        gmail_email: '',
+        gmail_app_password: '',
+        from_email: '',
         from_name: 'Fashion Cast Agency',
-        reminder_days_before: 3
+        reminder_days_before: 3,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       },
       whatsappSettings: {
         enabled: false,
@@ -1852,30 +1850,56 @@ app.delete('/api/service-library/:id', async (req, res) => {
 // EMAIL SETTINGS API
 // ======================
 app.get('/api/email-settings', async (req, res) => {
-  const db = await readDB();
-  res.json(db.emailSettings || {});
+  try {
+    const db = await readDB();
+    res.json(db.emailSettings || {});
+  } catch (error) {
+    console.error('Error fetching email settings:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 app.post('/api/email-settings', async (req, res) => {
-  const db = await readDB();
-  db.emailSettings = {
-    ...req.body,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  };
-  await writeDB(db);
-  res.json(db.emailSettings);
+  try {
+    const db = await readDB();
+    // If settings already exist, update them instead
+    if (db.emailSettings && Object.keys(db.emailSettings).length > 0) {
+      db.emailSettings = {
+        ...db.emailSettings,
+        ...req.body,
+        updated_at: new Date().toISOString()
+      };
+    } else {
+      db.emailSettings = {
+        ...req.body,
+        id: 1, // Add ID for compatibility
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+    }
+    await writeDB(db);
+    res.json(db.emailSettings);
+  } catch (error) {
+    console.error('Error saving email settings:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 app.put('/api/email-settings/:id', async (req, res) => {
-  const db = await readDB();
-  db.emailSettings = {
-    ...db.emailSettings,
-    ...req.body,
-    updated_at: new Date().toISOString()
-  };
-  await writeDB(db);
-  res.json(db.emailSettings);
+  try {
+    const db = await readDB();
+    db.emailSettings = {
+      ...db.emailSettings,
+      ...req.body,
+      id: 1, // Ensure ID exists
+      updated_at: new Date().toISOString()
+    };
+    await writeDB(db);
+    res.json(db.emailSettings);
+  } catch (error) {
+    console.error('Error updating email settings:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // ======================
