@@ -1738,6 +1738,79 @@ app.post('/api/share/:token/sign', async (req, res) => {
       });
       
       agreements[agreementIndex].downloadToken = downloadToken;
+      
+      // Send email notification with download link to both parties
+      try {
+        const emailSettings = db.emailSettings || {};
+        const agreement = agreements[agreementIndex];
+        
+        // Get party information
+        let agency = null;
+        let customer = null;
+        let agreementTitle = '';
+        
+        if (agreementType === 'model') {
+          agency = db.agencies.find(a => a.id === agreement.agency_id);
+          customer = db.models.find(m => m.id === agreement.model_id);
+          agreementTitle = agreement.title || 'Model Agreement';
+        } else if (agreementType === 'project') {
+          agency = db.agencies.find(a => a.id === agreement.agency_id);
+          customer = db.models.find(m => m.id === agreement.model_id);
+          agreementTitle = `${agreement.project_name} - ${agreement.company_name}`;
+        } else {
+          agency = db.agencies.find(a => a.id === agreement.agency_id);
+          customer = db.customers.find(c => c.id === agreement.customer_id);
+          agreementTitle = agreement.title || 'Agreement';
+        }
+        
+        const downloadLink = `${protocol}://${host}/download/${downloadToken}`;
+        
+        const emailHtml = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h2 style="color: #10b981;">✅ Agreement Fully Signed!</h2>
+            
+            <p>Great news! The following agreement has been fully signed by both parties:</p>
+            
+            <div style="background: #f0fdf4; padding: 15px; border-radius: 8px; margin: 20px 0;">
+              <strong>Agreement:</strong> ${agreementTitle}<br>
+              <strong>Number:</strong> ${agreement.agreement_number}<br>
+              <strong>Status:</strong> <span style="color: #10b981; font-weight: bold;">ACTIVE</span>
+            </div>
+            
+            <div style="background: #eff6ff; padding: 20px; border-radius: 8px; border-left: 4px solid #3b82f6; margin: 20px 0;">
+              <h3 style="color: #1e40af; margin-top: 0;">📥 Download Your Signed Agreement</h3>
+              <p style="margin: 10px 0;">You can now download the fully signed agreement document:</p>
+              <a href="${downloadLink}" 
+                 style="display: inline-block; margin: 15px 0; padding: 12px 24px; background-color: #8b5cf6; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">
+                <span style="font-size: 18px;">📄</span> Download Signed Agreement
+              </a>
+              <p style="font-size: 12px; color: #6b7280; margin-top: 10px;">
+                This download link is valid for 1 year and can be used multiple times.
+              </p>
+            </div>
+            
+            <p style="color: #6b7280; font-size: 14px; margin-top: 20px;">
+              This is an automated notification from the Agreement Management System.
+            </p>
+          </div>
+        `;
+        
+        const recipients = [];
+        if (agency?.email) recipients.push(agency.email);
+        if (customer?.email) recipients.push(customer.email);
+        
+        if (recipients.length > 0 && emailSettings.provider) {
+          await sendEmail(emailSettings, {
+            from: emailSettings.from_email || 'onboarding@resend.dev',
+            to: recipients,
+            subject: `✅ Agreement Fully Signed - ${agreementTitle}`,
+            html: emailHtml
+          });
+        }
+      } catch (emailError) {
+        console.error('Error sending completion email:', emailError);
+        // Don't fail the request if email fails
+      }
     }
     
     await writeDB(db);
@@ -1748,7 +1821,7 @@ app.post('/api/share/:token/sign', async (req, res) => {
     
     res.json({ 
       success: true, 
-      message: bothSigned ? 'Agreement fully signed! Download link generated.' : 'Signature saved successfully',
+      message: bothSigned ? 'Agreement fully signed! Download link generated and sent via email.' : 'Signature saved successfully',
       agreement: agreements[agreementIndex],
       downloadUrl: downloadUrl,
       bothSigned: bothSigned
