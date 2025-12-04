@@ -15,15 +15,26 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Initialize Resend with API key
-const resend = new Resend('re_L34baJx9_D44c6KUdsiapZPBtJXZPbc2S');
-
 // Universal email sending function - supports both Resend and SMTP
 async function sendEmail(emailSettings, { from, to, subject, html, attachments = [] }) {
   try {
-    // Check if Gmail is configured
-    if (emailSettings.provider === 'gmail' && emailSettings.gmail_email && emailSettings.gmail_app_password) {
-      // Use Gmail SMTP with explicit configuration (works with regular passwords if Less Secure Apps enabled)
+    // Priority 1: Check provider field first (most reliable)
+    if (emailSettings.provider === 'resend' && emailSettings.api_key) {
+      // Use Resend API with dynamic API key from settings
+      const resend = new Resend(emailSettings.api_key);
+      await resend.emails.send({
+        from: from || emailSettings.from_email || 'onboarding@resend.dev',
+        to: Array.isArray(to) ? to : [to],
+        subject,
+        html,
+        attachments
+      });
+      
+      return { success: true, provider: 'Resend' };
+    }
+    // Priority 2: Gmail SMTP
+    else if (emailSettings.provider === 'gmail' && emailSettings.gmail_email && emailSettings.gmail_app_password) {
+      // Use Gmail SMTP with explicit configuration
       const transporter = nodemailer.createTransport({
         host: 'smtp.gmail.com',
         port: 587,
@@ -33,7 +44,7 @@ async function sendEmail(emailSettings, { from, to, subject, html, attachments =
           pass: emailSettings.gmail_app_password
         },
         tls: {
-          rejectUnauthorized: false, // Accept self-signed certificates
+          rejectUnauthorized: false,
           ciphers: 'SSLv3'
         },
         requireTLS: true
@@ -49,13 +60,13 @@ async function sendEmail(emailSettings, { from, to, subject, html, attachments =
       
       return { success: true, provider: 'Gmail' };
     }
-    // Check if custom SMTP is configured
-    else if (emailSettings.smtp_host && emailSettings.smtp_username && emailSettings.smtp_password) {
+    // Priority 3: Custom SMTP
+    else if (emailSettings.provider === 'smtp' && emailSettings.smtp_host && emailSettings.smtp_username && emailSettings.smtp_password) {
       // Use SMTP (nodemailer)
       const transporter = nodemailer.createTransport({
         host: emailSettings.smtp_host,
         port: parseInt(emailSettings.smtp_port) || 465,
-        secure: emailSettings.smtp_encryption === 'SSL', // true for SSL, false for TLS
+        secure: emailSettings.smtp_encryption === 'SSL',
         auth: {
           user: emailSettings.smtp_username,
           pass: emailSettings.smtp_password
@@ -75,16 +86,20 @@ async function sendEmail(emailSettings, { from, to, subject, html, attachments =
       
       return { success: true, provider: 'SMTP' };
     } else {
-      // Use Resend API as fallback
-      await resend.emails.send({
-        from: from || 'onboarding@resend.dev',
-        to: Array.isArray(to) ? to : [to],
-        subject,
-        html,
-        attachments
-      });
-      
-      return { success: true, provider: 'Resend' };
+      // Fallback: Use Resend API with dynamic key or throw error
+      if (emailSettings.api_key) {
+        const resend = new Resend(emailSettings.api_key);
+        await resend.emails.send({
+          from: from || 'onboarding@resend.dev',
+          to: Array.isArray(to) ? to : [to],
+          subject,
+          html,
+          attachments
+        });
+        return { success: true, provider: 'Resend (Fallback)' };
+      } else {
+        throw new Error('No email provider configured. Please configure email settings.');
+      }
     }
   } catch (error) {
     console.error('Email sending error:', error);
