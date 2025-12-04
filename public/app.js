@@ -1528,7 +1528,7 @@ function addServiceSection() {
     
     // Create service library options
     const serviceOptions = serviceLibrary.map(s => 
-        `<option value="${s.id}" data-price="${s.default_price}" data-desc="${s.description}">${s.name} - $${s.default_price}</option>`
+        `<option value="${s.id}" data-price="${s.default_price}" data-desc="${s.description}" data-payment-type="${s.payment_type || 'monthly'}">${s.name} - $${s.default_price} (${s.payment_type === 'monthly' ? '🔄 Monthly' : '💰 One-Time'})</option>`
     ).join('');
     
     section.innerHTML = `
@@ -1544,9 +1544,15 @@ function addServiceSection() {
             </div>
             <div class="flex gap-3">
                 <input type="text" placeholder="Service Title *" class="flex-1 px-3 py-2 border border-gray-300 rounded" data-service-title required>
-                <input type="number" placeholder="Price" step="0.01" class="w-32 px-3 py-2 border border-gray-300 rounded" data-service-price>
+                <input type="number" placeholder="Price" step="0.01" class="w-32 px-3 py-2 border border-gray-300 rounded" data-service-price onchange="updateMonthlyPayment()">
             </div>
-            <input type="text" placeholder="Description" class="w-full px-3 py-2 border border-gray-300 rounded" data-service-description>
+            <div class="flex gap-3">
+                <input type="text" placeholder="Description" class="flex-1 px-3 py-2 border border-gray-300 rounded" data-service-description>
+                <select class="px-3 py-2 border border-gray-300 rounded" data-service-payment-type onchange="updateMonthlyPayment()">
+                    <option value="monthly">🔄 Monthly</option>
+                    <option value="one-time">💰 One-Time</option>
+                </select>
+            </div>
         </div>
     `;
     document.getElementById('service-sections').appendChild(section);
@@ -1560,6 +1566,7 @@ function fillServiceFromLibrary(sectionId, selectElement) {
     const title = section.querySelector('[data-service-title]');
     const desc = section.querySelector('[data-service-description]');
     const price = section.querySelector('[data-service-price]');
+    const paymentType = section.querySelector('[data-service-payment-type]');
     
     // Get data from service library
     const serviceId = parseInt(selectedOption.value);
@@ -1569,6 +1576,8 @@ function fillServiceFromLibrary(sectionId, selectElement) {
         title.value = service.name;
         desc.value = service.description;
         price.value = service.default_price;
+        if (paymentType) paymentType.value = service.payment_type || 'monthly';
+        updateMonthlyPayment();
     }
 }
 
@@ -1582,11 +1591,34 @@ function getServiceSections() {
         const title = section.querySelector('[data-service-title]').value;
         const description = section.querySelector('[data-service-description]').value;
         const price = section.querySelector('[data-service-price]').value;
+        const paymentType = section.querySelector('[data-service-payment-type]')?.value || 'monthly';
         if (title) {
-            sections.push({ title, description, price: price ? parseFloat(price) : null });
+            sections.push({ 
+                title, 
+                description, 
+                price: price ? parseFloat(price) : null,
+                payment_type: paymentType
+            });
         }
     });
     return sections;
+}
+
+// Auto-calculate monthly payment from monthly services
+function updateMonthlyPayment() {
+    const services = getServiceSections();
+    const monthlyTotal = services
+        .filter(s => s.payment_type === 'monthly')
+        .reduce((sum, s) => sum + (s.price || 0), 0);
+    
+    const paymentField = document.getElementById('agreement-payment');
+    if (paymentField) {
+        paymentField.value = monthlyTotal > 0 ? monthlyTotal.toFixed(2) : '';
+        // Make it readonly to show it's auto-calculated
+        paymentField.readOnly = true;
+        paymentField.style.backgroundColor = '#f3f4f6';
+        paymentField.title = 'Auto-calculated from monthly services';
+    }
 }
 
 // Agreement save
@@ -1655,19 +1687,45 @@ async function handleAgreementSave(e) {
     }
     
     if (!content) {
-        // Default template
-        content = `SERVICE AGREEMENT\n\nThis agreement is made between ${agency?.name || '[Agency]'} ("Agency") and ${customer?.name || '[Customer]'} ("Client").\n\nSERVICES:\nThe Agency agrees to provide the following services:\n\n`;
+        // Default template with services separated by payment type
+        content = `SERVICE AGREEMENT\n\nThis agreement is made between ${agency?.name || '[Agency]'} ("Agency") and ${customer?.name || '[Customer]'} ("Client").\n\n`;
         
-        services.forEach((s, i) => {
-            content += `${i + 1}. ${s.title}`;
-            if (s.description) content += ` - ${s.description}`;
-            if (s.price) content += ` ($${s.price})`;
-            content += '\n';
-        });
+        // Separate services by payment type
+        const monthlyServices = services.filter(s => s.payment_type === 'monthly');
+        const oneTimeServices = services.filter(s => s.payment_type !== 'monthly');
         
+        // Monthly recurring services
+        if (monthlyServices.length > 0) {
+            content += `MONTHLY RECURRING SERVICES:\n`;
+            monthlyServices.forEach((s, i) => {
+                content += `${i + 1}. ${s.title}`;
+                if (s.price) content += ` - $${s.price}/month`;
+                if (s.description) content += `\n   ${s.description}`;
+                content += '\n';
+            });
+            
+            const monthlyTotal = monthlyServices.reduce((sum, s) => sum + (s.price || 0), 0);
+            content += `\nTOTAL MONTHLY PAYMENT: $${monthlyTotal.toFixed(2)}\n`;
+        }
+        
+        // One-time services
+        if (oneTimeServices.length > 0) {
+            content += `\nONE-TIME SERVICES:\n`;
+            oneTimeServices.forEach((s, i) => {
+                content += `${i + 1}. ${s.title}`;
+                if (s.price) content += ` - $${s.price} (one-time)`;
+                if (s.description) content += `\n   ${s.description}`;
+                content += '\n';
+            });
+            
+            const oneTimeTotal = oneTimeServices.reduce((sum, s) => sum + (s.price || 0), 0);
+            content += `\nTOTAL ONE-TIME PAYMENT: $${oneTimeTotal.toFixed(2)}\n`;
+        }
+        
+        // Payment terms
         content += `\nPAYMENT TERMS:\n`;
-        if (monthlyPayment) {
-            content += `Monthly Payment: $${monthlyPayment}\nDue Date: Day ${paymentDay} of each month\n`;
+        if (monthlyPayment && parseFloat(monthlyPayment) > 0) {
+            content += `Monthly Recurring Payment: $${monthlyPayment}\nDue Date: Day ${paymentDay} of each month\n`;
         }
         
         content += `\nTERM:\nStart Date: ${startDate}\n`;
@@ -1714,17 +1772,57 @@ async function viewAgreement(id) {
         const res = await axios.get(`/api/agreements/${id}`);
         const agreement = res.data;
         
-        const servicesHtml = agreement.services && agreement.services.length > 0
-            ? agreement.services.map(s => `
-                <div class="border-b border-gray-200 py-2">
-                    <div class="flex justify-between">
-                        <span class="font-medium">${s.title}</span>
-                        ${s.price ? `<span>$${s.price}</span>` : ''}
+        // Separate services by payment type
+        const monthlyServices = agreement.services?.filter(s => s.payment_type === 'monthly') || [];
+        const oneTimeServices = agreement.services?.filter(s => s.payment_type !== 'monthly') || [];
+        
+        let servicesHtml = '';
+        
+        if (monthlyServices.length > 0) {
+            const monthlyTotal = monthlyServices.reduce((sum, s) => sum + (s.price || 0), 0);
+            servicesHtml += `
+                <div class="mb-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <h4 class="font-semibold text-gray-900">🔄 Monthly Recurring Services</h4>
+                        <span class="text-lg font-bold text-green-600">$${monthlyTotal.toFixed(2)}/mo</span>
                     </div>
-                    ${s.description ? `<p class="text-sm text-gray-600 mt-1">${s.description}</p>` : ''}
+                    ${monthlyServices.map(s => `
+                        <div class="border-b border-gray-200 py-2 pl-4">
+                            <div class="flex justify-between">
+                                <span class="font-medium">${s.title}</span>
+                                ${s.price ? `<span class="text-green-600">$${s.price}/mo</span>` : ''}
+                            </div>
+                            ${s.description ? `<p class="text-sm text-gray-600 mt-1">${s.description}</p>` : ''}
+                        </div>
+                    `).join('')}
                 </div>
-            `).join('')
-            : '<p class="text-gray-500">No services listed</p>';
+            `;
+        }
+        
+        if (oneTimeServices.length > 0) {
+            const oneTimeTotal = oneTimeServices.reduce((sum, s) => sum + (s.price || 0), 0);
+            servicesHtml += `
+                <div class="mb-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <h4 class="font-semibold text-gray-900">💰 One-Time Services</h4>
+                        <span class="text-lg font-bold text-blue-600">$${oneTimeTotal.toFixed(2)}</span>
+                    </div>
+                    ${oneTimeServices.map(s => `
+                        <div class="border-b border-gray-200 py-2 pl-4">
+                            <div class="flex justify-between">
+                                <span class="font-medium">${s.title}</span>
+                                ${s.price ? `<span class="text-blue-600">$${s.price}</span>` : ''}
+                            </div>
+                            ${s.description ? `<p class="text-sm text-gray-600 mt-1">${s.description}</p>` : ''}
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+        
+        if (!servicesHtml) {
+            servicesHtml = '<p class="text-gray-500">No services listed</p>';
+        }
         
         const modal = document.createElement('div');
         modal.id = 'agreement-modal';
