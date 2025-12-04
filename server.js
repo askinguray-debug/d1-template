@@ -817,7 +817,7 @@ app.post('/api/model-agreements/:id/send-email', async (req, res) => {
     }
     
     // Generate share links for unsigned parties
-    const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
     let agencyShareLink = '';
     let customerShareLink = '';
     
@@ -1161,7 +1161,7 @@ app.post('/api/project-agreements/:id/send-email', async (req, res) => {
     }
     
     // Generate share links for unsigned parties
-    const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
     let agencyShareLink = '';
     let modelShareLink = '';
     
@@ -2001,7 +2001,7 @@ app.post('/api/agreements/:id/send-email', async (req, res) => {
     }
 
     // Generate share links for unsigned parties
-    const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
     let agencyShareLink = '';
     let customerShareLink = '';
     
@@ -2858,7 +2858,7 @@ initDB().then(() => {
         await writeDB(db);
       }
 
-      const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
       const shareUrl = `${baseUrl}/sign/${shareToken.token}`;
 
       // Get agreement details for message
