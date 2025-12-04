@@ -1744,6 +1744,10 @@ app.post('/api/share/:token/sign', async (req, res) => {
         const emailSettings = db.emailSettings || {};
         const agreement = agreements[agreementIndex];
         
+        // Get protocol and host for download link
+        const host = req.get('x-forwarded-host') || req.get('host');
+        const protocol = req.get('x-forwarded-proto') || req.protocol;
+        
         // Get party information
         let agency = null;
         let customer = null;
