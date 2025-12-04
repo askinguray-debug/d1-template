@@ -2095,6 +2095,183 @@ app.delete('/api/categories/:id', async (req, res) => {
 });
 
 // ======================
+// PAYMENT REMINDER API
+// ======================
+
+// Get payment reminder templates
+app.get('/api/payment-reminder-templates', async (req, res) => {
+  try {
+    const db = await readDB();
+    res.json(db.paymentReminderTemplates || []);
+  } catch (error) {
+    console.error('Error fetching payment reminder templates:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update payment reminder template
+app.put('/api/payment-reminder-templates/:id', async (req, res) => {
+  try {
+    const db = await readDB();
+    if (!db.paymentReminderTemplates) {
+      db.paymentReminderTemplates = [];
+    }
+    
+    const index = db.paymentReminderTemplates.findIndex(t => t.id === parseInt(req.params.id));
+    if (index === -1) {
+      return res.status(404).json({ error: 'Template not found' });
+    }
+    
+    db.paymentReminderTemplates[index] = {
+      ...db.paymentReminderTemplates[index],
+      subject: req.body.subject,
+      body: req.body.body
+    };
+    
+    await writeDB(db);
+    res.json(db.paymentReminderTemplates[index]);
+  } catch (error) {
+    console.error('Error updating payment reminder template:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Send manual payment reminder for an agreement
+app.post('/api/agreements/:id/payment-reminder', async (req, res) => {
+  try {
+    const db = await readDB();
+    const agreement = db.agreements.find(a => a.id === parseInt(req.params.id));
+    
+    if (!agreement) {
+      return res.status(404).json({ error: 'Agreement not found' });
+    }
+    
+    const agency = db.agencies.find(a => a.id === agreement.agency_id);
+    const customer = db.customers.find(c => c.id === agreement.customer_id);
+    const emailSettings = db.emailSettings || {};
+    
+    // Calculate payment status and days
+    const today = new Date();
+    const paymentDay = parseInt(agreement.payment_day) || 1;
+    
+    // Calculate next payment date
+    let nextPaymentDate = new Date(today.getFullYear(), today.getMonth(), paymentDay);
+    if (today.getDate() > paymentDay) {
+      nextPaymentDate.setMonth(nextPaymentDate.getMonth() + 1);
+    }
+    
+    const daysUntilPayment = Math.ceil((nextPaymentDate - today) / (1000 * 60 * 60 * 24));
+    const daysOverdue = daysUntilPayment < 0 ? Math.abs(daysUntilPayment) : 0;
+    
+    // Determine which template to use
+    let templateType = 'upcoming';
+    if (daysOverdue > 15) {
+      templateType = 'suspended';
+    } else if (daysOverdue > 0) {
+      templateType = 'overdue';
+    }
+    
+    // Get the appropriate template
+    const template = db.paymentReminderTemplates?.find(t => t.type === templateType);
+    if (!template) {
+      return res.status(500).json({ error: 'Payment reminder template not found' });
+    }
+    
+    // Format services list
+    const servicesList = agreement.services?.map((s, i) => 
+      `${i + 1}. ${s.title}${s.price ? ` - $${s.price}` : ''}${s.description ? `\n   ${s.description}` : ''}`
+    ).join('\n') || 'No services listed';
+    
+    // Replace template variables
+    let subject = template.subject
+      .replace(/\{\{agreement_title\}\}/g, agreement.title)
+      .replace(/\{\{customer_name\}\}/g, customer?.name || 'Customer')
+      .replace(/\{\{agency_name\}\}/g, agency?.name || 'Agency');
+    
+    let body = template.body
+      .replace(/\{\{agreement_title\}\}/g, agreement.title)
+      .replace(/\{\{customer_name\}\}/g, customer?.name || 'Customer')
+      .replace(/\{\{agency_name\}\}/g, agency?.name || 'Agency')
+      .replace(/\{\{payment_amount\}\}/g, agreement.monthly_payment || '0')
+      .replace(/\{\{payment_day\}\}/g, paymentDay)
+      .replace(/\{\{payment_date\}\}/g, nextPaymentDate.toLocaleDateString())
+      .replace(/\{\{days_remaining\}\}/g, Math.max(0, daysUntilPayment))
+      .replace(/\{\{days_overdue\}\}/g, daysOverdue)
+      .replace(/\{\{services_list\}\}/g, servicesList)
+      .replace(/\{\{suspension_date\}\}/g, new Date().toLocaleDateString());
+    
+    // Send email
+    await sendEmail(emailSettings, {
+      from: emailSettings.from_email || 'onboarding@resend.dev',
+      to: [customer?.email],
+      subject: subject,
+      html: body.replace(/\n/g, '<br>')
+    });
+    
+    res.json({ 
+      success: true, 
+      message: 'Payment reminder sent successfully',
+      reminderType: templateType,
+      daysUntilPayment,
+      daysOverdue,
+      nextPaymentDate: nextPaymentDate.toLocaleDateString()
+    });
+    
+  } catch (error) {
+    console.error('Error sending payment reminder:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get payment status for an agreement
+app.get('/api/agreements/:id/payment-status', async (req, res) => {
+  try {
+    const db = await readDB();
+    const agreement = db.agreements.find(a => a.id === parseInt(req.params.id));
+    
+    if (!agreement) {
+      return res.status(404).json({ error: 'Agreement not found' });
+    }
+    
+    const today = new Date();
+    const paymentDay = parseInt(agreement.payment_day) || 1;
+    
+    // Calculate next payment date
+    let nextPaymentDate = new Date(today.getFullYear(), today.getMonth(), paymentDay);
+    if (today.getDate() > paymentDay) {
+      nextPaymentDate.setMonth(nextPaymentDate.getMonth() + 1);
+    }
+    
+    const daysUntilPayment = Math.ceil((nextPaymentDate - today) / (1000 * 60 * 60 * 24));
+    const daysOverdue = daysUntilPayment < 0 ? Math.abs(daysUntilPayment) : 0;
+    
+    let status = 'upcoming';
+    let statusColor = 'green';
+    if (daysOverdue > 15) {
+      status = 'suspended';
+      statusColor = 'red';
+    } else if (daysOverdue > 0) {
+      status = 'overdue';
+      statusColor = 'orange';
+    }
+    
+    res.json({
+      status,
+      statusColor,
+      daysUntilPayment,
+      daysOverdue,
+      nextPaymentDate: nextPaymentDate.toLocaleDateString(),
+      paymentAmount: agreement.monthly_payment,
+      paymentDay
+    });
+    
+  } catch (error) {
+    console.error('Error getting payment status:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ======================
 // EMAIL SETTINGS API
 // ======================
 app.get('/api/email-settings', async (req, res) => {

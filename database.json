@@ -49,6 +49,29 @@
       "created_at": "2025-12-04T18:12:09.190Z"
     }
   ],
+  "paymentReminderTemplates": [
+    {
+      "id": 1,
+      "type": "upcoming",
+      "subject": "⏰ Upcoming Payment Reminder - {{agreement_title}}",
+      "body": "Dear {{customer_name}},\n\nThis is a friendly reminder that your payment for {{agreement_title}} is due in {{days_remaining}} days.\n\n💰 Payment Details:\n- Amount: ${{payment_amount}}\n- Due Date: {{payment_date}}\n- Payment Day: {{payment_day}} of each month\n\n📋 Services Included:\n{{services_list}}\n\nPlease ensure payment is made by the due date to avoid any service interruption.\n\nIf you have already made this payment, please disregard this message.\n\nThank you for your business!\n\nBest regards,\n{{agency_name}}",
+      "created_at": "2025-12-04T00:00:00.000Z"
+    },
+    {
+      "id": 2,
+      "type": "overdue",
+      "subject": "⚠️ Payment Overdue - {{agreement_title}}",
+      "body": "Dear {{customer_name}},\n\nWe notice that your payment for {{agreement_title}} is now {{days_overdue}} days overdue.\n\n💰 Payment Details:\n- Amount: ${{payment_amount}}\n- Original Due Date: {{payment_date}}\n- Days Overdue: {{days_overdue}}\n\n📋 Services Included:\n{{services_list}}\n\n⚠️ IMPORTANT: Please submit payment as soon as possible to avoid service suspension.\n\nIf payment is not received within 15 days of the due date, services will be temporarily suspended until payment is received.\n\nIf you have already made this payment, please contact us immediately with proof of payment.\n\nThank you for your immediate attention to this matter.\n\nBest regards,\n{{agency_name}}",
+      "created_at": "2025-12-04T00:00:00.000Z"
+    },
+    {
+      "id": 3,
+      "type": "suspended",
+      "subject": "🛑 Services Suspended - Payment Required - {{agreement_title}}",
+      "body": "Dear {{customer_name}},\n\nYour payment for {{agreement_title}} is now {{days_overdue}} days overdue, and your services have been SUSPENDED as of {{suspension_date}}.\n\n💰 Outstanding Payment:\n- Amount: ${{payment_amount}}\n- Original Due Date: {{payment_date}}\n- Days Overdue: {{days_overdue}}\n- Status: SERVICES SUSPENDED\n\n📋 Affected Services:\n{{services_list}}\n\n🛑 Your services are currently INACTIVE and will remain suspended until payment is received in full.\n\nTo reactivate your services:\n1. Submit the outstanding payment immediately\n2. Contact us with proof of payment\n3. Services will be reactivated within 24 hours of payment confirmation\n\n⚠️ If payment is not received within 30 days, the agreement may be terminated.\n\nPlease contact us immediately if you have any questions or concerns.\n\nBest regards,\n{{agency_name}}",
+      "created_at": "2025-12-04T00:00:00.000Z"
+    }
+  ],
   "agencies": [
     {
       "id": 1,
@@ -138,7 +161,33 @@
       "updated_at": "2025-12-04T18:18:34.412Z"
     }
   ],
-  "agreements": [],
+  "agreements": [
+    {
+      "id": 1,
+      "agreement_number": "AGR-1764876614126-747",
+      "agency_id": 2,
+      "customer_id": 6,
+      "template_id": "4",
+      "title": "Casa ",
+      "content": "Test ",
+      "monthly_payment": "1200",
+      "payment_day": 5,
+      "start_date": "2025-12-04",
+      "end_date": "2026-01-31",
+      "status": "draft",
+      "services": [
+        {
+          "title": "Social Media Management",
+          "description": "Monthly social media content and management4 INSTAGRAM REELS 24 EDITED PHOTOS 2 EVENT SHOOTINGS ",
+          "price": 1200
+        }
+      ],
+      "agency_signed": 0,
+      "customer_signed": 0,
+      "created_at": "2025-12-04T19:30:14.126Z",
+      "updated_at": "2025-12-04T19:30:14.126Z"
+    }
+  ],
   "reminders": [],
   "emailSettings": {
     "provider": "resend",

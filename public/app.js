@@ -1177,28 +1177,12 @@ async function deleteModelTemplate(id) {
 }
 
 // Load reminders
-function loadReminders() {
-    const remindersHtml = reminders.map(reminder => `
-        <div class="border border-gray-200 rounded-lg p-4">
-            <div class="flex justify-between items-start">
-                <div>
-                    <h3 class="font-semibold text-gray-900">${reminder.agreement_title}</h3>
-                    <p class="text-sm text-gray-600 mt-1">
-                        <i class="fas fa-user mr-1"></i>${reminder.customer_name}
-                    </p>
-                    <div class="flex gap-4 mt-2 text-sm">
-                        <span class="text-gray-600"><i class="fas fa-calendar mr-1"></i>Due: ${formatDate(reminder.due_date)}</span>
-                        <span class="text-gray-900 font-medium"><i class="fas fa-dollar-sign mr-1"></i>${reminder.amount}</span>
-                    </div>
-                </div>
-                <button onclick="markReminderPaid(${reminder.id})" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm">
-                    <i class="fas fa-check mr-1"></i>Mark Paid
-                </button>
-            </div>
-        </div>
-    `).join('');
+async function loadReminders() {
+    // Load active agreements with payment tracking
+    await loadActiveAgreementsPayments();
     
-    document.getElementById('reminders-list').innerHTML = remindersHtml || '<p class="text-gray-500">No pending reminders</p>';
+    // Load payment reminder templates
+    await loadReminderTemplates();
 }
 
 // Load settings
@@ -1798,6 +1782,20 @@ async function viewAgreement(id) {
                     </div>
                 </div>
                 
+                ${agreement.monthly_payment && agreement.status === 'active' ? `
+                <div class="mb-6" id="payment-status-${id}">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="font-semibold text-gray-900">💰 Payment Status</h3>
+                        <button onclick="sendPaymentReminder(${id})" class="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 text-sm">
+                            <i class="fas fa-bell mr-2"></i>Send Payment Reminder
+                        </button>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600">Loading payment status...</p>
+                    </div>
+                </div>
+                ` : ''}
+                
                 <div class="mb-6">
                     <h3 class="font-semibold text-gray-900 mb-3">Agreement Content</h3>
                     <div class="bg-gray-50 p-4 rounded-lg whitespace-pre-wrap text-sm">
@@ -1877,6 +1875,11 @@ async function viewAgreement(id) {
             </div>
         `;
         document.body.appendChild(modal);
+        
+        // Load payment status if agreement is active and has monthly payment
+        if (agreement.status === 'active' && agreement.monthly_payment) {
+            await loadPaymentStatus(id);
+        }
     } catch (error) {
         console.error('Error viewing agreement:', error);
         showNotification('Error loading agreement', 'error');
@@ -1896,6 +1899,97 @@ async function deleteAgreement(id) {
     } catch (error) {
         console.error('Error deleting agreement:', error);
         showNotification('Error deleting agreement', 'error');
+    }
+}
+
+// ======================
+// PAYMENT REMINDER FUNCTIONS
+// ======================
+
+// Load payment status for an agreement
+async function loadPaymentStatus(id) {
+    try {
+        const response = await axios.get(`/api/agreements/${id}/payment-status`);
+        const status = response.data;
+        
+        const container = document.getElementById(`payment-status-${id}`);
+        if (!container) return;
+        
+        const statusBox = container.querySelector('.bg-gray-50');
+        if (!statusBox) return;
+        
+        let statusColor = '';
+        let statusIcon = '';
+        let statusText = '';
+        
+        if (status.status === 'upcoming') {
+            statusColor = 'bg-green-50 border border-green-200';
+            statusIcon = '✅';
+            statusText = `Payment is on track. Next payment due in <strong>${status.daysUntilPayment} days</strong> on ${status.nextPaymentDate}`;
+        } else if (status.status === 'overdue') {
+            statusColor = 'bg-orange-50 border border-orange-200';
+            statusIcon = '⚠️';
+            statusText = `Payment is <strong>${status.daysOverdue} days overdue</strong>. Services may be suspended after 15 days.`;
+        } else if (status.status === 'suspended') {
+            statusColor = 'bg-red-50 border border-red-200';
+            statusIcon = '🛑';
+            statusText = `Services SUSPENDED. Payment is <strong>${status.daysOverdue} days overdue</strong>.`;
+        }
+        
+        statusBox.className = `${statusColor} p-4 rounded-lg`;
+        statusBox.innerHTML = `
+            <div class="flex items-start gap-3">
+                <div class="text-2xl">${statusIcon}</div>
+                <div class="flex-1">
+                    <p class="text-sm font-medium">${statusText}</p>
+                    <div class="grid grid-cols-3 gap-4 mt-3 text-sm">
+                        <div>
+                            <span class="text-gray-600">Next Payment:</span>
+                            <p class="font-semibold">${status.nextPaymentDate}</p>
+                        </div>
+                        <div>
+                            <span class="text-gray-600">Amount:</span>
+                            <p class="font-semibold">$${status.paymentAmount}</p>
+                        </div>
+                        <div>
+                            <span class="text-gray-600">Payment Day:</span>
+                            <p class="font-semibold">Day ${status.paymentDay} of month</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+    } catch (error) {
+        console.error('Error loading payment status:', error);
+    }
+}
+
+// Send payment reminder
+async function sendPaymentReminder(id) {
+    if (!confirm('Send payment reminder email to customer?')) return;
+    
+    try {
+        showNotification('Sending payment reminder...');
+        const response = await axios.post(`/api/agreements/${id}/payment-reminder`);
+        
+        let message = '✅ Payment reminder sent successfully!';
+        if (response.data.reminderType === 'overdue') {
+            message += ' (Overdue notice)';
+        } else if (response.data.reminderType === 'suspended') {
+            message += ' (Service suspension notice)';
+        } else {
+            message += ' (Upcoming payment reminder)';
+        }
+        
+        showNotification(message);
+        
+        // Reload payment status
+        await loadPaymentStatus(id);
+        
+    } catch (error) {
+        console.error('Error sending payment reminder:', error);
+        showNotification('Error sending payment reminder', 'error');
     }
 }
 
@@ -3055,4 +3149,258 @@ function fallbackCopyShareLink(url) {
     }
     
     document.body.removeChild(textarea);
+}
+
+// ======================
+// PAYMENT REMINDER TAB FUNCTIONS
+// ======================
+
+// Load active agreements with payment tracking
+async function loadActiveAgreementsPayments() {
+    try {
+        const response = await axios.get('/api/agreements');
+        const agreements = response.data.filter(a => a.status === 'active' && a.monthly_payment);
+        
+        const container = document.getElementById('active-agreements-list');
+        if (!container) return;
+        
+        if (agreements.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-8 text-gray-500">
+                    <i class="fas fa-inbox text-4xl mb-3"></i>
+                    <p>No active agreements with monthly payments</p>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = '';
+        
+        for (const agreement of agreements) {
+            const statusResponse = await axios.get(`/api/agreements/${agreement.id}/payment-status`);
+            const status = statusResponse.data;
+            
+            let statusColor = '';
+            let statusBg = '';
+            let statusIcon = '';
+            let statusText = '';
+            
+            if (status.status === 'upcoming') {
+                statusColor = 'text-green-700';
+                statusBg = 'bg-green-50 border-green-200';
+                statusIcon = '✅';
+                statusText = `Due in ${status.daysUntilPayment} days`;
+            } else if (status.status === 'overdue') {
+                statusColor = 'text-orange-700';
+                statusBg = 'bg-orange-50 border-orange-200';
+                statusIcon = '⚠️';
+                statusText = `${status.daysOverdue} days overdue`;
+            } else if (status.status === 'suspended') {
+                statusColor = 'text-red-700';
+                statusBg = 'bg-red-50 border-red-200';
+                statusIcon = '🛑';
+                statusText = `SUSPENDED (${status.daysOverdue} days overdue)`;
+            }
+            
+            const agency = agencies.find(a => a.id === agreement.agency_id);
+            const customer = customers.find(c => c.id === agreement.customer_id);
+            
+            const agreementCard = document.createElement('div');
+            agreementCard.className = `border ${statusBg} rounded-lg p-4`;
+            agreementCard.innerHTML = `
+                <div class="flex justify-between items-start mb-3">
+                    <div class="flex-1">
+                        <h3 class="font-semibold text-gray-900">${agreement.title || agreement.agreement_number}</h3>
+                        <p class="text-sm text-gray-600">${agency?.name || ''} → ${customer?.name || ''}</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-2xl">${statusIcon}</span>
+                        <p class="text-sm font-semibold ${statusColor}">${statusText}</p>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-4 gap-3 mb-3 text-sm">
+                    <div>
+                        <span class="text-gray-600">Payment:</span>
+                        <p class="font-semibold">$${agreement.monthly_payment}</p>
+                    </div>
+                    <div>
+                        <span class="text-gray-600">Due Date:</span>
+                        <p class="font-semibold">Day ${status.paymentDay}</p>
+                    </div>
+                    <div>
+                        <span class="text-gray-600">Next Payment:</span>
+                        <p class="font-semibold">${status.nextPaymentDate}</p>
+                    </div>
+                    <div>
+                        <span class="text-gray-600">Services:</span>
+                        <p class="font-semibold">${agreement.services?.length || 0}</p>
+                    </div>
+                </div>
+                
+                <div class="flex gap-2">
+                    <button onclick="sendPaymentReminder(${agreement.id})" class="flex-1 px-3 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 text-sm">
+                        <i class="fas fa-bell mr-2"></i>Send Reminder
+                    </button>
+                    <button onclick="viewAgreement(${agreement.id})" class="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
+                        <i class="fas fa-eye mr-2"></i>View Agreement
+                    </button>
+                </div>
+            `;
+            
+            container.appendChild(agreementCard);
+        }
+        
+    } catch (error) {
+        console.error('Error loading active agreements payments:', error);
+    }
+}
+
+// Load payment reminder templates
+async function loadReminderTemplates() {
+    try {
+        const response = await axios.get('/api/payment-reminder-templates');
+        const templates = response.data;
+        
+        const container = document.getElementById('reminder-templates-list');
+        if (!container) return;
+        
+        container.innerHTML = '';
+        
+        templates.forEach(template => {
+            let typeLabel = '';
+            let typeColor = '';
+            let typeIcon = '';
+            
+            if (template.type === 'upcoming') {
+                typeLabel = 'Upcoming Payment';
+                typeColor = 'bg-green-100 text-green-800';
+                typeIcon = '✅';
+            } else if (template.type === 'overdue') {
+                typeLabel = 'Overdue Payment';
+                typeColor = 'bg-orange-100 text-orange-800';
+                typeIcon = '⚠️';
+            } else if (template.type === 'suspended') {
+                typeLabel = 'Services Suspended';
+                typeColor = 'bg-red-100 text-red-800';
+                typeIcon = '🛑';
+            }
+            
+            const templateCard = document.createElement('div');
+            templateCard.className = 'border border-gray-200 rounded-lg p-4';
+            templateCard.innerHTML = `
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <span class="inline-block px-3 py-1 ${typeColor} rounded-full text-sm font-semibold mb-2">
+                            ${typeIcon} ${typeLabel}
+                        </span>
+                        <h4 class="font-semibold text-gray-900">${template.subject}</h4>
+                    </div>
+                    <button onclick="editReminderTemplate(${template.id})" class="px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
+                        <i class="fas fa-edit mr-1"></i>Edit
+                    </button>
+                </div>
+                <p class="text-sm text-gray-600 whitespace-pre-wrap">${template.body.substring(0, 200)}${template.body.length > 200 ? '...' : ''}</p>
+            `;
+            
+            container.appendChild(templateCard);
+        });
+        
+    } catch (error) {
+        console.error('Error loading reminder templates:', error);
+    }
+}
+
+// Edit reminder template
+async function editReminderTemplate(id) {
+    try {
+        const response = await axios.get('/api/payment-reminder-templates');
+        const template = response.data.find(t => t.id === id);
+        
+        if (!template) {
+            showNotification('Template not found', 'error');
+            return;
+        }
+        
+        const modal = document.createElement('div');
+        modal.id = 'template-edit-modal';
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+        modal.innerHTML = `
+            <div class="bg-white rounded-lg p-6 max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold text-gray-900">
+                        <i class="fas fa-edit mr-2"></i>Edit Email Template
+                    </h3>
+                    <button onclick="closeModal('template-edit-modal')" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <form id="template-edit-form" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+                        <input type="text" id="template-subject" value="${template.subject}" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Body</label>
+                        <textarea id="template-body" rows="15" 
+                                  class="w-full px-3 py-2 border border-gray-300 rounded-lg font-mono text-sm">${template.body}</textarea>
+                    </div>
+                    
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <p class="text-sm font-semibold text-blue-900 mb-2">Available Template Variables:</p>
+                        <div class="grid grid-cols-2 gap-2 text-xs text-blue-800">
+                            <div><code class="bg-blue-100 px-2 py-1 rounded">{{agreement_title}}</code> - Agreement title</div>
+                            <div><code class="bg-blue-100 px-2 py-1 rounded">{{customer_name}}</code> - Customer name</div>
+                            <div><code class="bg-blue-100 px-2 py-1 rounded">{{agency_name}}</code> - Agency name</div>
+                            <div><code class="bg-blue-100 px-2 py-1 rounded">{{payment_amount}}</code> - Payment amount</div>
+                            <div><code class="bg-blue-100 px-2 py-1 rounded">{{payment_day}}</code> - Payment day of month</div>
+                            <div><code class="bg-blue-100 px-2 py-1 rounded">{{payment_date}}</code> - Next payment date</div>
+                            <div><code class="bg-blue-100 px-2 py-1 rounded">{{days_remaining}}</code> - Days until payment</div>
+                            <div><code class="bg-blue-100 px-2 py-1 rounded">{{days_overdue}}</code> - Days overdue</div>
+                            <div><code class="bg-blue-100 px-2 py-1 rounded">{{services_list}}</code> - List of services</div>
+                            <div><code class="bg-blue-100 px-2 py-1 rounded">{{suspension_date}}</code> - Suspension date</div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end gap-3">
+                        <button type="button" onclick="closeModal('template-edit-modal')" 
+                                class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+                            Cancel
+                        </button>
+                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                            <i class="fas fa-save mr-2"></i>Save Template
+                        </button>
+                    </div>
+                </form>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        document.getElementById('template-edit-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const updatedTemplate = {
+                subject: document.getElementById('template-subject').value,
+                body: document.getElementById('template-body').value
+            };
+            
+            try {
+                await axios.put(`/api/payment-reminder-templates/${id}`, updatedTemplate);
+                showNotification('Template updated successfully');
+                closeModal('template-edit-modal');
+                await loadReminderTemplates();
+            } catch (error) {
+                console.error('Error updating template:', error);
+                showNotification('Error updating template', 'error');
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error editing template:', error);
+        showNotification('Error loading template', 'error');
+    }
 }

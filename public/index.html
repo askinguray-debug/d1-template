@@ -483,9 +483,22 @@
 
                 <!-- Reminders Tab -->
                 <div id="reminders" class="tab-content">
-                    <div class="bg-white rounded-lg shadow p-6">
-                        <h2 class="text-xl font-bold text-gray-900 mb-4">Payment Reminders</h2>
-                        <div id="reminders-list" class="space-y-4"></div>
+                    <div class="grid grid-cols-1 gap-6">
+                        <!-- Active Agreements with Payment Tracking -->
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <h2 class="text-xl font-bold text-gray-900 mb-4">
+                                <i class="fas fa-dollar-sign mr-2 text-green-600"></i>Active Agreements - Payment Tracking
+                            </h2>
+                            <div id="active-agreements-list" class="space-y-4"></div>
+                        </div>
+                        
+                        <!-- Email Templates -->
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <h2 class="text-xl font-bold text-gray-900 mb-4">
+                                <i class="fas fa-envelope-open-text mr-2 text-blue-600"></i>Payment Reminder Email Templates
+                            </h2>
+                            <div class="space-y-4" id="reminder-templates-list"></div>
+                        </div>
                     </div>
                 </div>
 
