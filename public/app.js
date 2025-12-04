@@ -1583,6 +1583,7 @@ function fillServiceFromLibrary(sectionId, selectElement) {
 
 function removeServiceSection(id) {
     document.getElementById(`service-${id}`).remove();
+    updateMonthlyPayment(); // Recalculate after removing service
 }
 
 function getServiceSections() {
@@ -1737,13 +1738,17 @@ async function handleAgreementSave(e) {
         }
     }
     
+    // Auto-calculate monthly payment from monthly services only
+    const monthlyServices = services.filter(s => s.payment_type === 'monthly');
+    const calculatedMonthlyPayment = monthlyServices.reduce((sum, s) => sum + (parseFloat(s.price) || 0), 0);
+    
     const data = {
         agency_id: parseInt(agencyId),
         customer_id: parseInt(customerId),
         template_id: templateId || null,
         title: title,
         content: content,
-        monthly_payment: document.getElementById('agreement-payment').value || null,
+        monthly_payment: calculatedMonthlyPayment > 0 ? calculatedMonthlyPayment.toString() : null,
         payment_day: parseInt(document.getElementById('agreement-payment-day').value),
         start_date: startDate,
         end_date: document.getElementById('agreement-end-date').value || null,
