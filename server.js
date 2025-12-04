@@ -1387,7 +1387,7 @@ app.post('/api/project-agreements/:id/generate-share-link', async (req, res) => 
       const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
       return res.json({ 
         success: true, 
-        shareLink: `${baseUrl}/sign/${existingToken.token}`,
+        shareUrl: `${baseUrl}/sign/${existingToken.token}`,
         token: existingToken.token,
         expiresAt: existingToken.expiresAt
       });
@@ -1411,7 +1411,7 @@ app.post('/api/project-agreements/:id/generate-share-link', async (req, res) => 
     const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
     res.json({ 
       success: true, 
-      shareLink: `${baseUrl}/sign/${token}`,
+      shareUrl: `${baseUrl}/sign/${token}`,
       token: token,
       expiresAt: shareToken.expiresAt
     });
