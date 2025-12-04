@@ -1221,22 +1221,27 @@ async function loadSettings() {
             document.getElementById('email-provider').value = res.data.provider || 'gmail';
             
             // Load provider-specific fields
-            if (res.data.provider === 'gmail') {
-                document.getElementById('gmail-email').value = res.data.gmail_email || '';
+            if (res.data.provider === 'gmail' || !res.data.provider) {
+                document.getElementById('gmail-email').value = res.data.gmail_email || res.data.from_email || '';
                 document.getElementById('gmail-app-password').value = res.data.gmail_app_password || '';
             } else {
                 document.getElementById('email-api-key').value = res.data.api_key || '';
-                document.getElementById('email-from').value = res.data.from_email || '';
             }
             
             document.getElementById('email-from-name').value = res.data.from_name || '';
             document.getElementById('email-reminder-days').value = res.data.reminder_days_before || 3;
-            
-            // Toggle fields based on provider
-            toggleEmailProviderFields();
+        } else {
+            // No settings yet - default to Gmail
+            document.getElementById('email-provider').value = 'gmail';
         }
+        
+        // Always toggle fields based on current provider selection
+        toggleEmailProviderFields();
     } catch (error) {
         console.error('Error loading email settings:', error);
+        // On error, still show Gmail fields (default)
+        document.getElementById('email-provider').value = 'gmail';
+        toggleEmailProviderFields();
     }
 }
 
