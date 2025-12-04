@@ -2586,15 +2586,56 @@ app.post('/api/agreements/:id/send-email', async (req, res) => {
         ${signatureSection}
         ${agreement.services && agreement.services.length > 0 ? `
         <div style="margin: 20px 0;">
-          <h3 style="color: #1f2937;">Services Included:</h3>
-          <ul style="list-style: none; padding: 0;">
-            ${agreement.services.map(s => `
-              <li style="padding: 8px; background-color: #f9fafb; margin: 5px 0; border-radius: 5px;">
-                <strong>${s.title}</strong>${s.price ? ` - $${s.price}` : ''}
-                ${s.description ? `<br><span style="color: #6b7280; font-size: 14px;">${s.description}</span>` : ''}
-              </li>
-            `).join('')}
-          </ul>
+          <h3 style="color: #1f2937;">📋 Services Included:</h3>
+          ${(() => {
+            const monthlyServices = agreement.services.filter(s => s.payment_type === 'monthly');
+            const oneTimeServices = agreement.services.filter(s => s.payment_type !== 'monthly');
+            let html = '';
+            
+            // Monthly recurring services
+            if (monthlyServices.length > 0) {
+              const monthlyTotal = monthlyServices.reduce((sum, s) => sum + (parseFloat(s.price) || 0), 0);
+              html += `
+                <div style="margin-bottom: 20px;">
+                  <h4 style="color: #059669; margin-bottom: 10px;">📅 MONTHLY RECURRING SERVICES</h4>
+                  <ul style="list-style: none; padding: 0;">
+                    ${monthlyServices.map(s => `
+                      <li style="padding: 10px; background-color: #f0fdf4; margin: 5px 0; border-radius: 5px; border-left: 3px solid #059669;">
+                        <strong>${s.title}</strong> - <span style="color: #059669; font-weight: bold;">$${s.price}/month</span>
+                        ${s.description ? `<br><span style="color: #6b7280; font-size: 14px;">${s.description}</span>` : ''}
+                      </li>
+                    `).join('')}
+                  </ul>
+                  <p style="text-align: right; font-weight: bold; color: #059669; margin-top: 10px;">
+                    💰 Monthly Total: $${monthlyTotal.toFixed(2)}
+                  </p>
+                </div>
+              `;
+            }
+            
+            // One-time services
+            if (oneTimeServices.length > 0) {
+              const oneTimeTotal = oneTimeServices.reduce((sum, s) => sum + (parseFloat(s.price) || 0), 0);
+              html += `
+                <div style="margin-bottom: 20px;">
+                  <h4 style="color: #2563eb; margin-bottom: 10px;">💵 ONE-TIME SERVICES</h4>
+                  <ul style="list-style: none; padding: 0;">
+                    ${oneTimeServices.map(s => `
+                      <li style="padding: 10px; background-color: #eff6ff; margin: 5px 0; border-radius: 5px; border-left: 3px solid #2563eb;">
+                        <strong>${s.title}</strong> - <span style="color: #2563eb; font-weight: bold;">$${s.price}</span> <span style="color: #6b7280;">(one-time)</span>
+                        ${s.description ? `<br><span style="color: #6b7280; font-size: 14px;">${s.description}</span>` : ''}
+                      </li>
+                    `).join('')}
+                  </ul>
+                  <p style="text-align: right; font-weight: bold; color: #2563eb; margin-top: 10px;">
+                    💰 One-Time Total: $${oneTimeTotal.toFixed(2)}
+                  </p>
+                </div>
+              `;
+            }
+            
+            return html;
+          })()}
         </div>
         ` : ''}
         <div style="margin: 20px 0; padding: 15px; background-color: #e0f2fe; border-left: 4px solid #0284c7; border-radius: 8px;">
