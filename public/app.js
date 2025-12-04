@@ -19,15 +19,24 @@ function processTemplate(content, data) {
     }
     
     // Replace all template variables with actual data
+    // Support both UPPERCASE and lowercase variable names
     return content
-        .replace(/\{\{AGENCY_NAME\}\}/g, data.agencyName || '[Agency Name]')
-        .replace(/\{\{CUSTOMER_NAME\}\}/g, data.customerName || '[Customer Name]')
-        .replace(/\{\{SERVICES\}\}/g, data.services || '[Services]')
-        .replace(/\{\{MONTHLY_PAYMENT\}\}/g, data.monthlyPayment || '[Payment Amount]')
-        .replace(/\{\{PAYMENT_DAY\}\}/g, data.paymentDay || '[Payment Day]')
-        .replace(/\{\{START_DATE\}\}/g, data.startDate || '[Start Date]')
-        .replace(/\{\{END_DATE\}\}/g, data.endDate || '[End Date]')
-        .replace(/\{\{PAYMENT_TERMS\}\}/g, paymentTerms);
+        .replace(/\{\{AGENCY_NAME\}\}/gi, data.agencyName || '[Agency Name]')
+        .replace(/\{\{CUSTOMER_NAME\}\}/gi, data.customerName || '[Customer Name]')
+        .replace(/\{\{SERVICES\}\}/gi, data.services || '[Services]')
+        .replace(/\{\{MONTHLY_PAYMENT\}\}/gi, data.monthlyPayment || '[Payment Amount]')
+        .replace(/\{\{PAYMENT_DAY\}\}/gi, data.paymentDay || '[Payment Day]')
+        .replace(/\{\{START_DATE\}\}/gi, data.startDate || '[Start Date]')
+        .replace(/\{\{END_DATE\}\}/gi, data.endDate || '[End Date]')
+        .replace(/\{\{PAYMENT_TERMS\}\}/gi, paymentTerms)
+        // Support camelCase variable names as well
+        .replace(/\{\{agencyName\}\}/g, data.agencyName || '[Agency Name]')
+        .replace(/\{\{customerName\}\}/g, data.customerName || '[Customer Name]')
+        .replace(/\{\{services\}\}/g, data.services || '[Services]')
+        .replace(/\{\{monthlyPayment\}\}/g, data.monthlyPayment || '[Payment Amount]')
+        .replace(/\{\{paymentDay\}\}/g, data.paymentDay || '[Payment Day]')
+        .replace(/\{\{startDate\}\}/g, data.startDate || '[Start Date]')
+        .replace(/\{\{endDate\}\}/g, data.endDate || '[End Date]');
 }
 
 // Initialize app

@@ -335,6 +335,51 @@
       "created_at": "2025-12-04T21:34:03.342Z",
       "updated_at": "2025-12-04T21:34:03.342Z",
       "downloadToken": "13e957caea0a6729b1b45d41a83dbf17aaa7e20acd5b9998bb0e0090caf1554d"
+    },
+    {
+      "id": 6,
+      "agreement_number": "AGR-1764884579239-584",
+      "agency_id": 2,
+      "customer_id": 6,
+      "template_id": "4",
+      "title": "44",
+      "content": "SOCIAL MEDIA SERVICES AGREEMENT\n\nThis agreement is entered into between {{agencyName}} (\"Agency\") and {{customerName}} (\"Client\").\n\nSERVICES PROVIDED:\n{{services}}\n\nPAYMENT TERMS:\nMonthly Payment: ${{monthlyPayment}}\nPayment Due: Day {{paymentDay}} of each month\n\nTERM:\nStart Date: {{startDate}}\nEnd Date: {{endDate}}\n\nBoth parties agree to the terms outlined in this agreement.",
+      "monthly_payment": "1400",
+      "payment_day": 1,
+      "start_date": "2025-12-01",
+      "end_date": "2025-12-31",
+      "status": "draft",
+      "services": [
+        {
+          "title": "Social Media Management",
+          "description": "Monthly social media content and management4 INSTAGRAM REELS 24 EDITED PHOTOS 2 EVENT SHOOTINGS ",
+          "price": 1200,
+          "payment_type": "monthly"
+        },
+        {
+          "title": "SEO Optimization",
+          "description": "Search engine optimization services",
+          "price": 800,
+          "payment_type": "one-time"
+        },
+        {
+          "title": "Website Design",
+          "description": "Complete website design and development",
+          "price": 2500,
+          "payment_type": "one-time"
+        },
+        {
+          "title": "Website Maintenance",
+          "description": "Monthly website updates and maintenance",
+          "price": 200,
+          "payment_type": "monthly"
+        }
+      ],
+      "agency_signed": 0,
+      "customer_signed": 0,
+      "created_at": "2025-12-04T21:42:59.239Z",
+      "updated_at": "2025-12-04T21:42:59.239Z",
+      "downloadToken": "faf88f7998a9a465dc9e62986573b8187daadc6ddc2c10e0d64be1aa8fa735e4"
     }
   ],
   "reminders": [],
@@ -696,6 +741,24 @@
       "used": false,
       "createdAt": "2025-12-04T21:26:27.097Z",
       "expiresAt": "2026-01-03T21:26:27.097Z"
+    },
+    {
+      "token": "a11168d4608affab7df10f671dc3baf7f17b37b6391800d84d5e21e355fc55bf",
+      "agreementId": 6,
+      "agreementType": "regular",
+      "party": "agency",
+      "used": false,
+      "createdAt": "2025-12-04T21:43:03.377Z",
+      "expiresAt": "2026-01-03T21:43:03.377Z"
+    },
+    {
+      "token": "79ca100fcf1ce1ad7451933dcff05563c3dedba2996070c9e1621a45a2a1c66e",
+      "agreementId": 6,
+      "agreementType": "regular",
+      "party": "customer",
+      "used": false,
+      "createdAt": "2025-12-04T21:43:03.388Z",
+      "expiresAt": "2026-01-03T21:43:03.388Z"
     }
   ],
   "projectAgreements": [
@@ -803,6 +866,13 @@
       "agreementType": "regular",
       "createdAt": "2025-12-04T21:34:04.629Z",
       "expiresAt": "2026-12-04T21:34:04.629Z"
+    },
+    {
+      "token": "faf88f7998a9a465dc9e62986573b8187daadc6ddc2c10e0d64be1aa8fa735e4",
+      "agreementId": 6,
+      "agreementType": "regular",
+      "createdAt": "2025-12-04T21:43:03.366Z",
+      "expiresAt": "2026-12-04T21:43:03.366Z"
     }
   ]
 }
