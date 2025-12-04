@@ -12,10 +12,10 @@ let currentAgreementType = 'regular'; // 'regular' or 'model'
 function processTemplate(content, data) {
     if (!content) return '';
     
-    // Build payment terms section only if there's a monthly payment
-    let paymentTerms = '';
-    if (data.monthlyPayment && parseFloat(data.monthlyPayment) > 0) {
-        paymentTerms = `PAYMENT TERMS:\nMonthly Fee: $${data.monthlyPayment}\nDue Date: ${data.paymentDay || '1'} of each month`;
+    // Build default payment terms if not provided
+    let paymentTerms = data.paymentTerms || '';
+    if (!paymentTerms && data.monthlyPayment && parseFloat(data.monthlyPayment) > 0) {
+        paymentTerms = `Monthly Fee: $${data.monthlyPayment}\nDue Date: ${data.paymentDay || '1'} of each month`;
     }
     
     // Replace all template variables with actual data
@@ -24,15 +24,18 @@ function processTemplate(content, data) {
         .replace(/\{\{AGENCY_NAME\}\}/gi, data.agencyName || '[Agency Name]')
         .replace(/\{\{CUSTOMER_NAME\}\}/gi, data.customerName || '[Customer Name]')
         .replace(/\{\{SERVICES\}\}/gi, data.services || '[Services]')
+        .replace(/\{\{SERVICES_BY_TYPE\}\}/gi, data.servicesByType || data.services || '[Services]')
+        .replace(/\{\{PAYMENT_TERMS\}\}/gi, paymentTerms)
         .replace(/\{\{MONTHLY_PAYMENT\}\}/gi, data.monthlyPayment || '[Payment Amount]')
         .replace(/\{\{PAYMENT_DAY\}\}/gi, data.paymentDay || '[Payment Day]')
         .replace(/\{\{START_DATE\}\}/gi, data.startDate || '[Start Date]')
         .replace(/\{\{END_DATE\}\}/gi, data.endDate || '[End Date]')
-        .replace(/\{\{PAYMENT_TERMS\}\}/gi, paymentTerms)
         // Support camelCase variable names as well
         .replace(/\{\{agencyName\}\}/g, data.agencyName || '[Agency Name]')
         .replace(/\{\{customerName\}\}/g, data.customerName || '[Customer Name]')
         .replace(/\{\{services\}\}/g, data.services || '[Services]')
+        .replace(/\{\{servicesByType\}\}/g, data.servicesByType || data.services || '[Services]')
+        .replace(/\{\{paymentTerms\}\}/g, paymentTerms)
         .replace(/\{\{monthlyPayment\}\}/g, data.monthlyPayment || '[Payment Amount]')
         .replace(/\{\{paymentDay\}\}/g, data.paymentDay || '[Payment Day]')
         .replace(/\{\{startDate\}\}/g, data.startDate || '[Start Date]')
@@ -1729,7 +1732,62 @@ async function handleAgreementSave(e) {
     if (templateId) {
         const template = templates.find(t => t.id == templateId);
         if (template && template.content && template.content.trim().length > 20) {
-            // Build services text for template
+            // Separate services by payment type
+            const monthlyServices = services.filter(s => s.payment_type === 'monthly');
+            const oneTimeServices = services.filter(s => s.payment_type !== 'monthly');
+            
+            // Build services text separated by type
+            let servicesByType = '';
+            let monthlyTotal = 0;
+            let oneTimeTotal = 0;
+            
+            // Monthly recurring services
+            if (monthlyServices.length > 0) {
+                servicesByType += 'MONTHLY RECURRING SERVICES:\n';
+                monthlyServices.forEach((s, i) => {
+                    servicesByType += `${i + 1}. ${s.title}`;
+                    if (s.description) servicesByType += ` - ${s.description}`;
+                    if (s.price) {
+                        servicesByType += ` ($${s.price}/month)`;
+                        monthlyTotal += parseFloat(s.price) || 0;
+                    }
+                    servicesByType += '\n';
+                });
+                servicesByType += `\nMonthly Total: $${monthlyTotal.toFixed(2)}\n`;
+            }
+            
+            // One-time services
+            if (oneTimeServices.length > 0) {
+                if (monthlyServices.length > 0) servicesByType += '\n';
+                servicesByType += 'ONE-TIME SERVICES:\n';
+                oneTimeServices.forEach((s, i) => {
+                    servicesByType += `${i + 1}. ${s.title}`;
+                    if (s.description) servicesByType += ` - ${s.description}`;
+                    if (s.price) {
+                        servicesByType += ` ($${s.price})`;
+                        oneTimeTotal += parseFloat(s.price) || 0;
+                    }
+                    servicesByType += '\n';
+                });
+                servicesByType += `\nOne-Time Total: $${oneTimeTotal.toFixed(2)}\n`;
+            }
+            
+            // Grand total
+            const grandTotal = monthlyTotal + oneTimeTotal;
+            if (monthlyServices.length > 0 && oneTimeServices.length > 0) {
+                servicesByType += `\nGRAND TOTAL (All Services): $${grandTotal.toFixed(2)}\n`;
+            }
+            
+            // Build payment terms
+            let paymentTerms = '';
+            if (monthlyTotal > 0) {
+                paymentTerms += `Monthly Recurring Payment: $${monthlyTotal.toFixed(2)}\nDue Date: Day ${paymentDay} of each month\n`;
+            }
+            if (oneTimeTotal > 0) {
+                paymentTerms += `${monthlyTotal > 0 ? '\n' : ''}One-Time Payment Due: $${oneTimeTotal.toFixed(2)}\n`;
+            }
+            
+            // Build simple services list (for backward compatibility)
             let servicesText = '';
             services.forEach((s, i) => {
                 servicesText += `${i + 1}. ${s.title}`;
@@ -1743,7 +1801,9 @@ async function handleAgreementSave(e) {
                 agencyName: agency?.name,
                 customerName: customer?.name,
                 services: servicesText.trim(),
-                monthlyPayment: monthlyPayment || 'N/A',
+                servicesByType: servicesByType.trim(),
+                paymentTerms: paymentTerms.trim(),
+                monthlyPayment: monthlyTotal > 0 ? monthlyTotal.toFixed(2) : (monthlyPayment || 'N/A'),
                 paymentDay: paymentDay || 'N/A',
                 startDate: startDate,
                 endDate: endDate || 'Ongoing'

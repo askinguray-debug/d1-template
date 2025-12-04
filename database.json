@@ -167,7 +167,7 @@
       "id": 4,
       "name": "Social Media Services ",
       "description": "1 Month Social Media Management Package ",
-      "content": "SOCIAL MEDIA SERVICES AGREEMENT\n\nThis agreement is entered into between {{agencyName}} (\"Agency\") and {{customerName}} (\"Client\").\n\nSERVICES PROVIDED:\n{{services}}\n\nPAYMENT TERMS:\nMonthly Payment: ${{monthlyPayment}}\nPayment Due: Day {{paymentDay}} of each month\n\nTERM:\nStart Date: {{startDate}}\nEnd Date: {{endDate}}\n\nBoth parties agree to the terms outlined in this agreement.",
+      "content": "SERVICE AGREEMENT\n\nThis agreement is entered into between {{agencyName}} (\"Agency\") and {{customerName}} (\"Client\").\n\n{{servicesByType}}\n\nPAYMENT TERMS:\n{{paymentTerms}}\n\nTERM:\nStart Date: {{startDate}}\nEnd Date: {{endDate}}\n\nBoth parties agree to the terms outlined in this agreement.",
       "created_at": "2025-12-04T18:18:34.412Z",
       "updated_at": "2025-12-04T18:18:34.412Z"
     }
@@ -175,23 +175,29 @@
   "agreements": [
     {
       "id": 1,
-      "agreement_number": "AGR-1764885075625-111",
+      "agreement_number": "AGR-1764885717642-152",
       "agency_id": 2,
       "customer_id": 6,
       "template_id": "4",
-      "title": "77",
-      "content": "SOCIAL MEDIA SERVICES AGREEMENT\n\nThis agreement is entered into between Recluma Creative Agency (\"Agency\") and Ag (\"Client\").\n\nSERVICES PROVIDED:\n1. Website Maintenance - Monthly website updates and maintenance ($200)\n2. Social Media Management - Monthly social media content and management4 INSTAGRAM REELS 24 EDITED PHOTOS 2 EVENT SHOOTINGS  ($1200)\n3. Logo Design - Professional logo design with 3 revisions ($500)\n\nPAYMENT TERMS:\nMonthly Payment: $1400\nPayment Due: Day 7 of each month\n\nTERM:\nStart Date: 2025-12-05\nEnd Date: 2025-12-31\n\nBoth parties agree to the terms outlined in this agreement.",
+      "title": "88",
+      "content": "SOCIAL MEDIA SERVICES AGREEMENT\n\nThis agreement is entered into between Recluma Creative Agency (\"Agency\") and Ag (\"Client\").\n\nSERVICES PROVIDED:\n1. Website Design - Complete website design and development ($2500)\n2. Logo Design - Professional logo design with 3 revisions ($500)\n3. Social Media Management - Monthly social media content and management4 INSTAGRAM REELS 24 EDITED PHOTOS 2 EVENT SHOOTINGS  ($1200)\n4. Website Maintenance - Monthly website updates and maintenance ($200)\n\nPAYMENT TERMS:\nMonthly Payment: $1400.00\nPayment Due: Day 6 of each month\n\nTERM:\nStart Date: 2025-12-05\nEnd Date: 2026-01-05\n\nBoth parties agree to the terms outlined in this agreement.",
       "monthly_payment": "1400",
-      "payment_day": 7,
+      "payment_day": 6,
       "start_date": "2025-12-05",
-      "end_date": "2025-12-31",
+      "end_date": "2026-01-05",
       "status": "draft",
       "services": [
         {
-          "title": "Website Maintenance",
-          "description": "Monthly website updates and maintenance",
-          "price": 200,
-          "payment_type": "monthly"
+          "title": "Website Design",
+          "description": "Complete website design and development",
+          "price": 2500,
+          "payment_type": "one-time"
+        },
+        {
+          "title": "Logo Design",
+          "description": "Professional logo design with 3 revisions",
+          "price": 500,
+          "payment_type": "one-time"
         },
         {
           "title": "Social Media Management",
@@ -200,17 +206,17 @@
           "payment_type": "monthly"
         },
         {
-          "title": "Logo Design",
-          "description": "Professional logo design with 3 revisions",
-          "price": 500,
-          "payment_type": "one-time"
+          "title": "Website Maintenance",
+          "description": "Monthly website updates and maintenance",
+          "price": 200,
+          "payment_type": "monthly"
         }
       ],
       "agency_signed": 0,
       "customer_signed": 0,
-      "created_at": "2025-12-04T21:51:15.625Z",
-      "updated_at": "2025-12-04T21:51:15.625Z",
-      "downloadToken": "8d5970451c62c07c0bb3877a8f84eed31fd56a84c161ea6e3bc6857fdfaf23e2"
+      "created_at": "2025-12-04T22:01:57.643Z",
+      "updated_at": "2025-12-04T22:01:57.643Z",
+      "downloadToken": "a555637e4102d8a2770dc7a781bbfb97ca99a6c26729e144fa0676cd7254c764"
     }
   ],
   "reminders": [],
@@ -596,9 +602,10 @@
       "agreementId": 1,
       "agreementType": "regular",
       "party": "agency",
-      "used": false,
+      "used": true,
       "createdAt": "2025-12-04T21:51:16.156Z",
-      "expiresAt": "2026-01-03T21:51:16.156Z"
+      "expiresAt": "2026-01-03T21:51:16.156Z",
+      "usedAt": "2025-12-04T21:58:41.939Z"
     },
     {
       "token": "bf6c9ee69743ebc62ca4696ddd03c52b7e79fe62ffe227e1f3b6664d090b7683",
@@ -608,6 +615,15 @@
       "used": false,
       "createdAt": "2025-12-04T21:51:16.161Z",
       "expiresAt": "2026-01-03T21:51:16.161Z"
+    },
+    {
+      "token": "4a31a1476079427ad836b37a04c876ad21b017fc32c17a13890f6ee59d8da3ac",
+      "agreementId": 1,
+      "agreementType": "regular",
+      "party": "agency",
+      "used": false,
+      "createdAt": "2025-12-04T22:01:58.057Z",
+      "expiresAt": "2026-01-03T22:01:58.057Z"
     }
   ],
   "projectAgreements": [
@@ -729,6 +745,13 @@
       "agreementType": "regular",
       "createdAt": "2025-12-04T21:51:16.152Z",
       "expiresAt": "2026-12-04T21:51:16.152Z"
+    },
+    {
+      "token": "a555637e4102d8a2770dc7a781bbfb97ca99a6c26729e144fa0676cd7254c764",
+      "agreementId": 1,
+      "agreementType": "regular",
+      "createdAt": "2025-12-04T22:01:58.050Z",
+      "expiresAt": "2026-12-04T22:01:58.050Z"
     }
   ]
 }
