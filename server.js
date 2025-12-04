@@ -649,10 +649,15 @@ app.post('/api/agreements/:id/sign', async (req, res) => {
       db.agreements[index].agency_signed = 1;
       db.agreements[index].agency_signature = req.body.signature;
       db.agreements[index].agency_signed_at = new Date().toISOString();
+      // Check if customer already signed, if so, activate agreement
+      if (db.agreements[index].customer_signed) {
+        db.agreements[index].status = 'active';
+      }
     } else if (req.body.party === 'customer') {
       db.agreements[index].customer_signed = 1;
       db.agreements[index].customer_signature = req.body.signature;
       db.agreements[index].customer_signed_at = new Date().toISOString();
+      // Check if agency already signed, if so, activate agreement
       if (db.agreements[index].agency_signed) {
         db.agreements[index].status = 'active';
       }
