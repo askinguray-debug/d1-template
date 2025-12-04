@@ -2218,8 +2218,8 @@ app.post('/api/agreements/:id/send-email', async (req, res) => {
     const emailContent = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #2563eb;">📄 Service Agreement</h2>
-        <p>Dear ${recipient === 'agency' ? agency.name : customer.name},</p>
-        <p>Please find the agreement <strong>attached as a PDF</strong> with white background for easy printing.</p>
+        <p>Hello,</p>
+        <p>Please review the service agreement below and sign if you haven't already.</p>
         <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
           <p style="margin: 5px 0;"><strong>Agreement Number:</strong> ${agreement.agreement_number}</p>
           <p style="margin: 5px 0;"><strong>Title:</strong> ${agreement.title}</p>
