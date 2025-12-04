@@ -3362,7 +3362,7 @@ initDB().then(() => {
     <strong>Email:</strong> ${agency?.email || 'N/A'}<br>
     <strong>Phone:</strong> ${agency?.phone || 'N/A'}<br><br>
     
-    <strong>👤 ${downloadToken.agreementType === 'project' ? 'Model' : 'Customer'}:</strong> ${customer?.name || 'N/A'}<br>
+    <strong>👤 ${(downloadToken.agreementType === 'project' || downloadToken.agreementType === 'model') ? 'Model' : 'Customer'}:</strong> ${customer?.name || 'N/A'}<br>
     <strong>Email:</strong> ${customer?.email || 'N/A'}<br>
     ${customer?.phone ? `<strong>Phone:</strong> ${customer.phone}<br>` : ''}
   </div>
@@ -3395,11 +3395,11 @@ ${agreement.content}
       <div class="signature-box">
         <div class="signature-line">
           ${agreement.customer_signature ? `
-            <img src="${agreement.customer_signature}" class="signature-img" alt="${downloadToken.agreementType === 'project' ? 'Model' : 'Customer'} Signature">
+            <img src="${agreement.customer_signature}" class="signature-img" alt="${(downloadToken.agreementType === 'project' || downloadToken.agreementType === 'model') ? 'Model' : 'Customer'} Signature">
           ` : `<span style="color: #999; font-size: 12px;">Pending Signature</span>`}
         </div>
-        <div class="signature-name">${customer?.name || (downloadToken.agreementType === 'project' ? 'Model Name' : 'Customer Name')}</div>
-        <div class="signature-title">${downloadToken.agreementType === 'project' ? 'Model' : 'Customer'}</div>
+        <div class="signature-name">${customer?.name || ((downloadToken.agreementType === 'project' || downloadToken.agreementType === 'model') ? 'Model Name' : 'Customer Name')}</div>
+        <div class="signature-title">${(downloadToken.agreementType === 'project' || downloadToken.agreementType === 'model') ? 'Model Signature' : 'Customer'}</div>
         ${agreement.customer_signed_at ? `
           <div class="signature-date">Signed: ${new Date(agreement.customer_signed_at).toLocaleDateString()}</div>
         ` : ''}
