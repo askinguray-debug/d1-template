@@ -115,8 +115,17 @@
             const canSign = agreementData.canSign;
 
             // Header
-            const headerColor = agreementType === 'model' ? '#8b5cf6' : '#2563eb';
-            const headerTitle = agreementType === 'model' ? 'Cast & Modeling Agreement' : 'Service Agreement';
+            let headerColor, headerTitle;
+            if (agreementType === 'model') {
+                headerColor = '#8b5cf6';
+                headerTitle = 'Cast & Modeling Agreement';
+            } else if (agreementType === 'project') {
+                headerColor = '#10b981';
+                headerTitle = 'Project Agreement';
+            } else {
+                headerColor = '#2563eb';
+                headerTitle = 'Service Agreement';
+            }
             
             document.getElementById('agreement-header').innerHTML = `
                 <div class="text-center">
@@ -157,6 +166,7 @@
                         </div>
                     </div>
 
+                    ${agreementType !== 'project' ? `
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <p class="text-sm text-gray-600">Start Date</p>
@@ -167,6 +177,32 @@
                             <p class="font-semibold">${new Date(agreement.end_date).toLocaleDateString()}</p>
                         </div>
                     </div>
+                    ` : ''}
+                    
+                    ${agreementType === 'project' ? `
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-sm text-gray-600">Project Name</p>
+                            <p class="font-semibold">${agreement.project_name}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-600">Company/Brand</p>
+                            <p class="font-semibold">${agreement.company_name}</p>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600">Usage Platforms</p>
+                        <div class="flex flex-wrap gap-2 mt-2">
+                            ${agreement.platforms.map(p => `<span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">${p}</span>`).join('')}
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600">Content Types</p>
+                        <div class="flex flex-wrap gap-2 mt-2">
+                            ${agreement.content_types.map(c => `<span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">${c}</span>`).join('')}
+                        </div>
+                    </div>
+                    ` : ''}
 
                     ${agreementType === 'regular' && agreement.monthly_payment ? `
                     <div>
@@ -235,7 +271,16 @@
             }
 
             const partyColor = party === 'agency' ? '#2563eb' : '#059669';
-            const partyLabel = party === 'agency' ? 'Agency Representative' : (agreementData.agreementType === 'model' ? 'Model' : 'Customer');
+            let partyLabel;
+            if (party === 'agency') {
+                partyLabel = 'Agency Representative';
+            } else if (agreementData.agreementType === 'model') {
+                partyLabel = 'Model';
+            } else if (agreementData.agreementType === 'project') {
+                partyLabel = 'Model';
+            } else {
+                partyLabel = 'Customer';
+            }
 
             signatureSection.innerHTML = `
                 <div>
