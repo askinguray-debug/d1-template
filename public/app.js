@@ -1897,39 +1897,82 @@ async function deleteAgreement(id) {
 }
 
 // Print agreement
-function printAgreement(id) {
-    // For fully signed agreements, use download page
-    // Try to find in all agreement types
-    let agreement = agreements.find(a => a.id === id);
-    if (!agreement) {
-        agreement = modelAgreements.find(a => a.id === id);
-    }
-    if (!agreement) {
-        agreement = projectAgreements.find(a => a.id === id);
-    }
-    
-    if (agreement && agreement.downloadToken) {
-        window.open(`/download/${agreement.downloadToken}`, '_blank');
-    } else {
-        showNotification('⚠️ Agreement must be fully signed by both parties to print', 'error');
+async function printAgreement(id) {
+    // Fetch fresh agreement data from server to get latest downloadToken
+    try {
+        // Try all agreement types
+        let agreement = null;
+        let endpoint = '';
+        
+        // Try regular agreement first
+        try {
+            const response = await axios.get(`/api/agreements/${id}`);
+            agreement = response.data;
+            endpoint = `/api/agreements/${id}`;
+        } catch (e) {
+            // Try model agreement
+            try {
+                const response = await axios.get(`/api/model-agreements/${id}`);
+                agreement = response.data;
+                endpoint = `/api/model-agreements/${id}`;
+            } catch (e2) {
+                // Try project agreement
+                const response = await axios.get(`/api/project-agreements/${id}`);
+                agreement = response.data;
+                endpoint = `/api/project-agreements/${id}`;
+            }
+        }
+        
+        if (agreement && agreement.downloadToken) {
+            window.open(`/download/${agreement.downloadToken}`, '_blank');
+        } else if (agreement && agreement.agency_signed && agreement.customer_signed) {
+            showNotification('⚠️ Download link is being generated. Please refresh and try again.', 'warning');
+        } else {
+            showNotification('⚠️ Agreement must be fully signed by both parties to print', 'error');
+        }
+    } catch (error) {
+        console.error('Error fetching agreement:', error);
+        showNotification('⚠️ Could not load agreement. Please try again.', 'error');
     }
 }
 
 // Download PDF (opens download page in new tab for print/save)
-function downloadPDF(id) {
-    // Try to find in all agreement types
-    let agreement = agreements.find(a => a.id === id);
-    if (!agreement) {
-        agreement = modelAgreements.find(a => a.id === id);
-    }
-    if (!agreement) {
-        agreement = projectAgreements.find(a => a.id === id);
-    }
-    
-    if (agreement && agreement.downloadToken) {
-        window.open(`/download/${agreement.downloadToken}`, '_blank');
-    } else {
-        showNotification('⚠️ Agreement must be fully signed by both parties to download', 'error');
+async function downloadPDF(id) {
+    // Fetch fresh agreement data from server to get latest downloadToken
+    try {
+        // Try all agreement types
+        let agreement = null;
+        let endpoint = '';
+        
+        // Try regular agreement first
+        try {
+            const response = await axios.get(`/api/agreements/${id}`);
+            agreement = response.data;
+            endpoint = `/api/agreements/${id}`;
+        } catch (e) {
+            // Try model agreement
+            try {
+                const response = await axios.get(`/api/model-agreements/${id}`);
+                agreement = response.data;
+                endpoint = `/api/model-agreements/${id}`;
+            } catch (e2) {
+                // Try project agreement
+                const response = await axios.get(`/api/project-agreements/${id}`);
+                agreement = response.data;
+                endpoint = `/api/project-agreements/${id}`;
+            }
+        }
+        
+        if (agreement && agreement.downloadToken) {
+            window.open(`/download/${agreement.downloadToken}`, '_blank');
+        } else if (agreement && agreement.agency_signed && agreement.customer_signed) {
+            showNotification('⚠️ Download link is being generated. Please refresh and try again.', 'warning');
+        } else {
+            showNotification('⚠️ Agreement must be fully signed by both parties to download', 'error');
+        }
+    } catch (error) {
+        console.error('Error fetching agreement:', error);
+        showNotification('⚠️ Could not load agreement. Please try again.', 'error');
     }
 }
 
@@ -2610,18 +2653,23 @@ async function saveSignature() {
         currentSignatureParty = null;
         currentAgreementType = null;
         
-        // Reload data and close any open agreement modals
+        // Close any open agreement modals first
+        document.querySelectorAll('.fixed').forEach(modal => {
+            if (modal.id !== 'signature-modal') modal.remove();
+        });
+        
+        // Reload data and wait for it to complete
         await loadAllData();
         if (agreementTypeToReopen === 'model') {
             await loadModelAgreementsData();
         } else if (agreementTypeToReopen === 'project') {
             await loadProjectAgreementsData();
         }
-        document.querySelectorAll('.fixed').forEach(modal => {
-            if (modal.id !== 'signature-modal') modal.remove();
-        });
         
-        // Reopen the agreement to show the signature
+        // Small delay to ensure data is fully loaded
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Reopen the agreement to show the updated signature and download button
         if (agreementTypeToReopen === 'model') {
             viewModelAgreement(agreementIdToReopen);
         } else if (agreementTypeToReopen === 'project') {
