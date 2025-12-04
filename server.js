@@ -3121,7 +3121,8 @@ initDB().then(() => {
       // Get agency and customer/model info
       agency = db.agencies.find(a => a.id === agreement.agency_id);
       if (downloadToken.agreementType === 'model' || downloadToken.agreementType === 'project') {
-        customer = db.models.find(m => m.id === agreement.model_id);
+        // For model and project agreements, look in customers table using model_id field
+        customer = db.customers.find(c => c.id === agreement.model_id);
       } else {
         customer = db.customers.find(c => c.id === agreement.customer_id);
       }
@@ -3138,13 +3139,70 @@ initDB().then(() => {
     h1 { color: #333; border-bottom: 3px solid #8b5cf6; padding-bottom: 10px; }
     h2 { color: #8b5cf6; margin-top: 30px; }
     .info { background: #f0f0f0; padding: 15px; border-radius: 5px; margin: 20px 0; }
-    .signature-box { border: 1px solid #ddd; padding: 15px; margin: 20px 0; border-radius: 5px; }
-    .signature-img { max-width: 300px; border: 1px solid #ccc; }
     .status { display: inline-block; padding: 5px 15px; border-radius: 20px; font-weight: bold; }
     .status-active { background: #10b981; color: white; }
     .download-btn { display: inline-block; background: #8b5cf6; color: white; padding: 12px 24px; 
-                    text-decoration: none; border-radius: 6px; margin: 20px 0; }
-    @media print { .no-print { display: none; } }
+                    text-decoration: none; border-radius: 6px; margin: 20px 0; border: none; cursor: pointer; }
+    
+    /* Signature Section Styling */
+    .signature-section { 
+      margin-top: 60px; 
+      page-break-inside: avoid; 
+      border-top: 2px solid #333;
+      padding-top: 40px;
+    }
+    .signature-container { 
+      display: flex; 
+      justify-content: space-around; 
+      align-items: flex-start; 
+      gap: 40px; 
+      margin-top: 30px;
+      text-align: center;
+    }
+    .signature-box { 
+      flex: 1; 
+      min-width: 300px;
+      text-align: center;
+    }
+    .signature-line {
+      border-bottom: 2px solid #000;
+      min-height: 80px;
+      max-height: 100px;
+      margin: 10px auto 5px auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      max-width: 300px;
+    }
+    .signature-img { 
+      max-width: 280px; 
+      max-height: 80px; 
+      height: auto;
+      width: auto;
+      object-fit: contain;
+    }
+    .signature-name { 
+      font-weight: bold; 
+      font-size: 14px; 
+      margin: 8px 0 2px 0;
+      text-transform: uppercase;
+    }
+    .signature-title { 
+      font-size: 12px; 
+      color: #666; 
+      margin: 2px 0;
+    }
+    .signature-date { 
+      font-size: 11px; 
+      color: #999; 
+      margin-top: 5px;
+    }
+    
+    @media print { 
+      .no-print { display: none; }
+      .signature-section { page-break-before: auto; }
+      body { margin: 20px; }
+    }
   </style>
 </head>
 <body>
@@ -3173,23 +3231,40 @@ initDB().then(() => {
 ${agreement.content}
   </div>
   
-  <h2>✍️ Signatures</h2>
-  
-  ${agreement.agency_signature ? `
-  <div class="signature-box">
-    <strong>🏢 Agency Signature</strong><br>
-    <img src="${agreement.agency_signature}" class="signature-img" alt="Agency Signature"><br>
-    <small>Signed on: ${new Date(agreement.agency_signed_at).toLocaleString()}</small>
+  <!-- Signature Section: Side by side, centered, at bottom -->
+  <div class="signature-section">
+    <h2 style="text-align: center; margin-bottom: 40px;">SIGNATURES</h2>
+    
+    <div class="signature-container">
+      <!-- Agency Signature -->
+      <div class="signature-box">
+        <div class="signature-line">
+          ${agreement.agency_signature ? `
+            <img src="${agreement.agency_signature}" class="signature-img" alt="Agency Signature">
+          ` : `<span style="color: #999; font-size: 12px;">Pending Signature</span>`}
+        </div>
+        <div class="signature-name">${agency?.name || 'Agency Name'}</div>
+        <div class="signature-title">Agency / Representative</div>
+        ${agreement.agency_signed_at ? `
+          <div class="signature-date">Signed: ${new Date(agreement.agency_signed_at).toLocaleDateString()}</div>
+        ` : ''}
+      </div>
+      
+      <!-- Model/Customer Signature -->
+      <div class="signature-box">
+        <div class="signature-line">
+          ${agreement.customer_signature ? `
+            <img src="${agreement.customer_signature}" class="signature-img" alt="${downloadToken.agreementType === 'project' ? 'Model' : 'Customer'} Signature">
+          ` : `<span style="color: #999; font-size: 12px;">Pending Signature</span>`}
+        </div>
+        <div class="signature-name">${customer?.name || (downloadToken.agreementType === 'project' ? 'Model Name' : 'Customer Name')}</div>
+        <div class="signature-title">${downloadToken.agreementType === 'project' ? 'Model' : 'Customer'}</div>
+        ${agreement.customer_signed_at ? `
+          <div class="signature-date">Signed: ${new Date(agreement.customer_signed_at).toLocaleDateString()}</div>
+        ` : ''}
+      </div>
+    </div>
   </div>
-  ` : '<p>⏳ Agency signature pending</p>'}
-  
-  ${agreement.customer_signature ? `
-  <div class="signature-box">
-    <strong>👤 ${downloadToken.agreementType === 'project' ? 'Model' : 'Customer'} Signature</strong><br>
-    <img src="${agreement.customer_signature}" class="signature-img" alt="Customer Signature"><br>
-    <small>Signed on: ${new Date(agreement.customer_signed_at).toLocaleString()}</small>
-  </div>
-  ` : `<p>⏳ ${downloadToken.agreementType === 'project' ? 'Model' : 'Customer'} signature pending</p>`}
   
   <div class="no-print" style="margin-top: 40px; padding: 20px; background: #f0fdf4; border-radius: 8px;">
     <h3>📥 Download Options</h3>
