@@ -461,19 +461,21 @@ ${agreement.content}
                         </div>
                     </div>
                     
-                    <div class="p-6 border-t border-gray-200 flex gap-3 justify-end">
-                        <button onclick="printModelAgreement(${id})" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700">
-                            <i class="fas fa-print mr-2"></i>Print
-                        </button>
-                        <button onclick="showGenerateLinkDialog(${id}, 'model')" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
-                            <i class="fas fa-link mr-2"></i>Generate Link
-                        </button>
-                        <button onclick="showModelEmailDialog(${id})" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">
-                            <i class="fas fa-envelope mr-2"></i>Send Email
-                        </button>
-                        <button onclick="closeModal('model-agreement-modal')" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300">
-                            Close
-                        </button>
+                    <div class="p-4 sm:p-6 border-t border-gray-200">
+                        <div class="grid grid-cols-2 gap-2 mb-2">
+                            <button onclick="printModelAgreement(${id})" class="bg-gray-600 text-white px-3 py-2 rounded-lg hover:bg-gray-700 text-sm">
+                                <i class="fas fa-print mr-1"></i>Print
+                            </button>
+                            <button onclick="showGenerateLinkDialog(${id}, 'model')" class="bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 text-sm">
+                                <i class="fas fa-link mr-1"></i>Generate Link
+                            </button>
+                            <button onclick="showModelEmailDialog(${id})" class="bg-purple-600 text-white px-3 py-2 rounded-lg hover:bg-purple-700 text-sm">
+                                <i class="fas fa-envelope mr-1"></i>Send Email
+                            </button>
+                            <button onclick="closeModal('model-agreement-modal')" class="bg-gray-200 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-300 text-sm">
+                                Close
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -916,23 +918,23 @@ ${agreement.content}
                     </div>
                 </div>
                 
-                <div class="flex justify-end gap-3 mt-6">
-                    <button onclick="closeModal('project-agreement-modal')" class="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50">
-                        Close
-                    </button>
+                <div class="grid grid-cols-2 gap-2 mt-6">
                     ${agreement.agency_signed && agreement.customer_signed && agreement.downloadToken ? `
-                    <button onclick="window.open('/download/${agreement.downloadToken}', '_blank')" class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700">
-                        <i class="fas fa-download mr-2"></i>Download Signed Agreement
+                    <button onclick="window.open('/download/${agreement.downloadToken}', '_blank')" class="px-3 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm col-span-2">
+                        <i class="fas fa-download mr-1"></i>Download Signed
                     </button>
                     ` : ''}
-                    <button onclick="showGenerateLinkDialog(${id}, 'project')" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">
-                        <i class="fas fa-link mr-2"></i>Generate Link
+                    <button onclick="showGenerateLinkDialog(${id}, 'project')" class="px-3 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-sm">
+                        <i class="fas fa-link mr-1"></i>Generate Link
                     </button>
-                    <button onclick="showWhatsAppDialog(${id}, 'project')" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
-                        <i class="fab fa-whatsapp mr-2"></i>Send via WhatsApp
+                    <button onclick="showWhatsAppDialog(${id}, 'project')" class="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm">
+                        <i class="fab fa-whatsapp mr-1"></i>WhatsApp
                     </button>
-                    <button onclick="showProjectEmailDialog(${id}); closeModal('project-agreement-modal')" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-                        <i class="fas fa-envelope mr-2"></i>Send Email
+                    <button onclick="showProjectEmailDialog(${id}); closeModal('project-agreement-modal')" class="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
+                        <i class="fas fa-envelope mr-1"></i>Send Email
+                    </button>
+                    <button onclick="closeModal('project-agreement-modal')" class="px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 text-sm">
+                        Close
                     </button>
                 </div>
             </div>
@@ -2139,18 +2141,18 @@ async function viewAgreement(id) {
                     <button onclick="closeModal('agreement-modal')" class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
                         Close
                     </button>
-                    <div class="flex gap-3">
-                        <button onclick="downloadPDF(${id})" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
-                            <i class="fas fa-file-pdf mr-2"></i>Download PDF
+                    <div class="grid grid-cols-2 sm:flex gap-2 sm:gap-3">
+                        <button onclick="downloadPDF(${id})" class="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm">
+                            <i class="fas fa-file-pdf mr-1"></i>Download PDF
                         </button>
-                        <button onclick="printAgreement(${id})" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                            <i class="fas fa-print mr-2"></i>Print
+                        <button onclick="printAgreement(${id})" class="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
+                            <i class="fas fa-print mr-1"></i>Print
                         </button>
-                        <button onclick="showGenerateLinkDialog(${id}, 'regular')" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-                            <i class="fas fa-link mr-2"></i>Generate Link
+                        <button onclick="showGenerateLinkDialog(${id}, 'regular')" class="px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm">
+                            <i class="fas fa-link mr-1"></i>Generate Link
                         </button>
-                        <button onclick="showEmailDialog(${id})" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-                            <i class="fas fa-envelope mr-2"></i>Send Email
+                        <button onclick="showEmailDialog(${id})" class="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm">
+                            <i class="fas fa-envelope mr-1"></i>Send Email
                         </button>
                     </div>
                 </div>
