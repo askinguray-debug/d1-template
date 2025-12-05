@@ -18,11 +18,19 @@ const PORT = process.env.PORT || 3000;
 // Universal email sending function - supports both Resend and SMTP
 async function sendEmail(emailSettings, { from, to, subject, html, attachments = [] }) {
   try {
+    console.log('📧 EMAIL SENDING ATTEMPT:', {
+      provider: emailSettings.provider,
+      hasApiKey: !!emailSettings.api_key,
+      from: from || emailSettings.from_email || 'onboarding@resend.dev',
+      to: Array.isArray(to) ? to : [to],
+      subject: subject
+    });
+    
     // Priority 1: Check provider field first (most reliable)
     if (emailSettings.provider === 'resend' && emailSettings.api_key) {
       // Use Resend API with dynamic API key from settings
       const resend = new Resend(emailSettings.api_key);
-      await resend.emails.send({
+      const result = await resend.emails.send({
         from: from || emailSettings.from_email || 'onboarding@resend.dev',
         to: Array.isArray(to) ? to : [to],
         subject,
@@ -30,7 +38,30 @@ async function sendEmail(emailSettings, { from, to, subject, html, attachments =
         attachments
       });
       
-      return { success: true, provider: 'Resend' };
+      console.log('✅ RESEND API RESPONSE:', {
+        data: result.data,
+        error: result.error,
+        id: result.data?.id,
+        to: Array.isArray(to) ? to : [to]
+      });
+      
+      // Check if Resend returned an error
+      if (result.error) {
+        console.error('❌ RESEND API ERROR:', result.error);
+        throw new Error(`Resend API Error: ${result.error.message || JSON.stringify(result.error)}`);
+      }
+      
+      if (!result.data || !result.data.id) {
+        console.error('❌ RESEND: No email ID returned - email may not have been sent!');
+        throw new Error('Resend failed to send email - no ID returned');
+      }
+      
+      console.log('✅ EMAIL SENT SUCCESSFULLY via Resend:', {
+        id: result.data.id,
+        to: Array.isArray(to) ? to : [to]
+      });
+      
+      return { success: true, provider: 'Resend', emailId: result.data.id };
     }
     // Priority 2: Gmail SMTP
     else if (emailSettings.provider === 'gmail' && emailSettings.gmail_email && emailSettings.gmail_app_password) {
@@ -102,7 +133,12 @@ async function sendEmail(emailSettings, { from, to, subject, html, attachments =
       }
     }
   } catch (error) {
-    console.error('Email sending error:', error);
+    console.error('❌ EMAIL SENDING FAILED:', {
+      error: error.message,
+      stack: error.stack,
+      provider: emailSettings.provider,
+      hasApiKey: !!emailSettings.api_key
+    });
     throw error;
   }
 }
