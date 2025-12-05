@@ -2022,17 +2022,17 @@ async function viewAgreement(id) {
                     </button>
                 </div>
                 
-                <div class="grid grid-cols-2 gap-6 mb-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                     <div class="border border-gray-200 rounded-lg p-4">
                         <h3 class="font-semibold text-gray-900 mb-2">Agency</h3>
-                        <p class="text-gray-800">${agreement.agency_name}</p>
-                        ${agreement.agency_email ? `<p class="text-sm text-gray-600">${agreement.agency_email}</p>` : ''}
+                        <p class="text-gray-800 font-medium">${agreement.agency_name}</p>
+                        ${agreement.agency_email ? `<p class="text-sm text-gray-600 break-all">${agreement.agency_email}</p>` : ''}
                         ${agreement.agency_address ? `<p class="text-sm text-gray-600 mt-1">${agreement.agency_address}</p>` : ''}
                     </div>
                     <div class="border border-gray-200 rounded-lg p-4">
                         <h3 class="font-semibold text-gray-900 mb-2">Customer</h3>
-                        <p class="text-gray-800">${agreement.customer_name}</p>
-                        ${agreement.customer_email ? `<p class="text-sm text-gray-600">${agreement.customer_email}</p>` : ''}
+                        <p class="text-gray-800 font-medium">${agreement.customer_name}</p>
+                        ${agreement.customer_email ? `<p class="text-sm text-gray-600 break-all">${agreement.customer_email}</p>` : ''}
                         ${agreement.customer_company ? `<p class="text-sm text-gray-600">${agreement.customer_company}</p>` : ''}
                     </div>
                 </div>
