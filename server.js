@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import { readFile, writeFile } from 'fs/promises';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import nodemailer from 'nodemailer';
@@ -3487,9 +3488,48 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Serve public signing page
-app.get('/sign/:token', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'sign.html'));
+// Serve public signing page with server-side rendering for faster loading
+app.get('/sign/:token', async (req, res) => {
+  try {
+    const db = await readDB();
+    const { token } = req.params;
+    
+    // Find token in shareTokens array
+    if (!db.shareTokens) {
+      return res.status(404).send('Invalid or expired share link');
+    }
+    
+    const tokenData = db.shareTokens.find(t => t.token === token);
+    if (!tokenData) {
+      return res.status(404).send('Invalid or expired share link');
+    }
+    
+    // Check if token is expired
+    if (new Date(tokenData.expiresAt) < new Date()) {
+      return res.status(403).send('This share link has expired');
+    }
+    
+    // Read sign.html and inject data
+    const signHtmlPath = path.join(__dirname, 'public', 'sign.html');
+    let html = fs.readFileSync(signHtmlPath, 'utf-8');
+    
+    // Inject token data to avoid extra API call
+    html = html.replace(
+      '</body>',
+      `<script>
+        // Pre-loaded data to avoid API call and timeout
+        window.__PRELOADED_TOKEN__ = '${token}';
+        window.__AGREEMENT_TYPE__ = '${tokenData.agreementType}';
+        window.__PARTY__ = '${tokenData.party}';
+      </script>
+      </body>`
+    );
+    
+    res.send(html);
+  } catch (error) {
+    console.error('Error loading sign page:', error);
+    res.status(500).send('Error loading sign page');
+  }
 });
 
 // Start server
