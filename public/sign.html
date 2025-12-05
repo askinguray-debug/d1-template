@@ -82,6 +82,10 @@
 
     <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
     <script>
+        // CRITICAL: Clear any admin auth headers before loading agreement
+        // This ensures the signing page works as a PUBLIC page
+        delete axios.defaults.headers.common['Authorization'];
+        
         let signaturePad = null;
         let currentToken = null;
         let agreementData = null;
@@ -93,7 +97,10 @@
         // Load agreement data
         async function loadAgreement() {
             try {
-                const response = await axios.get(`/api/share/${currentToken}`);
+                // Explicitly ensure no auth header is sent
+                const response = await axios.get(`/api/share/${currentToken}`, {
+                    headers: { 'Authorization': '' }  // Override any default auth
+                });
                 agreementData = response.data;
                 
                 displayAgreement();
@@ -431,6 +438,8 @@
 
                 const response = await axios.post(`/api/share/${currentToken}/sign`, {
                     signature: signatureData
+                }, {
+                    headers: { 'Authorization': '' }  // Override any default auth
                 });
 
                 // Show success message
