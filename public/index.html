@@ -52,8 +52,9 @@
                             </h1>
                             <p class="text-sm text-gray-600 mt-1">Manage agencies, customers, and agreements</p>
                         </div>
-                        <button onclick="showTab('new-agreement')" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
-                            <i class="fas fa-plus mr-2"></i>New Agreement
+                        <!-- Mobile Menu Button -->
+                        <button onclick="toggleMobileMenu()" class="lg:hidden text-gray-600 hover:text-gray-900">
+                            <i id="menu-icon" class="fas fa-bars text-2xl"></i>
                         </button>
                     </div>
                 </div>
@@ -62,20 +63,13 @@
             <!-- Navigation Tabs -->
             <div class="bg-white border-b border-gray-200">
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <!-- Mobile Menu Button -->
-                    <div class="flex items-center justify-between py-4 lg:hidden">
-                        <span class="font-semibold text-gray-700">
-                            <i class="fas fa-bars mr-2"></i>Menu
-                        </span>
-                        <button onclick="toggleMobileMenu()" class="text-gray-600 hover:text-gray-900">
-                            <i id="menu-icon" class="fas fa-bars text-2xl"></i>
-                        </button>
-                    </div>
-                    
                     <!-- Desktop Navigation -->
                     <nav id="desktop-nav" class="hidden lg:flex space-x-2 py-4 overflow-x-auto">
                         <button onclick="showTab('dashboard')" class="nav-tab px-4 py-2 rounded-lg font-medium transition-colors active whitespace-nowrap">
                             <i class="fas fa-home mr-2"></i>Dashboard
+                        </button>
+                        <button onclick="showTab('new-agreement')" class="nav-tab px-4 py-2 rounded-lg font-medium transition-colors hover:bg-gray-100 whitespace-nowrap bg-blue-50 text-blue-700">
+                            <i class="fas fa-plus mr-2"></i>New Agreement
                         </button>
                         <button onclick="showTab('agreements')" class="nav-tab px-4 py-2 rounded-lg font-medium transition-colors hover:bg-gray-100 whitespace-nowrap">
                             <i class="fas fa-file-contract mr-2"></i>Agreements
@@ -107,10 +101,13 @@
                     </nav>
                     
                     <!-- Mobile Navigation (Dropdown) -->
-                    <nav id="mobile-nav" class="hidden lg:hidden pb-4">
+                    <nav id="mobile-nav" class="hidden pb-4">
                         <div class="space-y-1">
                             <button onclick="showTab('dashboard'); toggleMobileMenu()" class="nav-tab w-full text-left px-4 py-3 rounded-lg font-medium transition-colors active">
                                 <i class="fas fa-home mr-2"></i>Dashboard
+                            </button>
+                            <button onclick="showTab('new-agreement'); toggleMobileMenu()" class="nav-tab w-full text-left px-4 py-3 rounded-lg font-medium transition-colors bg-blue-50 text-blue-700">
+                                <i class="fas fa-plus mr-2"></i>New Agreement
                             </button>
                             <button onclick="showTab('agreements'); toggleMobileMenu()" class="nav-tab w-full text-left px-4 py-3 rounded-lg font-medium transition-colors hover:bg-gray-100">
                                 <i class="fas fa-file-contract mr-2"></i>Agreements
@@ -1083,6 +1080,6 @@
         </div>
 
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
-        <script src="/app.js?v=20241205-2"></script>
+        <script src="/app.js?v=20241205-3"></script>
     </body>
     </html>
