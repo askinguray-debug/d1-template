@@ -32,14 +32,14 @@
                 <p class="text-sm text-gray-600 mb-4">
                     By signing below, you agree to all terms and conditions stated in this agreement.
                 </p>
-                <div class="border-2 border-gray-300 rounded-lg mb-4">
-                    <canvas id="signature-pad" width="600" height="200"></canvas>
+                <div class="border-2 border-gray-300 rounded-lg mb-4 overflow-hidden">
+                    <canvas id="signature-pad" class="w-full" style="max-width: 100%; height: 200px;"></canvas>
                 </div>
                 <div class="flex gap-3">
                     <button onclick="clearSignature()" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">
                         <i class="fas fa-eraser mr-2"></i>Clear
                     </button>
-                    <button onclick="saveSignature()" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+                    <button onclick="saveSignature()" class="flex-1 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
                         <i class="fas fa-check mr-2"></i>Sign Agreement
                     </button>
                 </div>
@@ -106,11 +106,39 @@
                 document.getElementById('loading').classList.add('hidden');
                 document.getElementById('content').classList.remove('hidden');
 
-                // Initialize signature pad
+                // Initialize signature pad with responsive sizing
                 const canvas = document.getElementById('signature-pad');
+                
+                // Function to resize canvas
+                function resizeCanvas() {
+                    const container = canvas.parentElement;
+                    const ratio = Math.max(window.devicePixelRatio || 1, 1);
+                    
+                    // Set canvas width to container width
+                    canvas.width = container.offsetWidth * ratio;
+                    canvas.height = 200 * ratio;
+                    canvas.style.width = container.offsetWidth + 'px';
+                    canvas.style.height = '200px';
+                    
+                    canvas.getContext('2d').scale(ratio, ratio);
+                    
+                    // Reinitialize signature pad if it exists
+                    if (signaturePad) {
+                        signaturePad.clear();
+                    }
+                }
+                
+                // Initial resize
+                resizeCanvas();
+                
+                // Resize on window resize
+                window.addEventListener('resize', resizeCanvas);
+                
                 signaturePad = new SignaturePad(canvas, {
                     backgroundColor: 'rgb(255, 255, 255)',
-                    penColor: party === 'agency' ? 'rgb(37, 99, 235)' : 'rgb(34, 197, 94)'
+                    penColor: party === 'agency' ? 'rgb(37, 99, 235)' : 'rgb(34, 197, 94)',
+                    minWidth: 0.5,
+                    maxWidth: 2.5
                 });
 
             } catch (error) {
