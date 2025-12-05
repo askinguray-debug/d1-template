@@ -19,17 +19,25 @@
         <div id="content" class="hidden">
             <div class="bg-white rounded-lg shadow-lg p-6 mb-4">
                 <h1 class="text-2xl font-bold mb-4" id="title"></h1>
-                <div id="details" class="space-y-2 text-sm"></div>
+                <div id="details" class="space-y-2 text-sm mb-4"></div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-lg p-6 mb-4">
+                <h2 class="text-xl font-bold mb-4">Agreement Content</h2>
+                <div id="agreement-content" class="prose prose-sm max-w-none whitespace-pre-wrap text-gray-700 border-t border-b border-gray-200 py-4 max-h-96 overflow-y-auto"></div>
             </div>
 
             <div class="bg-white rounded-lg shadow-lg p-6">
                 <h2 class="text-xl font-bold mb-4">Digital Signature</h2>
+                <p class="text-sm text-gray-600 mb-4">
+                    By signing below, you agree to all terms and conditions stated in this agreement.
+                </p>
                 <div class="border-2 border-gray-300 rounded-lg mb-4">
                     <canvas id="signature-pad" width="600" height="200"></canvas>
                 </div>
                 <div class="flex gap-3">
                     <button onclick="clearSignature()" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">
-                        Clear
+                        <i class="fas fa-eraser mr-2"></i>Clear
                     </button>
                     <button onclick="saveSignature()" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
                         <i class="fas fa-check mr-2"></i>Sign Agreement
@@ -80,9 +88,20 @@
                 document.getElementById('title').textContent = agreement.title || 'Agreement';
                 document.getElementById('details').innerHTML = `
                     <p><strong>Agreement Number:</strong> ${agreement.agreement_number || 'N/A'}</p>
-                    <p><strong>Status:</strong> <span class="badge-${agreement.status}">${agreement.status?.toUpperCase() || 'DRAFT'}</span></p>
-                    <p><strong>Signing as:</strong> ${party === 'agency' ? 'Agency' : 'Customer/Model'}</p>
+                    <p><strong>Status:</strong> <span class="px-2 py-1 rounded text-xs font-semibold ${agreement.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">${agreement.status?.toUpperCase() || 'DRAFT'}</span></p>
+                    <p><strong>Start Date:</strong> ${agreement.start_date ? new Date(agreement.start_date).toLocaleDateString() : 'N/A'}</p>
+                    <p><strong>End Date:</strong> ${agreement.end_date ? new Date(agreement.end_date).toLocaleDateString() : 'Ongoing'}</p>
+                    ${agreement.monthly_payment ? `<p><strong>Monthly Payment:</strong> $${agreement.monthly_payment}</p>` : ''}
+                    <p><strong>Signing as:</strong> <span class="font-semibold ${party === 'agency' ? 'text-blue-600' : 'text-green-600'}">${party === 'agency' ? 'Agency' : 'Customer/Model'}</span></p>
                 `;
+
+                // Display agreement content
+                const contentDiv = document.getElementById('agreement-content');
+                if (agreement.content) {
+                    contentDiv.textContent = agreement.content;
+                } else {
+                    contentDiv.innerHTML = '<p class="text-gray-400 italic">No content available</p>';
+                }
 
                 document.getElementById('loading').classList.add('hidden');
                 document.getElementById('content').classList.remove('hidden');
