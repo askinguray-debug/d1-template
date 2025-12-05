@@ -744,7 +744,7 @@ app.post('/api/agreements/:id/generate-link', async (req, res) => {
     await writeDB(db);
     
     const host = req.get('x-forwarded-host') || req.get('host');
-    const protocol = req.get('x-forwarded-proto') || req.protocol;
+    const protocol = req.get('x-forwarded-proto') || (host.includes('sandbox') ? 'https' : req.protocol);
     const link = `${protocol}://${host}/sign/${token}`;
     
     res.json({ success: true, link, expiresAt });
@@ -781,7 +781,7 @@ app.post('/api/model-agreements/:id/generate-link', async (req, res) => {
     await writeDB(db);
     
     const host = req.get('x-forwarded-host') || req.get('host');
-    const protocol = req.get('x-forwarded-proto') || req.protocol;
+    const protocol = req.get('x-forwarded-proto') || (host.includes('sandbox') ? 'https' : req.protocol);
     const link = `${protocol}://${host}/sign/${token}`;
     
     res.json({ success: true, link, expiresAt });
@@ -818,7 +818,7 @@ app.post('/api/project-agreements/:id/generate-link', async (req, res) => {
     await writeDB(db);
     
     const host = req.get('x-forwarded-host') || req.get('host');
-    const protocol = req.get('x-forwarded-proto') || req.protocol;
+    const protocol = req.get('x-forwarded-proto') || (host.includes('sandbox') ? 'https' : req.protocol);
     const link = `${protocol}://${host}/sign/${token}`;
     
     res.json({ success: true, link, expiresAt });
@@ -1006,7 +1006,7 @@ app.post('/api/model-agreements/:id/send-email', async (req, res) => {
     // Generate share links for unsigned parties
     // Use X-Forwarded headers if available (for proxied requests)
     const host = req.get('x-forwarded-host') || req.get('host');
-    const protocol = req.get('x-forwarded-proto') || req.protocol;
+    const protocol = req.get('x-forwarded-proto') || (host.includes('sandbox') ? 'https' : req.protocol);
     const baseUrl = `${protocol}://${host}`;
     let agencyShareLink = '';
     let customerShareLink = '';
@@ -1385,7 +1385,7 @@ app.post('/api/project-agreements/:id/send-email', async (req, res) => {
     // Generate share links for unsigned parties
     // Use X-Forwarded-Host if available (for proxied requests), otherwise use HOST header
     const host = req.get('x-forwarded-host') || req.get('host');
-    const protocol = req.get('x-forwarded-proto') || req.protocol;
+    const protocol = req.get('x-forwarded-proto') || (host.includes('sandbox') ? 'https' : req.protocol);
     const baseUrl = `${protocol}://${host}`;
     let agencyShareLink = '';
     let modelShareLink = '';
@@ -2601,7 +2601,7 @@ app.post('/api/agreements/:id/send-email', async (req, res) => {
     // Generate share links for unsigned parties
     // Use X-Forwarded headers if available (for proxied requests)
     const host = req.get('x-forwarded-host') || req.get('host');
-    const protocol = req.get('x-forwarded-proto') || req.protocol;
+    const protocol = req.get('x-forwarded-proto') || (host.includes('sandbox') ? 'https' : req.protocol);
     const baseUrl = `${protocol}://${host}`;
     let agencyShareLink = '';
     let customerShareLink = '';
@@ -3620,7 +3620,7 @@ initDB().then(() => {
 
       // Use X-Forwarded headers if available (for proxied requests)
     const host = req.get('x-forwarded-host') || req.get('host');
-    const protocol = req.get('x-forwarded-proto') || req.protocol;
+    const protocol = req.get('x-forwarded-proto') || (host.includes('sandbox') ? 'https' : req.protocol);
     const baseUrl = `${protocol}://${host}`;
       const shareUrl = `${baseUrl}/sign/${shareToken.token}`;
 
