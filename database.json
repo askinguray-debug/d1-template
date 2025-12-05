@@ -1,33 +1,9 @@
 {
   "categories": [
     {
-      "id": 1,
-      "name": "Web Development",
-      "color": "#3b82f6",
-      "created_at": "2025-12-04T00:00:00.000Z"
-    },
-    {
-      "id": 2,
-      "name": "Digital Marketing",
-      "color": "#8b5cf6",
-      "created_at": "2025-12-04T00:00:00.000Z"
-    },
-    {
-      "id": 3,
-      "name": "Design",
-      "color": "#ec4899",
-      "created_at": "2025-12-04T00:00:00.000Z"
-    },
-    {
       "id": 4,
       "name": "Branding",
       "color": "#f59e0b",
-      "created_at": "2025-12-04T00:00:00.000Z"
-    },
-    {
-      "id": 5,
-      "name": "Content",
-      "color": "#10b981",
       "created_at": "2025-12-04T00:00:00.000Z"
     },
     {
@@ -130,21 +106,6 @@
     }
   ],
   "templates": [
-    {
-      "id": 1,
-      "name": "Standard Service Agreement",
-      "description": "Basic service agreement template",
-      "content": "This agreement is entered into between {{AGENCY_NAME}} (hereinafter \"Agency\") and {{CUSTOMER_NAME}} (hereinafter \"Client\").\n\nSERVICES: The Agency agrees to provide the following services:\n{{SERVICES}}\n\nPAYMENT TERMS: The Client agrees to pay {{MONTHLY_PAYMENT}} per month, due on the {{PAYMENT_DAY}} day of each month.\n\nTERM: This agreement shall commence on {{START_DATE}} and continue until {{END_DATE}} unless terminated earlier.",
-      "created_at": "2025-12-01T18:38:26.496Z"
-    },
-    {
-      "id": 2,
-      "name": "Digital Marketing Agreement",
-      "description": "Agreement for digital marketing services",
-      "content": "DIGITAL MARKETING SERVICES AGREEMENT\n\nBetween: {{AGENCY_NAME}}\nAnd: {{CUSTOMER_NAME}}\n\nThe Agency will provide comprehensive digital marketing services including:\n{{SERVICES}}\n\nMonthly Investment: {{MONTHLY_PAYMENT}}\nPayment Schedule: {{PAYMENT_DAY}} of each month\nContract Period: {{START_DATE}} to {{END_DATE}}",
-      "created_at": "2025-12-01T18:38:26.496Z",
-      "updated_at": "2025-12-03T13:49:47.183Z"
-    },
     {
       "id": 3,
       "name": "Web Development Agreement",
@@ -271,15 +232,8 @@
       "description": "Complete website design and development",
       "default_price": 2500,
       "category": "Web Development",
-      "payment_type": "monthly"
-    },
-    {
-      "id": 2,
-      "name": "SEO Optimization",
-      "description": "Search engine optimization services",
-      "default_price": 800,
-      "category": "Digital Marketing",
-      "payment_type": "monthly"
+      "payment_type": "one-time",
+      "updated_at": "2025-12-05T16:40:55.283Z"
     },
     {
       "id": 3,
@@ -299,45 +253,13 @@
       "payment_type": "one-time"
     },
     {
-      "id": 5,
-      "name": "Content Writing",
-      "description": "Blog posts and website content",
-      "default_price": 300,
-      "category": "Content",
-      "payment_type": "monthly"
-    },
-    {
-      "id": 6,
-      "name": "Email Marketing",
-      "description": "Email campaign setup and management",
-      "default_price": 600,
-      "category": "Digital Marketing",
-      "payment_type": "monthly"
-    },
-    {
       "id": 7,
       "name": "Website Maintenance",
       "description": "Monthly website updates and maintenance",
-      "default_price": 200,
+      "default_price": 500,
       "category": "Web Development",
-      "payment_type": "monthly"
-    },
-    {
-      "id": 8,
-      "name": "Graphic Design",
-      "description": "Custom graphic design services",
-      "default_price": 400,
-      "category": "Design",
-      "payment_type": "one-time"
-    },
-    {
-      "id": 9,
-      "name": "Standard Drone Videography",
-      "category": "Content",
-      "description": "Duration 45 Minutes",
-      "default_price": 350,
-      "created_at": "2025-12-04T03:25:01.653Z",
-      "payment_type": "one-time"
+      "payment_type": "monthly",
+      "updated_at": "2025-12-05T16:41:10.933Z"
     },
     {
       "id": 10,
@@ -391,8 +313,9 @@
       "category": "Drone Services ",
       "description": "    •\t✅ 30–40 edited aerial photos\n\t•\t✅ 1.5–2.5 minutes of 4K drone video\n\t•\t✅ Versatile coverage of surroundings, architecture, and people\n\t•\t✅ Two golden-hour flight windows (if weather allows)\n     +.      Additional 4 (15-20 Seconds Reels)",
       "default_price": 1499,
-      "payment_type": "monthly",
-      "created_at": "2025-12-05T13:17:31.047Z"
+      "payment_type": "one-time",
+      "created_at": "2025-12-05T13:17:31.047Z",
+      "updated_at": "2025-12-05T16:44:16.669Z"
     }
   ],
   "modelAgreements": [
@@ -1102,5 +1025,10 @@
       "createdAt": "2025-12-05T15:44:20.480Z",
       "expiresAt": "2026-12-05T15:44:20.480Z"
     }
-  ]
+  ],
+  "admin": {
+    "username": "Recluma",
+    "password": "123123",
+    "created_at": "2025-12-05T17:01:49.170Z"
+  }
 }

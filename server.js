@@ -147,7 +147,43 @@ async function sendEmail(emailSettings, { from, to, subject, html, attachments =
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname, 'public')));
+
+// Serve static files EXCEPT index.html (which needs auth)
+app.use(express.static(path.join(__dirname, 'public'), {
+  index: false // Don't auto-serve index.html
+}));
+
+// Active sessions storage (in-memory for simplicity)
+const activeSessions = new Map();
+
+// Protect all /api/ routes EXCEPT:
+// - /api/admin/ (login endpoints)
+// - /api/share/ (public agreement signing links)
+app.use('/api/', (req, res, next) => {
+  // Skip authentication for these public endpoints
+  if (req.path.startsWith('/admin/') || req.path.startsWith('/share/')) {
+    return next();
+  }
+  
+  // Require authentication for all other API routes
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(' ')[1];
+  
+  if (!token) {
+    return res.status(401).json({ message: 'Authentication required' });
+  }
+  
+  const session = activeSessions.get(token);
+  if (!session || session.expiresAt < Date.now()) {
+    activeSessions.delete(token);
+    return res.status(401).json({ message: 'Session expired' });
+  }
+  
+  // Extend session
+  session.expiresAt = Date.now() + (24 * 60 * 60 * 1000); // 24 hours
+  req.admin = session;
+  next();
+});
 
 // Database file path
 const DB_FILE = path.join(__dirname, 'database.json');
@@ -390,6 +426,168 @@ function getNextId(items) {
   if (!items || items.length === 0) return 1;
   return Math.max(...items.map(item => item.id)) + 1;
 }
+
+// ======================
+// ADMIN AUTHENTICATION
+// ======================
+
+// Initialize admin credentials in database
+async function ensureAdminExists() {
+  try {
+    const db = await readDB();
+    if (!db.admin) {
+      // Default admin credentials: username = "Recluma", password = "123123"
+      db.admin = {
+        username: 'Recluma',
+        password: '123123', // In production, this should be hashed
+        created_at: new Date().toISOString()
+      };
+      await writeDB(db);
+      console.log('✅ Admin account created: Username = Recluma');
+    }
+  } catch (error) {
+    console.error('Error ensuring admin exists:', error);
+  }
+}
+
+// Generate session token
+function generateSessionToken() {
+  return crypto.randomBytes(32).toString('hex');
+}
+
+// Admin login endpoint
+app.post('/api/admin/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    const db = await readDB();
+    
+    if (!db.admin) {
+      return res.status(500).json({ message: 'Admin account not configured' });
+    }
+    
+    if (username === db.admin.username && password === db.admin.password) {
+      const token = generateSessionToken();
+      const expiresAt = Date.now() + (24 * 60 * 60 * 1000); // 24 hours
+      
+      activeSessions.set(token, {
+        username: db.admin.username,
+        loginAt: Date.now(),
+        expiresAt
+      });
+      
+      console.log('✅ Admin login successful:', username);
+      return res.json({ 
+        success: true, 
+        token, 
+        username: db.admin.username,
+        expiresAt
+      });
+    } else {
+      console.log('❌ Admin login failed: Invalid credentials');
+      return res.status(401).json({ message: 'Invalid username or password' });
+    }
+  } catch (error) {
+    console.error('Login error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Admin logout endpoint
+app.post('/api/admin/logout', (req, res) => {
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(' ')[1];
+  
+  if (token) {
+    activeSessions.delete(token);
+    console.log('✅ Admin logged out');
+  }
+  
+  res.json({ success: true });
+});
+
+// Verify token endpoint  
+app.get('/api/admin/verify', (req, res) => {
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(' ')[1];
+  
+  if (!token) {
+    return res.status(401).json({ message: 'No token provided' });
+  }
+  
+  const session = activeSessions.get(token);
+  if (!session || session.expiresAt < Date.now()) {
+    activeSessions.delete(token);
+    return res.status(401).json({ message: 'Session expired' });
+  }
+  
+  res.json({ 
+    success: true, 
+    username: session.username 
+  });
+});
+
+// Change password endpoint
+app.post('/api/admin/change-password', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(' ')[1];
+  
+  if (!token || !activeSessions.has(token)) {
+    return res.status(401).json({ message: 'Authentication required' });
+  }
+  try {
+    const { currentPassword, newPassword } = req.body;
+    
+    if (!newPassword || newPassword.length < 6) {
+      return res.status(400).json({ message: 'New password must be at least 6 characters' });
+    }
+    
+    const db = await readDB();
+    
+    if (currentPassword !== db.admin.password) {
+      return res.status(401).json({ message: 'Current password is incorrect' });
+    }
+    
+    db.admin.password = newPassword;
+    db.admin.updated_at = new Date().toISOString();
+    await writeDB(db);
+    
+    console.log('✅ Admin password changed successfully');
+    res.json({ success: true, message: 'Password changed successfully' });
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// ======================
+// PAGE ROUTES
+// ======================
+
+// Login page - always accessible
+app.get('/login', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
+
+// Signing page - PUBLIC (no auth required)
+// This ensures shared agreement links work without login
+app.get('/sign/:token', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'sign.html'));
+});
+
+// Main dashboard - PROTECTED (requires auth)
+app.get('/', (req, res) => {
+  // Check for auth token in request
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(' ')[1];
+  
+  // If no token or invalid token, redirect to login
+  if (!token || !activeSessions.has(token)) {
+    return res.redirect('/login');
+  }
+  
+  // Serve the main dashboard
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 // ======================
 // AGENCIES API
@@ -3541,6 +3739,9 @@ app.get('/sign/:token', async (req, res) => {
 
 // Start server
 initDB().then(() => {
+  // Initialize admin account
+  ensureAdminExists();
+  
   // ===============================
   // WHATSAPP API
   // ===============================
