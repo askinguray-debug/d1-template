@@ -3879,3 +3879,19 @@ function generateSimpleLink(agreementId, party, agreementType) {
     document.body.appendChild(modal);
     showNotification('✅ Link generated instantly!', 'success');
 }
+
+// Mobile Menu Toggle
+function toggleMobileMenu() {
+    const mobileNav = document.getElementById('mobile-nav');
+    const menuIcon = document.getElementById('menu-icon');
+    
+    if (mobileNav.classList.contains('hidden')) {
+        mobileNav.classList.remove('hidden');
+        menuIcon.classList.remove('fa-bars');
+        menuIcon.classList.add('fa-times');
+    } else {
+        mobileNav.classList.add('hidden');
+        menuIcon.classList.remove('fa-times');
+        menuIcon.classList.add('fa-bars');
+    }
+}

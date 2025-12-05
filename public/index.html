@@ -62,37 +62,84 @@
             <!-- Navigation Tabs -->
             <div class="bg-white border-b border-gray-200">
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <nav class="flex space-x-4 py-4">
-                        <button onclick="showTab('dashboard')" class="nav-tab px-4 py-2 rounded-lg font-medium transition-colors active">
+                    <!-- Mobile Menu Button -->
+                    <div class="flex items-center justify-between py-4 lg:hidden">
+                        <span class="font-semibold text-gray-700">
+                            <i class="fas fa-bars mr-2"></i>Menu
+                        </span>
+                        <button onclick="toggleMobileMenu()" class="text-gray-600 hover:text-gray-900">
+                            <i id="menu-icon" class="fas fa-bars text-2xl"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Desktop Navigation -->
+                    <nav id="desktop-nav" class="hidden lg:flex space-x-2 py-4 overflow-x-auto">
+                        <button onclick="showTab('dashboard')" class="nav-tab px-4 py-2 rounded-lg font-medium transition-colors active whitespace-nowrap">
                             <i class="fas fa-home mr-2"></i>Dashboard
                         </button>
-                        <button onclick="showTab('agreements')" class="nav-tab px-4 py-2 rounded-lg font-medium transition-colors hover:bg-gray-100">
+                        <button onclick="showTab('agreements')" class="nav-tab px-4 py-2 rounded-lg font-medium transition-colors hover:bg-gray-100 whitespace-nowrap">
                             <i class="fas fa-file-contract mr-2"></i>Agreements
                         </button>
-                        <button onclick="showTab('model-agreements')" class="nav-tab px-4 py-2 rounded-lg font-medium transition-colors hover:bg-gray-100">
-                            <i class="fas fa-camera mr-2"></i>Model Agreements
+                        <button onclick="showTab('model-agreements')" class="nav-tab px-4 py-2 rounded-lg font-medium transition-colors hover:bg-gray-100 whitespace-nowrap">
+                            <i class="fas fa-camera mr-2"></i>Model
                         </button>
-                        <button onclick="showTab('project-agreements')" class="nav-tab px-4 py-2 rounded-lg font-medium transition-colors hover:bg-gray-100">
-                            <i class="fas fa-briefcase mr-2 text-green-600"></i>Project Agreements
+                        <button onclick="showTab('project-agreements')" class="nav-tab px-4 py-2 rounded-lg font-medium transition-colors hover:bg-gray-100 whitespace-nowrap">
+                            <i class="fas fa-briefcase mr-2 text-green-600"></i>Project
                         </button>
-                        <button onclick="showTab('customers')" class="nav-tab px-4 py-2 rounded-lg font-medium transition-colors hover:bg-gray-100">
+                        <button onclick="showTab('customers')" class="nav-tab px-4 py-2 rounded-lg font-medium transition-colors hover:bg-gray-100 whitespace-nowrap">
                             <i class="fas fa-users mr-2"></i>Customers
                         </button>
-                        <button onclick="showTab('templates')" class="nav-tab px-4 py-2 rounded-lg font-medium transition-colors hover:bg-gray-100">
+                        <button onclick="showTab('templates')" class="nav-tab px-4 py-2 rounded-lg font-medium transition-colors hover:bg-gray-100 whitespace-nowrap">
                             <i class="fas fa-file-alt mr-2"></i>Templates
                         </button>
-                        <button onclick="showTab('services')" class="nav-tab px-4 py-2 rounded-lg font-medium transition-colors hover:bg-gray-100">
+                        <button onclick="showTab('services')" class="nav-tab px-4 py-2 rounded-lg font-medium transition-colors hover:bg-gray-100 whitespace-nowrap">
                             <i class="fas fa-box mr-2"></i>Services
                         </button>
-                        <button onclick="showTab('categories')" class="nav-tab px-4 py-2 rounded-lg font-medium transition-colors hover:bg-gray-100">
+                        <button onclick="showTab('categories')" class="nav-tab px-4 py-2 rounded-lg font-medium transition-colors hover:bg-gray-100 whitespace-nowrap">
                             <i class="fas fa-tags mr-2 text-purple-600"></i>Categories
                         </button>
-                        <button onclick="showTab('reminders')" class="nav-tab px-4 py-2 rounded-lg font-medium transition-colors hover:bg-gray-100">
+                        <button onclick="showTab('reminders')" class="nav-tab px-4 py-2 rounded-lg font-medium transition-colors hover:bg-gray-100 whitespace-nowrap">
                             <i class="fas fa-bell mr-2"></i>Reminders
                         </button>
-                        <button onclick="showTab('settings')" class="nav-tab px-4 py-2 rounded-lg font-medium transition-colors hover:bg-gray-100">
+                        <button onclick="showTab('settings')" class="nav-tab px-4 py-2 rounded-lg font-medium transition-colors hover:bg-gray-100 whitespace-nowrap">
                             <i class="fas fa-cog mr-2"></i>Settings
                         </button>
+                    </nav>
+                    
+                    <!-- Mobile Navigation (Dropdown) -->
+                    <nav id="mobile-nav" class="hidden lg:hidden pb-4">
+                        <div class="space-y-1">
+                            <button onclick="showTab('dashboard'); toggleMobileMenu()" class="nav-tab w-full text-left px-4 py-3 rounded-lg font-medium transition-colors active">
+                                <i class="fas fa-home mr-2"></i>Dashboard
+                            </button>
+                            <button onclick="showTab('agreements'); toggleMobileMenu()" class="nav-tab w-full text-left px-4 py-3 rounded-lg font-medium transition-colors hover:bg-gray-100">
+                                <i class="fas fa-file-contract mr-2"></i>Agreements
+                            </button>
+                            <button onclick="showTab('model-agreements'); toggleMobileMenu()" class="nav-tab w-full text-left px-4 py-3 rounded-lg font-medium transition-colors hover:bg-gray-100">
+                                <i class="fas fa-camera mr-2"></i>Model Agreements
+                            </button>
+                            <button onclick="showTab('project-agreements'); toggleMobileMenu()" class="nav-tab w-full text-left px-4 py-3 rounded-lg font-medium transition-colors hover:bg-gray-100">
+                                <i class="fas fa-briefcase mr-2 text-green-600"></i>Project Agreements
+                            </button>
+                            <button onclick="showTab('customers'); toggleMobileMenu()" class="nav-tab w-full text-left px-4 py-3 rounded-lg font-medium transition-colors hover:bg-gray-100">
+                                <i class="fas fa-users mr-2"></i>Customers
+                            </button>
+                            <button onclick="showTab('templates'); toggleMobileMenu()" class="nav-tab w-full text-left px-4 py-3 rounded-lg font-medium transition-colors hover:bg-gray-100">
+                                <i class="fas fa-file-alt mr-2"></i>Templates
+                            </button>
+                            <button onclick="showTab('services'); toggleMobileMenu()" class="nav-tab w-full text-left px-4 py-3 rounded-lg font-medium transition-colors hover:bg-gray-100">
+                                <i class="fas fa-box mr-2"></i>Services
+                            </button>
+                            <button onclick="showTab('categories'); toggleMobileMenu()" class="nav-tab w-full text-left px-4 py-3 rounded-lg font-medium transition-colors hover:bg-gray-100">
+                                <i class="fas fa-tags mr-2 text-purple-600"></i>Categories
+                            </button>
+                            <button onclick="showTab('reminders'); toggleMobileMenu()" class="nav-tab w-full text-left px-4 py-3 rounded-lg font-medium transition-colors hover:bg-gray-100">
+                                <i class="fas fa-bell mr-2"></i>Reminders
+                            </button>
+                            <button onclick="showTab('settings'); toggleMobileMenu()" class="nav-tab w-full text-left px-4 py-3 rounded-lg font-medium transition-colors hover:bg-gray-100">
+                                <i class="fas fa-cog mr-2"></i>Settings
+                            </button>
+                        </div>
                     </nav>
                 </div>
             </div>
@@ -1036,6 +1083,6 @@
         </div>
 
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
-        <script src="/app.js?v=20241205-1"></script>
+        <script src="/app.js?v=20241205-2"></script>
     </body>
     </html>
