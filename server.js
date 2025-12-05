@@ -1820,9 +1820,16 @@ app.get('/api/share/:token', async (req, res) => {
       customer_company: customer?.company || ''
     };
     
-    // Remove large signature data to prevent timeout
-    delete agreementResponse.agency_signature;
-    delete agreementResponse.customer_signature;
+    // Remove large signature images to prevent timeout
+    // But keep signature status for display
+    if (agreementResponse.agency_signature) {
+      agreementResponse.agency_signature_exists = true;
+      delete agreementResponse.agency_signature;
+    }
+    if (agreementResponse.customer_signature) {
+      agreementResponse.customer_signature_exists = true;
+      delete agreementResponse.customer_signature;
+    }
     
     res.json({
       agreement: agreementResponse,
