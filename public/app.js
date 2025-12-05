@@ -3309,15 +3309,15 @@ async function generateShareLink(agreementId, party, agreementType = 'regular') 
         
         let endpoint;
         if (agreementType === 'model') {
-            endpoint = `/api/model-agreements/${agreementId}/generate-share-link`;
+            endpoint = `/api/model-agreements/${agreementId}/generate-link`;
         } else if (agreementType === 'project') {
-            endpoint = `/api/project-agreements/${agreementId}/generate-share-link`;
+            endpoint = `/api/project-agreements/${agreementId}/generate-link`;
         } else {
-            endpoint = `/api/agreements/${agreementId}/generate-share-link`;
+            endpoint = `/api/agreements/${agreementId}/generate-link`;
         }
         
         const response = await axios.post(endpoint, { party });
-        const { shareUrl } = response.data;
+        const { link: shareUrl, expiresAt } = response.data;
         
         // Create modal to display the share link
         const modal = document.createElement('div');

@@ -330,11 +330,11 @@
       "downloadToken": "a34b54a49dd64fd1b6bf0c58b04c682694e0376efb311761800bbb5c1d0e8dae",
       "shareTokens": {
         "customer": {
-          "token": "02be3eb3df065d9b5ffbc418279620c612d76ea2b42f63e79937b9002dbafe28",
+          "token": "ff2854c36e1970a637420cb211c6e9257101cd096adc16f0d052368f411ac573",
           "party": "customer",
           "used": false,
-          "createdAt": "2025-12-05T08:19:20.160Z",
-          "expiresAt": "2026-01-04T08:19:20.160Z"
+          "createdAt": "2025-12-05T08:38:20.203Z",
+          "expiresAt": "2026-12-05T08:38:20.203Z"
         }
       }
     }
@@ -644,6 +644,15 @@
       "used": false,
       "createdAt": "2025-12-04T22:31:20.945Z",
       "expiresAt": "2026-01-03T22:31:20.945Z"
+    },
+    {
+      "token": "f91ecaf41b394ac01a026bb9a2bb4b44854b36c0ccbd866bd4017ced361a6c26",
+      "agreementId": 1,
+      "agreementType": "model",
+      "party": "customer",
+      "createdAt": "2025-12-05T08:41:15.658Z",
+      "expiresAt": "2026-01-04T08:41:15.658Z",
+      "used": false
     }
   ],
   "projectAgreements": [
