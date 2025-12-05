@@ -1153,16 +1153,28 @@
 
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
         
-        <!-- Authentication Script -->
+        <!-- Authentication Script - CRITICAL: Runs BEFORE app.js -->
         <script>
-            // Check authentication on page load
+            // STEP 1: Check for token and redirect if missing
+            const adminToken = localStorage.getItem('adminToken');
+            
+            if (!adminToken) {
+                // No token - redirect to login immediately
+                window.location.href = '/login';
+            } else {
+                // STEP 2: Set axios headers IMMEDIATELY before any API calls
+                // This ensures app.js can make authenticated requests
+                axios.defaults.headers.common['Authorization'] = `Bearer ${adminToken}`;
+                console.log('✅ Authentication token configured');
+            }
+            
+            // Then verify the token asynchronously after page loads
             window.addEventListener('load', async () => {
                 const token = localStorage.getItem('adminToken');
                 const username = localStorage.getItem('adminUsername');
                 
                 if (!token) {
-                    window.location.href = '/login';
-                    return;
+                    return; // Already redirected above
                 }
                 
                 // Verify token with server
@@ -1174,9 +1186,6 @@
                     if (response.data.success) {
                         // Display username
                         document.getElementById('username-display').textContent = response.data.username;
-                        
-                        // Set axios default headers for all future requests
-                        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
                     } else {
                         throw new Error('Invalid session');
                     }
@@ -1270,6 +1279,6 @@
             }
         </script>
         
-        <script src="/app.js?v=20241205-5"></script>
+        <script src="/app.js?v=20241205-6"></script>
     </body>
     </html>
