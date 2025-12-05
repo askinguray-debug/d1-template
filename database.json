@@ -653,6 +653,24 @@
       "createdAt": "2025-12-05T08:41:15.658Z",
       "expiresAt": "2026-01-04T08:41:15.658Z",
       "used": false
+    },
+    {
+      "token": "a4a5a4fcaef1afaa97492fc359b926901908fd4397ffb3880e0444523caa2890",
+      "agreementId": 1,
+      "agreementType": "model",
+      "party": "customer",
+      "createdAt": "2025-12-05T08:42:28.530Z",
+      "expiresAt": "2026-01-04T08:42:28.530Z",
+      "used": false
+    },
+    {
+      "token": "458843887c730b93a9361d82bffdf961871678909e8176ec37aee552783a03ef",
+      "agreementId": 1,
+      "agreementType": "regular",
+      "party": "agency",
+      "createdAt": "2025-12-05T08:44:09.859Z",
+      "expiresAt": "2026-01-04T08:44:09.859Z",
+      "used": false
     }
   ],
   "projectAgreements": [
