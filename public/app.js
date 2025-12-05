@@ -622,9 +622,18 @@ async function sendModelAgreementEmail(id) {
     try {
         showNotification('📧 Sending email...', 'info');
         
+        // Get current host to pass to backend for correct link generation
+        const currentHost = window.location.host;
+        const currentProtocol = window.location.protocol.replace(':', '');
+        
         const response = await axios.post(`/api/model-agreements/${id}/send-email`, {
             recipients: recipients,
             cc: cc
+        }, {
+            headers: {
+                'X-Forwarded-Host': currentHost,
+                'X-Forwarded-Proto': currentProtocol
+            }
         });
         
         // Close email dialog
@@ -1061,9 +1070,18 @@ async function sendProjectAgreementEmail(id) {
     try {
         showNotification('📧 Sending email...', 'info');
         
+        // Get current host to pass to backend for correct link generation
+        const currentHost = window.location.host;
+        const currentProtocol = window.location.protocol.replace(':', '');
+        
         await axios.post(`/api/project-agreements/${id}/send-email`, {
             recipients: recipients,
             cc: cc
+        }, {
+            headers: {
+                'X-Forwarded-Host': currentHost,
+                'X-Forwarded-Proto': currentProtocol
+            }
         });
         
         closeModal('project-email-dialog-modal');
@@ -2477,9 +2495,18 @@ async function sendAgreementEmail(id) {
     try {
         showNotification('📧 Sending email...', 'info');
         
+        // Get current host to pass to backend for correct link generation
+        const currentHost = window.location.host;
+        const currentProtocol = window.location.protocol.replace(':', '');
+        
         const response = await axios.post(`/api/agreements/${id}/send-email`, {
             recipients: recipients,
             cc: cc
+        }, {
+            headers: {
+                'X-Forwarded-Host': currentHost,
+                'X-Forwarded-Proto': currentProtocol
+            }
         });
         
         // Close email dialog
