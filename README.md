@@ -187,13 +187,32 @@ webapp/
 - `PUT /api/templates/:id` - Update template
 - `DELETE /api/templates/:id` - Delete template
 
-### Agreements
+### Agreements (Regular)
 - `GET /api/agreements` - List all agreements with details
 - `GET /api/agreements/:id` - Get full agreement details
 - `POST /api/agreements` - Create new agreement
 - `PUT /api/agreements/:id` - Update agreement
 - `POST /api/agreements/:id/sign` - Sign agreement (agency or customer)
+- `POST /api/agreements/:id/generate-link` - Generate new signature link (30-day expiry)
 - `DELETE /api/agreements/:id` - Delete agreement
+
+### Model Agreements
+- `GET /api/model-agreements` - List all model agreements
+- `GET /api/model-agreements/:id` - Get model agreement details
+- `POST /api/model-agreements` - Create new model agreement
+- `PUT /api/model-agreements/:id` - Update model agreement
+- `POST /api/model-agreements/:id/sign` - Sign model agreement
+- `POST /api/model-agreements/:id/generate-link` - Generate new signature link (30-day expiry)
+- `DELETE /api/model-agreements/:id` - Delete model agreement
+
+### Project Agreements
+- `GET /api/project-agreements` - List all project agreements
+- `GET /api/project-agreements/:id` - Get project agreement details
+- `POST /api/project-agreements` - Create new project agreement
+- `PUT /api/project-agreements/:id` - Update project agreement
+- `POST /api/project-agreements/:id/sign` - Sign project agreement
+- `POST /api/project-agreements/:id/generate-link` - Generate new signature link (30-day expiry)
+- `DELETE /api/project-agreements/:id` - Delete project agreement
 
 ### Payment Reminders
 - `GET /api/reminders` - List all reminders
@@ -224,7 +243,42 @@ The signature feature had an error where clicking "Save Signature" would show "M
 - Proper context preservation during async signature operations
 - Separate cancel and close functions
 - Better error handling and logging
-- See `SIGNATURE_FIX_EXPLAINED.md` for technical details
+
+## 🔗 **NEW! Generate Signature Link Feature**
+
+### Problem Solved
+Previously, signature links would expire or become invalid, making it impossible to send new signing links without resending the entire agreement email. This caused major workflow issues.
+
+### Solution: Generate Link Button
+- ✅ **"Generate Link" button** added to all agreement types (Regular, Model, Project)
+- ✅ **Create fresh signature links anytime** - even after agreements are partially signed
+- ✅ **30-day validity** - Each link is valid for 30 days from generation
+- ✅ **One-time use** - Links expire after being used to sign
+- ✅ **Party-specific** - Generate separate links for Agency and Customer/Model
+- ✅ **Copy or open directly** - Copy link to clipboard or open in new tab
+
+### How to Use
+1. Open any agreement (Regular, Model, or Project)
+2. Click the **"Generate Link"** button in the action buttons
+3. Choose who needs to sign:
+   - **Agency** - Generate link for agency representative
+   - **Customer/Model** - Generate link for customer or model
+4. **Copy the link** and share via email, WhatsApp, or any messaging platform
+5. Or **open the link** directly in a new tab to test
+
+### Technical Details
+- **Endpoint Pattern**: `POST /api/{agreement-type}/:id/generate-link`
+- **Request Body**: `{ "party": "agency" | "customer" }`
+- **Response**: `{ "success": true, "link": "https://...", "expiresAt": "2026-01-04..." }`
+- **Link Format**: `https://your-domain.com/sign/{secure-token}`
+- **Token Storage**: Stored in `shareTokens` array in database with expiry tracking
+
+### Benefits
+- ✅ **No more broken links** - Generate fresh links whenever needed
+- ✅ **No email resending** - Share links directly via any channel
+- ✅ **Flexible workflow** - Generate links for partial signings
+- ✅ **Better UX** - Copy/paste or direct open functionality
+- ✅ **Secure** - Cryptographically secure tokens with expiry
 
 ## 🔜 Features Not Yet Implemented
 
@@ -262,11 +316,16 @@ The signature feature had an error where clicking "Save Signature" would show "M
 7. Save as draft
 
 ### Managing Agreements
-1. Go to **Agreements** tab
+1. Go to **Agreements** tab (Regular, Model, or Project)
 2. View all agreements with status
 3. Click eye icon to view full details
 4. Track signatures from both parties
-5. Delete if needed (removes related reminders too)
+5. **Generate signature links** anytime:
+   - Click "Generate Link" button
+   - Select Agency or Customer/Model
+   - Copy link and share via email, WhatsApp, etc.
+   - Links valid for 30 days, one-time use
+6. Delete if needed (removes related reminders too)
 
 ### Tracking Payments
 1. Go to **Reminders** tab
@@ -333,15 +392,9 @@ You can delete or modify these after deployment.
 - **Database**: JSON file (automatic)
 - **API**: RESTful JSON API
 - **Frontend**: Vanilla JS + TailwindCSS
-- **Last Updated**: 2025-12-03 (Signature feature fixed!)
+- **Last Updated**: 2025-12-05 (Generate Link feature added!)
 
 ---
 
 **Ready to deploy?** Just push to GitHub and connect to Vercel, Netlify, Railway, or Render - no configuration needed! 🚀
-- **API**: RESTful JSON API
-- **Frontend**: Vanilla JS + TailwindCSS
-- **Last Updated**: 2025-12-01
 
----
-
-**Ready to deploy?** Just push to GitHub and connect to Vercel, Netlify, Railway, or Render - no configuration needed! 🚀
