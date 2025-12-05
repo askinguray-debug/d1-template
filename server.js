@@ -574,18 +574,10 @@ app.get('/sign/:token', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'sign.html'));
 });
 
-// Main dashboard - PROTECTED (requires auth)
+// Main dashboard - PROTECTED (requires auth via client-side JavaScript)
 app.get('/', (req, res) => {
-  // Check for auth token in request
-  const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader.split(' ')[1];
-  
-  // If no token or invalid token, redirect to login
-  if (!token || !activeSessions.has(token)) {
-    return res.redirect('/login');
-  }
-  
   // Serve the main dashboard
+  // Authentication check happens client-side in the JavaScript
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 

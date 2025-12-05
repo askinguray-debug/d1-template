@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Login</title>
+</head>
+<body>
+    <h1>Testing Login</h1>
+    <form id="testForm">
+        <input type="text" id="username" value="Recluma" />
+        <input type="password" id="password" value="123123" />
+        <button type="submit">Test Login</button>
+    </form>
+    <div id="result"></div>
+    
+    <script>
+        document.getElementById('testForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                const response = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: document.getElementById('username').value,
+                        password: document.getElementById('password').value
+                    })
+                });
+                
+                const data = await response.json();
+                resultDiv.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                
+                if (response.ok) {
+                    resultDiv.innerHTML += '<br><b style="color: green;">SUCCESS! Token received.</b>';
+                    localStorage.setItem('adminToken', data.token);
+                    resultDiv.innerHTML += '<br>Token saved. <a href="/">Go to dashboard</a>';
+                } else {
+                    resultDiv.innerHTML += '<br><b style="color: red;">FAILED!</b>';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<b style="color: red;">ERROR: ${error.message}</b>`;
+            }
+        });
+    </script>
+</body>
+</html>
