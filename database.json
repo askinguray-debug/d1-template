@@ -221,11 +221,11 @@
     },
     {
       "id": 2,
-      "agreement_number": "AGR-1764941868364-411",
+      "agreement_number": "AGR-1764942384738-206",
       "agency_id": 2,
       "customer_id": 6,
       "template_id": "5",
-      "title": "12",
+      "title": "11",
       "content": "This agreement outlines the terms and conditions for drone-based aerial photography and videography services provided by Recluma Creative Media.\n\n⸻\n\n1. Scope of Work\n\nRecluma will provide professional aerial content services using drones for photography, videography, or a combination of both. The service includes:\n\t•\tAerial footage and/or photographs captured using professional-grade drones\n\t•\tBasic editing, color correction, and formatting\n\t•\tDelivery of final files in high-resolution digital formats via online transfer\n\t•\tAll flights operated by licensed drone professionals under safety-compliant protocols\n\n⸻\n\n2. Service Duration\n\t•\tHalf-Day Shoot: Up to 4 hours on location, including setup and flight time\n\t•\tFull-Day Shoot: Up to 8 hours on location, including setup, breaks, and multiple flights if required\n\n⸻\n\n3. Deliverables\n\nThe deliverables may include one or more of the following depending on the project scope:\n\t•\tEdited aerial photographs in JPEG and/or RAW formats\n\t•\tEdited aerial video clips in HD or 4K resolution\n\t•\tFiles delivered within 5 to 7 working days after the shoot unless otherwise agreed\n\t•\tOptional enhancements (e.g., music, graphics, storytelling) may be arranged separately\n\n⸻\n\n4. Payment Terms\n\t•\tA 50% deposit is required upon confirmation of the booking to reserve the shoot date\n\t•\tThe remaining 50% balance is due upon delivery of the final content\n\t•\tPayments can be made via bank transfer, credit card, or mobile money\n\t•\tNo materials will be released until the final payment is received\n\n⸻\n\n5. Transportation Costs\n\nTransportation to and from the shooting location is charged separately and added to the final invoice. This includes any required boat transfers, fuel, or vehicle rentals necessary for access to the site.\n\n⸻\n\n6. Client Responsibilities\n\t•\tThe client must provide appropriate access and permissions to the property or location\n\t•\tIf permits are required for flying or filming, the client must secure them in advance unless otherwise arranged with Recluma\n\t•\tThe client should inform Recluma of any local restrictions or limitations regarding drone use\n\n⸻\n\n7. Rescheduling & Cancellations\n\t•\tRescheduling is allowed free of charge if done at least 48 hours in advance\n\t•\tCancellations made within 48 hours of the scheduled shoot may incur a cancellation fee\n\t•\tIf weather conditions make flying unsafe, the shoot may be rescheduled at no extra charge\n\t•\tDeposits are non-refundable in cases of late cancellation without valid cause\n\n⸻\n\n8. Usage Rights\n\t•\tThe client receives full usage rights for all delivered content for commercial, marketing, or internal purposes\n\t•\tRecluma retains the right to use the material for its own promotional purposes (portfolio, website, social media), unless the client explicitly requests otherwise in writing\n\n⸻\n\n9. Liability Disclaimer\n\nRecluma is not liable for any restrictions imposed by local authorities, property owners, or environmental conditions that prevent the execution of the planned drone shoot. All equipment is operated by trained professionals following local aviation and safety laws.\n\n\n",
       "monthly_payment": null,
       "payment_day": 1,
@@ -242,9 +242,9 @@
       ],
       "agency_signed": 0,
       "customer_signed": 0,
-      "created_at": "2025-12-05T13:37:48.365Z",
-      "updated_at": "2025-12-05T13:37:48.365Z",
-      "downloadToken": "e6ce2a65618f4477261f3e22588b72e45148feca096b0e8024968470da161956"
+      "created_at": "2025-12-05T13:46:24.739Z",
+      "updated_at": "2025-12-05T13:46:24.739Z",
+      "downloadToken": "013c646032544a3e59eafd0f9b1f6d30c6bd4d2859fcc8c0171befca269bec66"
     }
   ],
   "reminders": [],
@@ -994,6 +994,13 @@
       "agreementType": "regular",
       "createdAt": "2025-12-05T13:37:49.148Z",
       "expiresAt": "2026-12-05T13:37:49.148Z"
+    },
+    {
+      "token": "013c646032544a3e59eafd0f9b1f6d30c6bd4d2859fcc8c0171befca269bec66",
+      "agreementId": 2,
+      "agreementType": "regular",
+      "createdAt": "2025-12-05T13:46:25.527Z",
+      "expiresAt": "2026-12-05T13:46:25.527Z"
     }
   ]
 }
