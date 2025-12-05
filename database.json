@@ -330,13 +330,44 @@
       "downloadToken": "a34b54a49dd64fd1b6bf0c58b04c682694e0376efb311761800bbb5c1d0e8dae",
       "shareTokens": {
         "customer": {
-          "token": "ff2854c36e1970a637420cb211c6e9257101cd096adc16f0d052368f411ac573",
+          "token": "d4382c862b55bb22c57d1933b5431dab9ce4ad60ac32f4b0713f7fd223edbc7b",
           "party": "customer",
           "used": false,
-          "createdAt": "2025-12-05T08:38:20.203Z",
-          "expiresAt": "2026-12-05T08:38:20.203Z"
+          "createdAt": "2025-12-05T08:46:37.971Z",
+          "expiresAt": "2026-12-05T08:46:37.971Z"
         }
       }
+    },
+    {
+      "id": 2,
+      "agreement_number": "MODEL-1764928091314-528",
+      "agency_id": 1,
+      "customer_id": 7,
+      "title": "Test Agreement - No Signatures",
+      "content": "This is a test agreement created to verify the Generate Link feature works when signatures are not present.",
+      "start_date": "2025-12-05",
+      "end_date": "2026-12-05",
+      "status": "draft",
+      "agency_signed": 0,
+      "customer_signed": 0,
+      "created_at": "2025-12-05T09:48:11.314Z",
+      "updated_at": "2025-12-05T09:48:11.314Z"
+    },
+    {
+      "id": 3,
+      "agreement_number": "MODEL-1764928138916-955",
+      "agency_id": 1,
+      "customer_id": 6,
+      "title": "Cast & Modeling Agreement",
+      "content": "\nFASHION CAST AGENCY\n\nComprehensive Model Registration & Collaboration Agreement (Non-Exclusive)\n\nThis agreement is made between Fashion Cast Agency (“FCA”) and the individual signing below (“the Model”). It outlines how the collaboration works, how content is produced and used, and what rights and responsibilities apply to both parties.\n\n⸻\n\n1. Purpose and Overview\n\nFCA helps build your professional presence and connects you with fashion brands, designers, lifestyle companies, and creative teams. We invest in photography, video, and AI-generated visuals to showcase your creative potential.\n\nThis is a non-exclusive agreement. The Model may freely work with other agencies or accept independent jobs at any time.\n\n⸻\n\n2. How Our Process Works\n\n2.1 Registration and Promotion\n\nAfter signing, FCA creates promotional visuals for the Model, including photos, AI-generated composites, and short videos. These are produced at FCA’s expense and used to introduce the Model to potential clients.\n\nThe Model is not tied exclusively to FCA and may collaborate with others.\n\n2.2 Brand Engagement\n\nWhen a brand shows interest, FCA contacts the Model with full project details. No project begins without the Model’s explicit approval.\n\n2.3 Concept Development\n\nOnce the Model and brand agree to proceed, FCA produces draft visuals to preview the collaboration. Final production begins only after both sides fully approve the concept.\n\n2.4 Final Production\n\nFCA produces final campaign visuals and delivers them for approval. Once approved, the content is published on FCA’s platforms and/or the brand’s platforms.\n\nAll approvals are final.\n\n⸻\n\n3. Payment and Commission\n\nFCA does not charge the Model for promotional visuals.\nFor paid brand campaigns, FCA receives a commission between 15%–20%, depending on the project.\n\n⸻\n\n4. Booking Rules\n\nFCA proposes only jobs that match the Model’s personality, comfort level, and goals.\nThe Model may decline any job. FCA never books the Model without approval.\n\n⸻\n\n5. Image Usage Rights and Ownership\n\nOnce the Model approves final campaign visuals, the Model grants FCA and the brand the permanent right to use that content for:\n\t•\tsocial media\n\t•\twebsites\n\t•\tpromotional materials\n\t•\tonline advertising\n\t•\tlookbooks and digital campaigns\n\nThe Model still owns their personal likeness, but the specific approved visuals become permanently licensed and cannot be revoked.\n\nApproved and published content can never be removed unless FCA chooses to do so voluntarily.\n\n⸻\n\n6. Contract Duration and Termination\n\nThis agreement is valid for five (5) years from the date of signing.\n\nEither party may terminate the agreement with 30 days’ written notice.\n\nTermination does not affect any approved and published content; such content remains permanently in FCA’s archive.\n\n⸻\n\n7. Content Permanence and AI Training\n\nAll approved visuals may be used permanently by FCA and collaborating brands.\nThe content may also be used to train FCA’s AI systems and to generate new promotional materials.\n\nPublished content cannot be edited, restricted, removed, or deleted by the Model.\n\nOnly FCA has the right to decide whether content remains online.\n\n⸻\n\n8. Penalty for Leaving the Agency Within First Two Years\n\nThe Model is always free to leave FCA.\nHowever, if the Model decides to terminate their membership and leave FCA within the first two (2) years of this agreement, the Model agrees to pay a contractual exit penalty of 900 USD.\n\nThis penalty compensates FCA for:\n\t•\tportfolio creation\n\t•\tAI training value\n\t•\tpromotional investment\n\t•\tbrand development work\n\t•\tcontent production costs\n\nThis penalty applies ONLY if the Model chooses to leave FCA within the first 2 years.\nIt does NOT apply for reporting, blocking, or removing content — because content cannot be removed under any circumstance.\n\nAfter two years, there is no financial penalty for leaving the agency.\n\n⸻\n\n9. Confidentiality\n\nThe Model agrees to keep all unreleased campaigns and brand communication confidential until publicly released. FCA will protect the Model’s data securely and respectfully.\n\n⸻\n\n10. Governing Law\n\nThis agreement is governed by the laws of the United Republic of Tanzania.\n\nAny disputes will be resolved first through negotiation, then through arbitration or court proceedings in Tanzania if necessary.\n\n⸻",
+      "start_date": "2025-12-05",
+      "end_date": "2025-12-19",
+      "status": "draft",
+      "agency_signed": 0,
+      "customer_signed": 0,
+      "created_at": "2025-12-05T09:48:58.916Z",
+      "updated_at": "2025-12-05T09:48:58.916Z",
+      "downloadToken": "8df8a3966110b07d2dd065bb361642a7f275d2f9b54f6cc4ceec37aff8620463"
     }
   ],
   "modelAgreementTemplates": [
@@ -671,6 +702,69 @@
       "createdAt": "2025-12-05T08:44:09.859Z",
       "expiresAt": "2026-01-04T08:44:09.859Z",
       "used": false
+    },
+    {
+      "token": "7a25fc241c23d92aa3cc013c8ff26ec3b140f505a28fb0c33fbe97ce1d34c162",
+      "agreementId": 1,
+      "agreementType": "model",
+      "party": "customer",
+      "createdAt": "2025-12-05T08:45:01.419Z",
+      "expiresAt": "2026-01-04T08:45:01.419Z",
+      "used": false
+    },
+    {
+      "token": "c1f26cc08c36411c0a71643c58e9655eacd82869a77986ae8d6fb9cbb5494965",
+      "agreementId": 1,
+      "agreementType": "model",
+      "party": "customer",
+      "createdAt": "2025-12-05T08:50:23.115Z",
+      "expiresAt": "2026-01-04T08:50:23.115Z",
+      "used": false
+    },
+    {
+      "token": "f208675a34c50e8b40fb0590b291be5087a3d58c79b0dc95efd32c9a0267e90f",
+      "agreementId": 1,
+      "agreementType": "model",
+      "party": "customer",
+      "createdAt": "2025-12-05T08:50:42.434Z",
+      "expiresAt": "2026-01-04T08:50:42.434Z",
+      "used": false
+    },
+    {
+      "token": "13ae163b631593db881cdd803a22fda84124a6dad18d25adecd6ab325975043e",
+      "agreementId": 1,
+      "agreementType": "model",
+      "party": "customer",
+      "createdAt": "2025-12-05T09:43:24.354Z",
+      "expiresAt": "2026-01-04T09:43:24.353Z",
+      "used": false
+    },
+    {
+      "token": "49f70d8c839cd49941dcf39bb462addf9fea2f4801c5f4df4f43dd44384515ac",
+      "agreementId": 1,
+      "agreementType": "model",
+      "party": "customer",
+      "createdAt": "2025-12-05T09:46:51.292Z",
+      "expiresAt": "2026-01-04T09:46:51.292Z",
+      "used": false
+    },
+    {
+      "token": "3b317e52cd7aad8142807d5c03f615354096cb8d302f4f072ad28e2fe99d52fd",
+      "agreementId": 2,
+      "agreementType": "model",
+      "party": "customer",
+      "createdAt": "2025-12-05T09:48:11.622Z",
+      "expiresAt": "2026-01-04T09:48:11.622Z",
+      "used": false
+    },
+    {
+      "token": "d0fc9724c2746a5663e9fdc94623d42a6f334bae61b24f9089c1f194e1146768",
+      "agreementId": 1,
+      "agreementType": "model",
+      "party": "customer",
+      "createdAt": "2025-12-05T09:51:04.649Z",
+      "expiresAt": "2026-01-04T09:51:04.649Z",
+      "used": false
     }
   ],
   "projectAgreements": [
@@ -820,6 +914,13 @@
       "agreementType": "regular",
       "createdAt": "2025-12-04T22:38:24.234Z",
       "expiresAt": "2026-12-04T22:38:24.234Z"
+    },
+    {
+      "token": "8df8a3966110b07d2dd065bb361642a7f275d2f9b54f6cc4ceec37aff8620463",
+      "agreementId": 3,
+      "agreementType": "model",
+      "createdAt": "2025-12-05T09:48:59.608Z",
+      "expiresAt": "2026-12-05T09:48:59.608Z"
     }
   ]
 }

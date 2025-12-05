@@ -1772,16 +1772,23 @@ app.get('/api/share/:token', async (req, res) => {
     const agency = db.agencies.find(a => a.id === agreement.agency_id);
     const customer = db.customers.find(c => c.id === agreement.customer_id);
     
+    // Create response without signatures to avoid timeout issues
+    const agreementResponse = {
+      ...agreement,
+      agency_name: agency?.name || '',
+      agency_email: agency?.email || '',
+      agency_address: agency?.address || '',
+      customer_name: customer?.name || '',
+      customer_email: customer?.email || '',
+      customer_company: customer?.company || ''
+    };
+    
+    // Remove large signature data to prevent timeout
+    delete agreementResponse.agency_signature;
+    delete agreementResponse.customer_signature;
+    
     res.json({
-      agreement: {
-        ...agreement,
-        agency_name: agency?.name || '',
-        agency_email: agency?.email || '',
-        agency_address: agency?.address || '',
-        customer_name: customer?.name || '',
-        customer_email: customer?.email || '',
-        customer_company: customer?.company || ''
-      },
+      agreement: agreementResponse,
       party: party,
       agreementType: agreementType,
       alreadySigned: alreadySigned,
