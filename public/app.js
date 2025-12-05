@@ -386,12 +386,12 @@ async function viewModelAgreement(id) {
                             <div>
                                 <p class="text-sm text-gray-600">Agency</p>
                                 <p class="font-semibold">${agreement.agency_name}</p>
-                                <p class="text-sm text-gray-500">${agreement.agency_email}</p>
+                                <p class="text-sm text-gray-500 break-all">${agreement.agency_email}</p>
                             </div>
                             <div>
                                 <p class="text-sm text-gray-600">Model</p>
                                 <p class="font-semibold">${agreement.customer_name}</p>
-                                <p class="text-sm text-gray-500">${agreement.customer_email}</p>
+                                <p class="text-sm text-gray-500 break-all">${agreement.customer_email}</p>
                             </div>
                         </div>
                         
