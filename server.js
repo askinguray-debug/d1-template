@@ -678,6 +678,119 @@ app.delete('/api/agreements/:id', async (req, res) => {
 });
 
 // ======================
+// GENERATE SIGNATURE LINKS
+// Generate signature link for regular agreement
+app.post('/api/agreements/:id/generate-link', async (req, res) => {
+  try {
+    const { party } = req.body;
+    const db = await readDB();
+    const agreement = db.agreements.find(a => a.id === parseInt(req.params.id));
+    
+    if (!agreement) {
+      return res.status(404).json({ error: 'Agreement not found' });
+    }
+    
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    
+    if (!db.shareTokens) db.shareTokens = [];
+    db.shareTokens.push({
+      token,
+      agreementId: agreement.id,
+      agreementType: 'regular',
+      party,
+      createdAt: new Date().toISOString(),
+      expiresAt,
+      used: false
+    });
+    
+    await writeDB(db);
+    
+    const host = req.get('x-forwarded-host') || req.get('host');
+    const protocol = req.get('x-forwarded-proto') || req.protocol;
+    const link = `${protocol}://${host}/sign/${token}`;
+    
+    res.json({ success: true, link, expiresAt });
+  } catch (error) {
+    console.error('Error generating link:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/model-agreements/:id/generate-link', async (req, res) => {
+  try {
+    const { party } = req.body;
+    const db = await readDB();
+    const agreement = db.modelAgreements.find(a => a.id === parseInt(req.params.id));
+    
+    if (!agreement) {
+      return res.status(404).json({ error: 'Agreement not found' });
+    }
+    
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    
+    if (!db.shareTokens) db.shareTokens = [];
+    db.shareTokens.push({
+      token,
+      agreementId: agreement.id,
+      agreementType: 'model',
+      party,
+      createdAt: new Date().toISOString(),
+      expiresAt,
+      used: false
+    });
+    
+    await writeDB(db);
+    
+    const host = req.get('x-forwarded-host') || req.get('host');
+    const protocol = req.get('x-forwarded-proto') || req.protocol;
+    const link = `${protocol}://${host}/sign/${token}`;
+    
+    res.json({ success: true, link, expiresAt });
+  } catch (error) {
+    console.error('Error generating link:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/project-agreements/:id/generate-link', async (req, res) => {
+  try {
+    const { party } = req.body;
+    const db = await readDB();
+    const agreement = db.projectAgreements.find(a => a.id === parseInt(req.params.id));
+    
+    if (!agreement) {
+      return res.status(404).json({ error: 'Agreement not found' });
+    }
+    
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    
+    if (!db.shareTokens) db.shareTokens = [];
+    db.shareTokens.push({
+      token,
+      agreementId: agreement.id,
+      agreementType: 'project',
+      party,
+      createdAt: new Date().toISOString(),
+      expiresAt,
+      used: false
+    });
+    
+    await writeDB(db);
+    
+    const host = req.get('x-forwarded-host') || req.get('host');
+    const protocol = req.get('x-forwarded-proto') || req.protocol;
+    const link = `${protocol}://${host}/sign/${token}`;
+    
+    res.json({ success: true, link, expiresAt });
+  } catch (error) {
+    console.error('Error generating link:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // MODEL AGREEMENTS API (Cast & Modeling - No Pricing)
 // ======================
 app.get('/api/model-agreements', async (req, res) => {
@@ -1478,35 +1591,9 @@ app.post('/api/project-agreements/:id/generate-share-link', async (req, res) => 
     
     const { party } = req.body; // 'agency' or 'customer'
     
-    // Check if already signed
-    if (party === 'agency' && agreement.agency_signed) {
-      return res.status(400).json({ error: 'Agency has already signed this agreement' });
-    }
-    if (party === 'customer' && agreement.customer_signed) {
-      return res.status(400).json({ error: 'Model has already signed this agreement' });
-    }
-    
-    // Check for existing valid token
-    let existingToken = db.shareTokens.find(t => 
-      t.agreementId === agreement.id && 
-      t.agreementType === 'project' && 
-      t.party === party && 
-      !t.used && 
-      new Date(t.expiresAt) > new Date()
-    );
-    
-    if (existingToken) {
-      // Use req.protocol and req.get('host') like other agreement types
-      const shareUrl = `${req.protocol}://${req.get('host')}/sign/${existingToken.token}`;
-      return res.json({ 
-        success: true, 
-        shareUrl: shareUrl,
-        token: existingToken.token,
-        expiresAt: existingToken.expiresAt
-      });
-    }
-    
-    // Generate new token
+    // Allow regenerating links even if already signed (for archival/reference purposes)
+    // ALWAYS generate new token to allow link regeneration
+    // This allows users to regenerate links when old ones expire
     const token = crypto.randomBytes(32).toString('hex');
     const shareToken = {
       token,
@@ -1515,7 +1602,7 @@ app.post('/api/project-agreements/:id/generate-share-link', async (req, res) => 
       party,
       used: false,
       createdAt: new Date().toISOString(),
-      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+      expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() // 1 year expiration
     };
     
     db.shareTokens.push(shareToken);
@@ -1555,7 +1642,7 @@ app.post('/api/model-agreements/:id/generate-share-link', async (req, res) => {
       return res.status(400).json({ error: 'Invalid party. Must be "agency" or "customer"' });
     }
     
-    // Generate secure random token
+    // Generate secure random token (ALWAYS generate new token to refresh expired links)
     const token = crypto.randomBytes(32).toString('hex');
     
     // Initialize share tokens object if it doesn't exist
@@ -1563,13 +1650,13 @@ app.post('/api/model-agreements/:id/generate-share-link', async (req, res) => {
       db.modelAgreements[agreementIndex].shareTokens = {};
     }
     
-    // Store token with metadata
+    // Store token with metadata (1 year expiration for long-term access)
     db.modelAgreements[agreementIndex].shareTokens[party] = {
       token: token,
       party: party,
       used: false,
       createdAt: new Date().toISOString(),
-      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days
+      expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() // 1 year
     };
     
     await writeDB(db);
@@ -1605,7 +1692,7 @@ app.post('/api/agreements/:id/generate-share-link', async (req, res) => {
       return res.status(400).json({ error: 'Invalid party. Must be "agency" or "customer"' });
     }
     
-    // Generate secure random token
+    // Generate secure random token (ALWAYS generate new token to refresh expired links)
     const token = crypto.randomBytes(32).toString('hex');
     
     // Initialize share tokens object if it doesn't exist
@@ -1613,13 +1700,13 @@ app.post('/api/agreements/:id/generate-share-link', async (req, res) => {
       db.agreements[agreementIndex].shareTokens = {};
     }
     
-    // Store token with metadata
+    // Store token with metadata (1 year expiration for long-term access)
     db.agreements[agreementIndex].shareTokens[party] = {
       token: token,
       party: party,
       used: false,
       createdAt: new Date().toISOString(),
-      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days
+      expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() // 1 year
     };
     
     await writeDB(db);

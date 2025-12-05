@@ -465,6 +465,9 @@ ${agreement.content}
                         <button onclick="printModelAgreement(${id})" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700">
                             <i class="fas fa-print mr-2"></i>Print
                         </button>
+                        <button onclick="showGenerateLinkDialog(${id}, 'model')" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                            <i class="fas fa-link mr-2"></i>Generate Link
+                        </button>
                         <button onclick="showModelEmailDialog(${id})" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">
                             <i class="fas fa-envelope mr-2"></i>Send Email
                         </button>
@@ -913,6 +916,9 @@ ${agreement.content}
                         <i class="fas fa-download mr-2"></i>Download Signed Agreement
                     </button>
                     ` : ''}
+                    <button onclick="showGenerateLinkDialog(${id}, 'project')" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">
+                        <i class="fas fa-link mr-2"></i>Generate Link
+                    </button>
                     <button onclick="showWhatsAppDialog(${id}, 'project')" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
                         <i class="fab fa-whatsapp mr-2"></i>Send via WhatsApp
                     </button>
@@ -2122,6 +2128,9 @@ async function viewAgreement(id) {
                         <button onclick="printAgreement(${id})" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                             <i class="fas fa-print mr-2"></i>Print
                         </button>
+                        <button onclick="showGenerateLinkDialog(${id}, 'regular')" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                            <i class="fas fa-link mr-2"></i>Generate Link
+                        </button>
                         <button onclick="showEmailDialog(${id})" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
                             <i class="fas fa-envelope mr-2"></i>Send Email
                         </button>
@@ -2482,6 +2491,130 @@ async function sendAgreementEmail(id) {
         const errorMsg = error.response?.data?.error || error.response?.data?.details || 'Failed to send email';
         showNotification(`❌ ${errorMsg}`, 'error');
     }
+}
+
+// Show Generate Link Dialog
+function showGenerateLinkDialog(agreementId, agreementType) {
+    const modal = document.createElement('div');
+    modal.id = 'generate-link-modal';
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    
+    const partyLabels = agreementType === 'model' 
+        ? { party1: 'Agency', party2: 'Model' }
+        : agreementType === 'project'
+        ? { party1: 'Agency', party2: 'Model' }
+        : { party1: 'Agency', party2: 'Customer' };
+    
+    modal.innerHTML = `
+        <div class="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 class="text-xl font-bold text-gray-900 mb-4">
+                <i class="fas fa-link mr-2 text-indigo-600"></i>Generate Signature Link
+            </h3>
+            <p class="text-sm text-gray-600 mb-4">
+                Generate a new signature link that can be shared with the signing party. 
+                The link will be valid for 30 days.
+            </p>
+            <div class="space-y-3">
+                <button 
+                    onclick="generateAndShowLink(${agreementId}, 'agency', '${agreementType}')" 
+                    class="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-left flex items-center justify-between"
+                >
+                    <span>
+                        <i class="fas fa-building mr-2"></i>${partyLabels.party1}
+                    </span>
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+                <button 
+                    onclick="generateAndShowLink(${agreementId}, 'customer', '${agreementType}')" 
+                    class="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 text-left flex items-center justify-between"
+                >
+                    <span>
+                        <i class="fas fa-user mr-2"></i>${partyLabels.party2}
+                    </span>
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+            <button 
+                onclick="closeModal('generate-link-modal')" 
+                class="w-full mt-4 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+            >
+                Cancel
+            </button>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+// Generate and show link
+async function generateAndShowLink(agreementId, party, agreementType) {
+    try {
+        showNotification('🔗 Generating signature link...', 'info');
+        
+        const endpoint = agreementType === 'model' 
+            ? `/api/model-agreements/${agreementId}/generate-link`
+            : agreementType === 'project'
+            ? `/api/project-agreements/${agreementId}/generate-link`
+            : `/api/agreements/${agreementId}/generate-link`;
+        
+        const response = await axios.post(endpoint, { party });
+        const link = response.data.link;
+        
+        // Close generate dialog
+        closeModal('generate-link-modal');
+        
+        // Show link in copyable modal
+        const modal = document.createElement('div');
+        modal.id = 'show-link-modal';
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        modal.innerHTML = `
+            <div class="bg-white rounded-lg p-6 w-full max-w-lg">
+                <h3 class="text-xl font-bold text-gray-900 mb-4">
+                    <i class="fas fa-check-circle mr-2 text-green-600"></i>Signature Link Generated
+                </h3>
+                <p class="text-sm text-gray-600 mb-3">
+                    Share this link with the ${party === 'agency' ? 'agency' : (agreementType === 'model' || agreementType === 'project' ? 'model' : 'customer')} to sign the agreement:
+                </p>
+                <div class="bg-gray-50 border border-gray-300 rounded-lg p-3 mb-4 break-all">
+                    <code class="text-sm text-blue-600">${link}</code>
+                </div>
+                <div class="flex gap-3">
+                    <button 
+                        onclick="copyToClipboard('${link}')" 
+                        class="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                    >
+                        <i class="fas fa-copy mr-2"></i>Copy Link
+                    </button>
+                    <button 
+                        onclick="window.open('${link}', '_blank')" 
+                        class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    >
+                        <i class="fas fa-external-link-alt mr-2"></i>Open Link
+                    </button>
+                </div>
+                <button 
+                    onclick="closeModal('show-link-modal')" 
+                    class="w-full mt-3 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                    Close
+                </button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        
+        showNotification('✅ Link generated successfully!');
+    } catch (error) {
+        console.error('Error generating link:', error);
+        showNotification('❌ Failed to generate link', 'error');
+    }
+}
+
+// Copy to clipboard
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        showNotification('✅ Link copied to clipboard!');
+    }).catch(err => {
+        showNotification('❌ Failed to copy link', 'error');
+    });
 }
 
 // Toggle email menu
