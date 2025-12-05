@@ -765,6 +765,15 @@
       "createdAt": "2025-12-05T09:51:04.649Z",
       "expiresAt": "2026-01-04T09:51:04.649Z",
       "used": false
+    },
+    {
+      "token": "8b27c0da0e3fcc90f64b310e0b1fb82b5be4c1add2ffc794beca3ff77d546f56",
+      "agreementId": 1,
+      "agreementType": "model",
+      "party": "customer",
+      "createdAt": "2025-12-05T09:54:05.565Z",
+      "expiresAt": "2026-01-04T09:54:05.565Z",
+      "used": false
     }
   ],
   "projectAgreements": [

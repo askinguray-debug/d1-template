@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Agreement</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+</head>
+<body class="bg-gray-50 min-h-screen p-4">
+    <div class="max-w-4xl mx-auto">
+        <div id="loading" class="text-center py-12">
+            <i class="fas fa-spinner fa-spin text-4xl text-blue-600"></i>
+            <p class="mt-4 text-gray-600">Loading agreement...</p>
+        </div>
+
+        <div id="content" class="hidden">
+            <div class="bg-white rounded-lg shadow-lg p-6 mb-4">
+                <h1 class="text-2xl font-bold mb-4" id="title"></h1>
+                <div id="details" class="space-y-2 text-sm"></div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h2 class="text-xl font-bold mb-4">Digital Signature</h2>
+                <div class="border-2 border-gray-300 rounded-lg mb-4">
+                    <canvas id="signature-pad" width="600" height="200"></canvas>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="clearSignature()" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">
+                        Clear
+                    </button>
+                    <button onclick="saveSignature()" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+                        <i class="fas fa-check mr-2"></i>Sign Agreement
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="success" class="hidden bg-green-50 border-2 border-green-500 rounded-lg p-6 text-center">
+            <i class="fas fa-check-circle text-5xl text-green-600 mb-4"></i>
+            <h2 class="text-2xl font-bold text-green-800 mb-2">Successfully Signed!</h2>
+            <p class="text-green-700">Thank you for signing the agreement.</p>
+        </div>
+
+        <div id="error" class="hidden bg-red-50 border-2 border-red-500 rounded-lg p-6 text-center">
+            <i class="fas fa-exclamation-circle text-5xl text-red-600 mb-4"></i>
+            <h2 class="text-2xl font-bold text-red-800 mb-2">Error</h2>
+            <p id="error-message" class="text-red-700"></p>
+        </div>
+    </div>
+
+    <script>
+        let signaturePad;
+        const params = new URLSearchParams(window.location.search);
+        const agreementId = params.get('id');
+        const agreementType = params.get('type') || 'regular';
+        const party = params.get('party');
+
+        async function loadAgreement() {
+            try {
+                const endpoint = agreementType === 'model' 
+                    ? `/api/model-agreements/${agreementId}`
+                    : agreementType === 'project'
+                    ? `/api/project-agreements/${agreementId}`
+                    : `/api/agreements/${agreementId}`;
+
+                const response = await axios.get(endpoint);
+                const agreement = response.data;
+
+                // Check if already signed
+                const alreadySigned = party === 'agency' ? agreement.agency_signed : agreement.customer_signed;
+                if (alreadySigned) {
+                    showError('This party has already signed this agreement.');
+                    return;
+                }
+
+                // Display agreement details
+                document.getElementById('title').textContent = agreement.title || 'Agreement';
+                document.getElementById('details').innerHTML = `
+                    <p><strong>Agreement Number:</strong> ${agreement.agreement_number || 'N/A'}</p>
+                    <p><strong>Status:</strong> <span class="badge-${agreement.status}">${agreement.status?.toUpperCase() || 'DRAFT'}</span></p>
+                    <p><strong>Signing as:</strong> ${party === 'agency' ? 'Agency' : 'Customer/Model'}</p>
+                `;
+
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('content').classList.remove('hidden');
+
+                // Initialize signature pad
+                const canvas = document.getElementById('signature-pad');
+                signaturePad = new SignaturePad(canvas, {
+                    backgroundColor: 'rgb(255, 255, 255)',
+                    penColor: party === 'agency' ? 'rgb(37, 99, 235)' : 'rgb(34, 197, 94)'
+                });
+
+            } catch (error) {
+                showError(error.response?.data?.error || 'Failed to load agreement');
+            }
+        }
+
+        function clearSignature() {
+            if (signaturePad) signaturePad.clear();
+        }
+
+        async function saveSignature() {
+            if (!signaturePad || signaturePad.isEmpty()) {
+                alert('Please draw your signature first');
+                return;
+            }
+
+            try {
+                const signatureData = signaturePad.toDataURL();
+                const endpoint = agreementType === 'model'
+                    ? `/api/model-agreements/${agreementId}/sign`
+                    : agreementType === 'project'
+                    ? `/api/project-agreements/${agreementId}/sign`
+                    : `/api/agreements/${agreementId}/sign`;
+
+                await axios.post(endpoint, {
+                    party: party,
+                    signature: signatureData
+                });
+
+                document.getElementById('content').classList.add('hidden');
+                document.getElementById('success').classList.remove('hidden');
+            } catch (error) {
+                alert('Error: ' + (error.response?.data?.error || 'Failed to save signature'));
+            }
+        }
+
+        function showError(message) {
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('error').classList.remove('hidden');
+            document.getElementById('error-message').textContent = message;
+        }
+
+        loadAgreement();
+    </script>
+</body>
+</html>

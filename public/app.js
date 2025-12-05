@@ -2511,12 +2511,11 @@ function showGenerateLinkDialog(agreementId, agreementType) {
                 <i class="fas fa-link mr-2 text-indigo-600"></i>Generate Signature Link
             </h3>
             <p class="text-sm text-gray-600 mb-4">
-                Generate a new signature link that can be shared with the signing party. 
-                The link will be valid for 30 days.
+                Generate a simple direct link for signing. No expiration, works instantly!
             </p>
             <div class="space-y-3">
                 <button 
-                    onclick="generateAndShowLink(${agreementId}, 'agency', '${agreementType}')" 
+                    onclick="generateSimpleLink(${agreementId}, 'agency', '${agreementType}')" 
                     class="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-left flex items-center justify-between"
                 >
                     <span>
@@ -2525,7 +2524,7 @@ function showGenerateLinkDialog(agreementId, agreementType) {
                     <i class="fas fa-chevron-right"></i>
                 </button>
                 <button 
-                    onclick="generateAndShowLink(${agreementId}, 'customer', '${agreementType}')" 
+                    onclick="generateSimpleLink(${agreementId}, 'customer', '${agreementType}')" 
                     class="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 text-left flex items-center justify-between"
                 >
                     <span>
@@ -3798,4 +3797,58 @@ async function editReminderTemplate(id) {
         console.error('Error editing template:', error);
         showNotification('Error loading template', 'error');
     }
+}
+
+// NEW SIMPLE LINK SYSTEM - Direct URL, no tokens, no delays
+function generateSimpleLink(agreementId, party, agreementType) {
+    const baseUrl = window.location.origin;
+    const link = `${baseUrl}/sign-simple.html?id=${agreementId}&type=${agreementType}&party=${party}`;
+    
+    closeModal('generate-link-modal');
+    
+    const modal = document.createElement('div');
+    modal.id = 'show-link-modal';
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    modal.innerHTML = `
+        <div class="bg-white rounded-lg p-6 w-full max-w-lg">
+            <h3 class="text-xl font-bold text-gray-900 mb-4">
+                <i class="fas fa-check-circle mr-2 text-green-600"></i>✨ Link Ready Instantly!
+            </h3>
+            <p class="text-sm text-gray-600 mb-3">
+                Share this direct link - no expiration, works immediately:
+            </p>
+            <div class="bg-gray-50 p-3 rounded border border-gray-300 mb-4">
+                <input 
+                    type="text" 
+                    value="${link}" 
+                    readonly 
+                    id="generated-link" 
+                    class="w-full bg-transparent text-sm font-mono focus:outline-none"
+                    onclick="this.select()"
+                />
+            </div>
+            <div class="flex gap-3">
+                <button 
+                    onclick="copyToClipboard('${link}')" 
+                    class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                    <i class="fas fa-copy mr-2"></i>Copy Link
+                </button>
+                <button 
+                    onclick="window.open('${link}', '_blank')" 
+                    class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                >
+                    <i class="fas fa-external-link-alt mr-2"></i>Open Link
+                </button>
+            </div>
+            <button 
+                onclick="closeModal('show-link-modal')" 
+                class="w-full mt-3 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+            >
+                Close
+            </button>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    showNotification('✅ Link generated instantly!', 'success');
 }
