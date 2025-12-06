@@ -9,6 +9,7 @@ import nodemailer from 'nodemailer';
 import crypto from 'crypto';
 import { Resend } from 'resend';
 import puppeteer from 'puppeteer';
+import SibApiV3Sdk from '@getbrevo/brevo';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -92,7 +93,36 @@ async function sendEmail(emailSettings, { from, to, subject, html, attachments =
       
       return { success: true, provider: 'Gmail' };
     }
-    // Priority 3: Custom SMTP
+    // Priority 3: Brevo (Sendinblue) - API method
+    else if (emailSettings.provider === 'brevo' && emailSettings.brevo_api_key) {
+      const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
+      const apiKey = apiInstance.authentications['apiKey'];
+      apiKey.apiKey = emailSettings.brevo_api_key;
+      
+      const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
+      sendSmtpEmail.sender = { 
+        email: emailSettings.from_email || 'noreply@yourdomain.com',
+        name: emailSettings.from_name || 'Agreement Management'
+      };
+      sendSmtpEmail.to = Array.isArray(to) ? to.map(email => ({ email })) : [{ email: to }];
+      sendSmtpEmail.subject = subject;
+      sendSmtpEmail.htmlContent = html;
+      
+      if (attachments && attachments.length > 0) {
+        sendSmtpEmail.attachment = attachments.map(att => ({
+          content: att.content,
+          name: att.filename
+        }));
+      }
+      
+      const result = await apiInstance.sendTransacEmail(sendSmtpEmail);
+      console.log('✅ EMAIL SENT SUCCESSFULLY via Brevo API:', {
+        messageId: result.messageId,
+        to: Array.isArray(to) ? to : [to]
+      });
+      return { success: true, provider: 'Brevo', emailId: result.messageId };
+    }
+    // Priority 4: Custom SMTP
     else if (emailSettings.provider === 'smtp' && emailSettings.smtp_host && emailSettings.smtp_username && emailSettings.smtp_password) {
       // Use SMTP (nodemailer)
       const transporter = nodemailer.createTransport({
