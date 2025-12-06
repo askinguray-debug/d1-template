@@ -22,7 +22,9 @@ async function sendEmail(emailSettings, { from, to, subject, html, attachments =
   try {
     console.log('📧 EMAIL SENDING ATTEMPT:', {
       provider: emailSettings.provider,
-      hasApiKey: !!emailSettings.api_key,
+      hasResendKey: !!emailSettings.api_key,
+      hasBrevoKey: !!emailSettings.brevo_api_key,
+      hasGmailCreds: !!(emailSettings.gmail_email && emailSettings.gmail_app_password),
       from: from || emailSettings.from_email || 'onboarding@resend.dev',
       to: Array.isArray(to) ? to : [to],
       subject: subject
@@ -104,7 +106,13 @@ async function sendEmail(emailSettings, { from, to, subject, html, attachments =
         email: emailSettings.from_email || 'noreply@yourdomain.com',
         name: emailSettings.from_name || 'Agreement Management'
       };
-      sendSmtpEmail.to = Array.isArray(to) ? to.map(email => ({ email })) : [{ email: to }];
+      
+      // Handle both string emails and {email, type} objects
+      const toEmails = Array.isArray(to) 
+        ? to.map(item => typeof item === 'string' ? item : item.email)
+        : [typeof to === 'string' ? to : to.email];
+      sendSmtpEmail.to = toEmails.map(email => ({ email }));
+      
       sendSmtpEmail.subject = subject;
       sendSmtpEmail.htmlContent = html;
       
