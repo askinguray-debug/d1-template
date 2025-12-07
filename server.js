@@ -2247,7 +2247,7 @@ app.post('/api/share/:token/sign', async (req, res) => {
                 📄 Request Invoice
               </a>
               <p style="color: rgba(255,255,255,0.8); margin: 15px 0 0 0; font-size: 12px;">
-                Your invoice request will be processed immediately
+                You will receive a confirmation email shortly
               </p>
             </div>
             
