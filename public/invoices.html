@@ -202,10 +202,9 @@
     </div>
 
     <script>
-        const API_TOKEN = localStorage.getItem('api_token');
+        // Use cookie-based auth (same as main app)
         const API_HEADERS = {
-            'Content-Type': 'application/json',
-            'Authorization': API_TOKEN
+            'Content-Type': 'application/json'
         };
 
         // Load invoices
@@ -215,7 +214,8 @@
 
             try {
                 const response = await fetch('/api/invoices', {
-                    headers: API_HEADERS
+                    headers: API_HEADERS,
+                    credentials: 'include'
                 });
                 
                 if (!response.ok) throw new Error('Failed to load invoices');
@@ -359,7 +359,8 @@
             try {
                 const response = await fetch('/api/invoices/generate-monthly', {
                     method: 'POST',
-                    headers: API_HEADERS
+                    headers: API_HEADERS,
+                    credentials: 'include'
                 });
 
                 const result = await response.json();
@@ -385,7 +386,8 @@
 
             try {
                 const response = await fetch(`/api/invoices/${id}`, {
-                    headers: API_HEADERS
+                    headers: API_HEADERS,
+                    credentials: 'include'
                 });
 
                 if (!response.ok) throw new Error('Failed to load invoice');
@@ -536,7 +538,8 @@
             try {
                 const response = await fetch(`/api/invoices/${id}/approve`, {
                     method: 'POST',
-                    headers: API_HEADERS
+                    headers: API_HEADERS,
+                    credentials: 'include'
                 });
 
                 const result = await response.json();
@@ -561,7 +564,8 @@
             try {
                 const response = await fetch(`/api/invoices/${id}/send`, {
                     method: 'POST',
-                    headers: API_HEADERS
+                    headers: API_HEADERS,
+                    credentials: 'include'
                 });
 
                 const result = await response.json();
@@ -586,6 +590,7 @@
                 const response = await fetch(`/api/invoices/${id}/mark-paid`, {
                     method: 'PUT',
                     headers: API_HEADERS,
+                    credentials: 'include',
                     body: JSON.stringify({ payment_method: paymentMethod })
                 });
 
@@ -612,7 +617,8 @@
             try {
                 const response = await fetch(`/api/invoices/${id}`, {
                     method: 'DELETE',
-                    headers: API_HEADERS
+                    headers: API_HEADERS,
+                    credentials: 'include'
                 });
 
                 if (response.ok) {
@@ -633,7 +639,8 @@
 
             try {
                 const response = await fetch('/api/invoice-settings', {
-                    headers: API_HEADERS
+                    headers: API_HEADERS,
+                    credentials: 'include'
                 });
 
                 if (response.ok) {
@@ -679,6 +686,7 @@
                 const response = await fetch('/api/invoice-settings', {
                     method: 'PUT',
                     headers: API_HEADERS,
+                    credentials: 'include',
                     body: JSON.stringify(settings)
                 });
 
