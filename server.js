@@ -2914,6 +2914,16 @@ app.post('/api/agreements/:id/send-email', async (req, res) => {
     
     if (agreement.agency_signed && agreement.customer_signed) {
       signatureSection += '<p style="color: #059669;"><strong>✅ Fully Signed</strong> - This agreement has been signed by both parties.</p>';
+      signatureSection += `
+        <div style="margin-top: 20px; padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; text-align: center;">
+          <p style="color: white; margin: 0 0 10px 0; font-weight: bold;">💰 Need an Invoice?</p>
+          <a href="${baseUrl}/api/agreements/${agreement.id}/request-invoice" 
+             style="display: inline-block; padding: 12px 30px; background-color: white; color: #667eea; text-decoration: none; border-radius: 6px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            📄 Request Invoice
+          </a>
+          <p style="color: white; margin: 10px 0 0 0; font-size: 12px; opacity: 0.9;">Click to generate and receive your invoice via email</p>
+        </div>
+      `;
     } else {
       signatureSection += '<p><strong>Pending Signatures:</strong></p><ul style="list-style: none; padding-left: 0;">';
       
@@ -4259,7 +4269,139 @@ ${agreement.content}
     }
   });
 
-  // Generate invoice from agreement
+  // Request invoice from email link (no auth required for customer convenience)
+  app.get('/api/agreements/:id/request-invoice', async (req, res) => {
+    try {
+      const db = await readDB();
+      if (!db.invoices) db.invoices = [];
+      if (!db.invoiceSettings) {
+        return res.send('<html><body><h1>Invoice System Not Configured</h1><p>Please contact the agency to set up invoicing.</p></body></html>');
+      }
+      
+      const agreement = db.agreements.find(a => a.id === parseInt(req.params.id));
+      if (!agreement) {
+        return res.send('<html><body><h1>Agreement Not Found</h1></body></html>');
+      }
+
+      // Check if both parties signed
+      if (!agreement.agency_signed || !agreement.customer_signed) {
+        return res.send('<html><body><h1>Agreement Not Fully Signed</h1><p>Both parties must sign the agreement before requesting an invoice.</p></body></html>');
+      }
+
+      const settings = db.invoiceSettings;
+      const invoiceNumber = `${settings.invoice_prefix}-${settings.invoice_number_start + db.invoices.length}`;
+      
+      // Calculate dates
+      const issueDate = new Date();
+      const dueDate = new Date();
+      dueDate.setDate(dueDate.getDate() + settings.payment_terms_days);
+      
+      // Create invoice items from agreement services
+      const items = agreement.services?.map(service => ({
+        description: service.name,
+        details: service.description,
+        quantity: 1,
+        unit_price: parseFloat(service.price) || 0,
+        amount: parseFloat(service.price) || 0
+      })) || [];
+      
+      // Calculate totals
+      const subtotal = items.reduce((sum, item) => sum + item.amount, 0);
+      const taxAmount = subtotal * (settings.tax_rate / 100);
+      const total = subtotal + taxAmount;
+      
+      const newInvoice = {
+        id: getNextId(db.invoices),
+        invoice_number: invoiceNumber,
+        agreement_id: agreement.id,
+        customer_id: agreement.customer_id,
+        issue_date: issueDate.toISOString().split('T')[0],
+        due_date: dueDate.toISOString().split('T')[0],
+        period_start: new Date(issueDate.getFullYear(), issueDate.getMonth(), 1).toISOString().split('T')[0],
+        period_end: new Date(issueDate.getFullYear(), issueDate.getMonth() + 1, 0).toISOString().split('T')[0],
+        items: items,
+        subtotal: subtotal,
+        tax_rate: settings.tax_rate,
+        tax_name: settings.tax_name,
+        tax_amount: taxAmount,
+        total: total,
+        currency: settings.currency,
+        status: 'pending',
+        paid_date: null,
+        notes: settings.notes,
+        payment_method: null,
+        customer_requested: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      db.invoices.push(newInvoice);
+      await writeDB(db);
+
+      // Send invoice email to customer
+      const customer = db.customers.find(c => c.id === agreement.customer_id);
+      const agency = db.agencies.find(a => a.id === agreement.agency_id);
+      const emailSettings = db.emailSettings || {};
+      
+      if (customer?.email && emailSettings.from_email) {
+        try {
+          const invoiceHTML = generateInvoiceHTML(newInvoice, customer, agreement, agency, settings);
+          
+          await sendEmail(emailSettings, {
+            from: emailSettings.from_email,
+            to: customer.email,
+            subject: `Invoice ${newInvoice.invoice_number} from ${agency?.name || 'Agency'}`,
+            html: invoiceHTML
+          });
+          
+          newInvoice.email_sent = true;
+          newInvoice.email_sent_at = new Date().toISOString();
+          await writeDB(db);
+        } catch (emailError) {
+          console.error('Failed to send invoice email:', emailError);
+        }
+      }
+      
+      // Return success page
+      res.send(`
+        <html>
+        <head>
+          <title>Invoice Generated</title>
+          <style>
+            body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
+            .success { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 10px; text-align: center; }
+            .details { margin-top: 20px; padding: 20px; background: #f3f4f6; border-radius: 8px; }
+            h1 { margin: 0 0 10px 0; }
+          </style>
+        </head>
+        <body>
+          <div class="success">
+            <h1>✅ Invoice Generated Successfully!</h1>
+            <p style="font-size: 18px; margin: 10px 0;">Invoice #${newInvoice.invoice_number}</p>
+          </div>
+          <div class="details">
+            <h3>What happens next?</h3>
+            <ul>
+              <li>📧 Your invoice has been sent to ${customer?.email}</li>
+              <li>💰 Total Amount: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: settings.currency }).format(total)}</li>
+              <li>📅 Due Date: ${newInvoice.due_date}</li>
+              <li>✉️ Check your email for the full invoice details</li>
+            </ul>
+            <p style="color: #6b7280; font-size: 14px; margin-top: 20px;">
+              The agency has been notified of your invoice request and will process your payment.
+            </p>
+          </div>
+        </body>
+        </html>
+      `);
+      
+    } catch (error) {
+      console.error('Error generating requested invoice:', error);
+      res.status(500).send('<html><body><h1>Error</h1><p>Failed to generate invoice. Please contact the agency.</p></body></html>');
+    }
+  });
+
+  // Generate invoice from agreement (authenticated admin only)
   app.post('/api/agreements/:id/generate-invoice', requireAuth, async (req, res) => {
     try {
       const db = await readDB();
