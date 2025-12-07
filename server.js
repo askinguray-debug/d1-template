@@ -199,7 +199,9 @@ const activeSessions = new Map();
 // - /api/share/ (public agreement signing links)
 app.use('/api/', (req, res, next) => {
   // Skip authentication for these public endpoints
-  if (req.path.startsWith('/admin/') || req.path.startsWith('/share/')) {
+  if (req.path.startsWith('/admin/') || 
+      req.path.startsWith('/share/') ||
+      req.path.includes('/request-invoice')) {
     return next();
   }
   
@@ -2245,7 +2247,7 @@ app.post('/api/share/:token/sign', async (req, res) => {
                 📄 Request Invoice
               </a>
               <p style="color: rgba(255,255,255,0.8); margin: 15px 0 0 0; font-size: 12px;">
-                You'll receive a confirmation email and your invoice within 1-2 hours
+                Your invoice request will be processed immediately
               </p>
             </div>
             
@@ -4405,8 +4407,8 @@ ${agreement.content}
                 </ol>
                 
                 <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 25px 0; border-radius: 4px;">
-                  <p style="margin: 0; color: #92400e;"><strong>⏰ Estimated Processing Time:</strong></p>
-                  <p style="margin: 10px 0 0 0; color: #92400e;">Your invoice will typically be approved and sent within 1-2 business hours.</p>
+                  <p style="margin: 0; color: #92400e;"><strong>⏰ Processing Status:</strong></p>
+                  <p style="margin: 10px 0 0 0; color: #92400e;">Your invoice is now pending admin approval and will be sent to you shortly.</p>
                 </div>
                 
                 <p style="margin-top: 30px;">If you have any questions, please don't hesitate to contact us.</p>
