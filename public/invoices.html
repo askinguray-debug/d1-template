@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <!-- Invoice Tab Content -->
+    <div id="invoices-content">
+        <!-- Invoice Header with Action Buttons -->
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h2 class="text-2xl font-bold text-gray-800">
+                    <i class="fas fa-file-invoice-dollar mr-2 text-purple-600"></i>
+                    Invoices
+                </h2>
+                <p class="text-gray-600 mt-1">Manage customer invoices and monthly billing</p>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="generateMonthlyInvoices()" class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                    <i class="fas fa-calendar-alt"></i>
+                    Generate Monthly Invoices
+                </button>
+                <button onclick="showInvoiceSettings()" class="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">
+                    <i class="fas fa-cog"></i>
+                    Settings
+                </button>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <select id="invoice-status-filter" onchange="loadInvoices()" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        <option value="">All Statuses</option>
+                        <option value="pending">Pending</option>
+                        <option value="paid">Paid</option>
+                        <option value="overdue">Overdue</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Customer</label>
+                    <input type="text" id="invoice-customer-filter" onkeyup="loadInvoices()" placeholder="Search customer" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                </div>
+                <div class="flex items-end">
+                    <button onclick="loadInvoices()" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                        <i class="fas fa-search mr-2"></i>Search
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Invoices List -->
+        <div id="invoices-list" class="bg-white rounded-lg shadow-sm overflow-hidden">
+            <div class="p-8 text-center text-gray-500">
+                <i class="fas fa-spinner fa-spin text-4xl mb-4"></i>
+                <p>Loading invoices...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Invoice Settings Modal -->
+    <div id="invoice-settings-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto m-4">
+            <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xl font-bold text-gray-800">
+                        <i class="fas fa-cog mr-2 text-purple-600"></i>
+                        Invoice Settings
+                    </h3>
+                    <button onclick="closeInvoiceSettingsModal()" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-6">
+                <form id="invoice-settings-form">
+                    <div class="space-y-6">
+                        <!-- Numbering -->
+                        <div>
+                            <h4 class="text-lg font-semibold mb-4">Invoice Numbering</h4>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Prefix</label>
+                                    <input type="text" id="invoice_prefix" class="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="INV">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Starting Number</label>
+                                    <input type="number" id="invoice_number_start" class="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="1000">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tax Settings -->
+                        <div>
+                            <h4 class="text-lg font-semibold mb-4">Tax Settings</h4>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Tax Name</label>
+                                    <input type="text" id="tax_name" class="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="VAT, GST, Sales Tax">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Tax Rate (%)</label>
+                                    <input type="number" step="0.01" id="tax_rate" class="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="0">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Currency & Payment Terms -->
+                        <div>
+                            <h4 class="text-lg font-semibold mb-4">Currency & Terms</h4>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Currency</label>
+                                    <select id="currency" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                        <option value="USD">USD - US Dollar</option>
+                                        <option value="EUR">EUR - Euro</option>
+                                        <option value="GBP">GBP - British Pound</option>
+                                        <option value="TRY">TRY - Turkish Lira</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Payment Terms (days)</label>
+                                    <input type="number" id="payment_terms_days" class="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="30">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Automation Settings -->
+                        <div>
+                            <h4 class="text-lg font-semibold mb-4">Automation Settings</h4>
+                            <div class="space-y-4">
+                                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                    <div>
+                                        <label class="font-medium text-gray-700">Auto-Send Invoices</label>
+                                        <p class="text-sm text-gray-600">Automatically email invoices when generated</p>
+                                    </div>
+                                    <input type="checkbox" id="auto_send_enabled" class="w-5 h-5 text-purple-600">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Send on Day of Month</label>
+                                    <input type="number" min="1" max="28" id="send_day_of_month" class="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="1">
+                                    <p class="text-xs text-gray-500 mt-1">Day of the month to send invoices (1-28)</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Notes -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Default Notes</label>
+                            <textarea id="notes" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="Payment terms, bank details, etc."></textarea>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex justify-end gap-3 pt-4 border-t border-gray-200">
+                            <button type="button" onclick="closeInvoiceSettingsModal()" class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+                                Cancel
+                            </button>
+                            <button type="submit" class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+                                Save Settings
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Invoice Details Modal -->
+    <div id="invoice-details-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto m-4">
+            <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xl font-bold text-gray-800">
+                        <i class="fas fa-file-invoice-dollar mr-2 text-purple-600"></i>
+                        Invoice Details
+                    </h3>
+                    <button onclick="closeInvoiceDetailsModal()" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="invoice-details-content" class="p-6">
+                <!-- Content loaded dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_TOKEN = localStorage.getItem('api_token');
+        const API_HEADERS = {
+            'Content-Type': 'application/json',
+            'Authorization': API_TOKEN
+        };
+
+        // Load invoices
+        async function loadInvoices() {
+            const container = document.getElementById('invoices-list');
+            container.innerHTML = '<div class="p-8 text-center text-gray-500"><i class="fas fa-spinner fa-spin text-4xl mb-4"></i><p>Loading invoices...</p></div>';
+
+            try {
+                const response = await fetch('/api/invoices', {
+                    headers: API_HEADERS
+                });
+                
+                if (!response.ok) throw new Error('Failed to load invoices');
+                
+                let invoices = await response.json();
+
+                // Apply filters
+                const statusFilter = document.getElementById('invoice-status-filter').value;
+                const customerFilter = document.getElementById('invoice-customer-filter').value.toLowerCase();
+
+                if (statusFilter) {
+                    invoices = invoices.filter(inv => inv.status === statusFilter);
+                }
+                if (customerFilter) {
+                    invoices = invoices.filter(inv => 
+                        inv.customer_name.toLowerCase().includes(customerFilter) ||
+                        inv.customer_email.toLowerCase().includes(customerFilter)
+                    );
+                }
+
+                if (invoices.length === 0) {
+                    container.innerHTML = `
+                        <div class="p-8 text-center text-gray-500">
+                            <i class="fas fa-file-invoice text-4xl mb-4 text-gray-300"></i>
+                            <p class="text-lg font-medium">No invoices found</p>
+                            <p class="text-sm mt-2">Generate monthly invoices for active agreements</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = `
+                    <table class="w-full">
+                        <thead class="bg-gray-50 border-b border-gray-200">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Invoice #</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Agreement</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Due Date</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            ${invoices.map(inv => `
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4">
+                                        <span class="font-medium text-gray-900">${inv.invoice_number}</span>
+                                        ${inv.auto_generated ? '<span class="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">Auto</span>' : ''}
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="font-medium text-gray-900">${inv.customer_name}</div>
+                                        <div class="text-sm text-gray-500">${inv.customer_email}</div>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900">${inv.agreement_number || 'N/A'}</td>
+                                    <td class="px-6 py-4">
+                                        <span class="font-semibold text-gray-900">${formatCurrency(inv.total, inv.currency)}</span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900">${inv.due_date}</td>
+                                    <td class="px-6 py-4">
+                                        ${getStatusBadge(inv)}
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex gap-2">
+                                            <button onclick="viewInvoice(${inv.id})" class="text-blue-600 hover:text-blue-800" title="View">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            ${inv.status !== 'paid' ? `
+                                                <button onclick="sendInvoiceEmail(${inv.id})" class="text-green-600 hover:text-green-800" title="Send Email">
+                                                    <i class="fas fa-envelope"></i>
+                                                </button>
+                                                <button onclick="markInvoiceAsPaid(${inv.id})" class="text-purple-600 hover:text-purple-800" title="Mark as Paid">
+                                                    <i class="fas fa-check-circle"></i>
+                                                </button>
+                                            ` : ''}
+                                            <button onclick="deleteInvoice(${inv.id})" class="text-red-600 hover:text-red-800" title="Delete">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+            } catch (error) {
+                console.error('Error loading invoices:', error);
+                container.innerHTML = `
+                    <div class="p-8 text-center text-red-500">
+                        <i class="fas fa-exclamation-triangle text-4xl mb-4"></i>
+                        <p class="text-lg font-medium">Failed to load invoices</p>
+                        <p class="text-sm mt-2">${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        function getStatusBadge(invoice) {
+            const today = new Date().toISOString().split('T')[0];
+            let status = invoice.status;
+            let color = 'gray';
+
+            if (status === 'paid') {
+                color = 'green';
+            } else if (status === 'pending' && invoice.due_date < today) {
+                status = 'overdue';
+                color = 'red';
+            } else if (status === 'pending') {
+                color = 'yellow';
+            }
+
+            return `<span class="px-3 py-1 text-xs font-semibold rounded-full bg-${color}-100 text-${color}-800">${status.toUpperCase()}</span>`;
+        }
+
+        function formatCurrency(amount, currency = 'USD') {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: currency
+            }).format(amount);
+        }
+
+        // Generate monthly invoices
+        async function generateMonthlyInvoices() {
+            if (!confirm('Generate invoices for all active agreements this month? This will create invoices for agreements that don\'t have one yet.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/invoices/generate-monthly', {
+                    method: 'POST',
+                    headers: API_HEADERS
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert(`✅ Generated ${result.generated} invoice(s)\n✉️ Sent ${result.sent} email(s)`);
+                    loadInvoices();
+                } else {
+                    alert(`❌ Error: ${result.error}`);
+                }
+            } catch (error) {
+                alert(`❌ Error: ${error.message}`);
+            }
+        }
+
+        // View invoice details
+        async function viewInvoice(id) {
+            const modal = document.getElementById('invoice-details-modal');
+            const content = document.getElementById('invoice-details-content');
+            
+            content.innerHTML = '<div class="text-center py-8"><i class="fas fa-spinner fa-spin text-4xl text-gray-400"></i></div>';
+            modal.classList.remove('hidden');
+
+            try {
+                const response = await fetch(`/api/invoices/${id}`, {
+                    headers: API_HEADERS
+                });
+
+                if (!response.ok) throw new Error('Failed to load invoice');
+
+                const data = await response.json();
+                const inv = data;
+
+                content.innerHTML = `
+                    <div class="space-y-6">
+                        <!-- Invoice Header -->
+                        <div class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-6 rounded-lg">
+                            <h2 class="text-3xl font-bold">${inv.invoice_number}</h2>
+                            <p class="text-purple-100 mt-1">${getStatusBadge(inv)}</p>
+                        </div>
+
+                        <!-- From/To -->
+                        <div class="grid grid-cols-2 gap-6">
+                            <div>
+                                <h3 class="font-semibold text-gray-700 mb-2">From:</h3>
+                                <p class="text-sm text-gray-900"><strong>${data.agency?.name || 'N/A'}</strong></p>
+                                <p class="text-sm text-gray-600">${data.agency?.email || ''}</p>
+                                <p class="text-sm text-gray-600">${data.agency?.phone || ''}</p>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-gray-700 mb-2">To:</h3>
+                                <p class="text-sm text-gray-900"><strong>${data.customer?.name || 'N/A'}</strong></p>
+                                <p class="text-sm text-gray-600">${data.customer?.company || ''}</p>
+                                <p class="text-sm text-gray-600">${data.customer?.email || ''}</p>
+                            </div>
+                        </div>
+
+                        <!-- Details -->
+                        <div class="bg-gray-50 p-4 rounded-lg grid grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-sm text-gray-600">Issue Date</p>
+                                <p class="font-semibold">${inv.issue_date}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-600">Due Date</p>
+                                <p class="font-semibold">${inv.due_date}</p>
+                            </div>
+                            ${inv.period_start ? `
+                                <div class="col-span-2 border-t border-gray-200 pt-3 mt-2">
+                                    <p class="text-sm text-gray-600">Billing Period</p>
+                                    <p class="font-semibold">${inv.period_start} to ${inv.period_end}</p>
+                                </div>
+                            ` : ''}
+                        </div>
+
+                        <!-- Items -->
+                        <div>
+                            <h3 class="font-semibold text-gray-700 mb-3">Invoice Items</h3>
+                            <table class="w-full">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Description</th>
+                                        <th class="px-4 py-2 text-center text-sm font-medium text-gray-600">Qty</th>
+                                        <th class="px-4 py-2 text-right text-sm font-medium text-gray-600">Unit Price</th>
+                                        <th class="px-4 py-2 text-right text-sm font-medium text-gray-600">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-200">
+                                    ${inv.items.map(item => `
+                                        <tr>
+                                            <td class="px-4 py-3">
+                                                <p class="font-medium">${item.description}</p>
+                                                ${item.details ? `<p class="text-sm text-gray-600">${item.details}</p>` : ''}
+                                            </td>
+                                            <td class="px-4 py-3 text-center">${item.quantity}</td>
+                                            <td class="px-4 py-3 text-right">${formatCurrency(item.unit_price, inv.currency)}</td>
+                                            <td class="px-4 py-3 text-right font-semibold">${formatCurrency(item.amount, inv.currency)}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Totals -->
+                        <div class="border-t border-gray-200 pt-4">
+                            <div class="flex justify-end">
+                                <div class="w-64 space-y-2">
+                                    <div class="flex justify-between text-sm">
+                                        <span>Subtotal:</span>
+                                        <span class="font-semibold">${formatCurrency(inv.subtotal, inv.currency)}</span>
+                                    </div>
+                                    ${inv.tax_amount > 0 ? `
+                                        <div class="flex justify-between text-sm">
+                                            <span>${inv.tax_name || 'Tax'} (${inv.tax_rate}%):</span>
+                                            <span class="font-semibold">${formatCurrency(inv.tax_amount, inv.currency)}</span>
+                                        </div>
+                                    ` : ''}
+                                    <div class="flex justify-between text-lg font-bold pt-2 border-t border-gray-200">
+                                        <span>Total:</span>
+                                        <span class="text-purple-600">${formatCurrency(inv.total, inv.currency)}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        ${inv.notes ? `
+                            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+                                <p class="text-sm font-medium text-yellow-800">Notes:</p>
+                                <p class="text-sm text-yellow-700 mt-1">${inv.notes}</p>
+                            </div>
+                        ` : ''}
+
+                        <!-- Actions -->
+                        <div class="flex justify-end gap-3 pt-4 border-t border-gray-200">
+                            ${inv.status !== 'paid' ? `
+                                <button onclick="sendInvoiceEmail(${inv.id})" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                                    <i class="fas fa-envelope mr-2"></i>Send Email
+                                </button>
+                                <button onclick="markInvoiceAsPaid(${inv.id})" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+                                    <i class="fas fa-check-circle mr-2"></i>Mark as Paid
+                                </button>
+                            ` : ''}
+                            <button onclick="closeInvoiceDetailsModal()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                content.innerHTML = `
+                    <div class="text-center text-red-500 py-8">
+                        <i class="fas fa-exclamation-triangle text-4xl mb-4"></i>
+                        <p>Failed to load invoice details</p>
+                    </div>
+                `;
+            }
+        }
+
+        function closeInvoiceDetailsModal() {
+            document.getElementById('invoice-details-modal').classList.add('hidden');
+        }
+
+        // Send invoice email
+        async function sendInvoiceEmail(id) {
+            if (!confirm('Send this invoice via email to the customer?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/invoices/${id}/send`, {
+                    method: 'POST',
+                    headers: API_HEADERS
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert('✅ Invoice sent successfully!');
+                    loadInvoices();
+                } else {
+                    alert(`❌ Error: ${result.error}`);
+                }
+            } catch (error) {
+                alert(`❌ Error: ${error.message}`);
+            }
+        }
+
+        // Mark invoice as paid
+        async function markInvoiceAsPaid(id) {
+            const paymentMethod = prompt('Enter payment method (e.g., Bank Transfer, Credit Card):');
+            if (!paymentMethod) return;
+
+            try {
+                const response = await fetch(`/api/invoices/${id}/mark-paid`, {
+                    method: 'PUT',
+                    headers: API_HEADERS,
+                    body: JSON.stringify({ payment_method: paymentMethod })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert('✅ Invoice marked as paid!');
+                    loadInvoices();
+                    closeInvoiceDetailsModal();
+                } else {
+                    alert(`❌ Error: ${result.error}`);
+                }
+            } catch (error) {
+                alert(`❌ Error: ${error.message}`);
+            }
+        }
+
+        // Delete invoice
+        async function deleteInvoice(id) {
+            if (!confirm('Are you sure you want to delete this invoice? This action cannot be undone.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/invoices/${id}`, {
+                    method: 'DELETE',
+                    headers: API_HEADERS
+                });
+
+                if (response.ok) {
+                    alert('✅ Invoice deleted successfully!');
+                    loadInvoices();
+                } else {
+                    alert('❌ Failed to delete invoice');
+                }
+            } catch (error) {
+                alert(`❌ Error: ${error.message}`);
+            }
+        }
+
+        // Show invoice settings
+        async function showInvoiceSettings() {
+            const modal = document.getElementById('invoice-settings-modal');
+            modal.classList.remove('hidden');
+
+            try {
+                const response = await fetch('/api/invoice-settings', {
+                    headers: API_HEADERS
+                });
+
+                if (response.ok) {
+                    const settings = await response.json();
+                    document.getElementById('invoice_prefix').value = settings.invoice_prefix || 'INV';
+                    document.getElementById('invoice_number_start').value = settings.invoice_number_start || 1000;
+                    document.getElementById('tax_name').value = settings.tax_name || '';
+                    document.getElementById('tax_rate').value = settings.tax_rate || 0;
+                    document.getElementById('currency').value = settings.currency || 'USD';
+                    document.getElementById('payment_terms_days').value = settings.payment_terms_days || 30;
+                    document.getElementById('auto_send_enabled').checked = settings.auto_send_enabled || false;
+                    document.getElementById('send_day_of_month').value = settings.send_day_of_month || 1;
+                    document.getElementById('notes').value = settings.notes || '';
+                }
+            } catch (error) {
+                console.error('Error loading invoice settings:', error);
+            }
+        }
+
+        function closeInvoiceSettingsModal() {
+            document.getElementById('invoice-settings-modal').classList.add('hidden');
+        }
+
+        // Save invoice settings
+        document.getElementById('invoice-settings-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const settings = {
+                invoice_prefix: document.getElementById('invoice_prefix').value,
+                invoice_number_start: parseInt(document.getElementById('invoice_number_start').value),
+                tax_name: document.getElementById('tax_name').value,
+                tax_rate: parseFloat(document.getElementById('tax_rate').value),
+                currency: document.getElementById('currency').value,
+                payment_terms_days: parseInt(document.getElementById('payment_terms_days').value),
+                auto_send_enabled: document.getElementById('auto_send_enabled').checked,
+                send_day_of_month: parseInt(document.getElementById('send_day_of_month').value),
+                notes: document.getElementById('notes').value
+            };
+
+            try {
+                const response = await fetch('/api/invoice-settings', {
+                    method: 'PUT',
+                    headers: API_HEADERS,
+                    body: JSON.stringify(settings)
+                });
+
+                if (response.ok) {
+                    alert('✅ Settings saved successfully!');
+                    closeInvoiceSettingsModal();
+                } else {
+                    alert('❌ Failed to save settings');
+                }
+            } catch (error) {
+                alert(`❌ Error: ${error.message}`);
+            }
+        });
+
+        // Load invoices on page load
+        loadInvoices();
+    </script>
+</body>
+</html>
