@@ -4152,6 +4152,35 @@ ${agreement.content}
     <h3>📥 Download Options</h3>
     <p><strong>Print as PDF:</strong> Use your browser's print function (Ctrl+P / Cmd+P) and select "Save as PDF"</p>
     <button onclick="window.print()" class="download-btn">🖨️ Print / Save as PDF</button>
+    ${agreement.agency_signed && agreement.customer_signed ? `
+    <button onclick="requestInvoice()" class="download-btn" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); margin-left: 10px;">
+      💰 Request Invoice
+    </button>
+    <script>
+      async function requestInvoice() {
+        if (!confirm('Request an invoice for this agreement?')) return;
+        
+        try {
+          const response = await fetch('/api/agreements/${agreement.id}/generate-invoice', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (response.ok) {
+            const invoice = await response.json();
+            alert('✅ Invoice ' + invoice.invoice_number + ' has been generated! The agency will send it to you via email.');
+          } else {
+            const error = await response.json();
+            alert('❌ Failed to generate invoice: ' + (error.error || 'Unknown error'));
+          }
+        } catch (error) {
+          alert('❌ Error: ' + error.message);
+        }
+      }
+    </script>
+    ` : ''}
   </div>
   
   <div style="margin-top: 40px; padding: 20px; background: #f9fafb; border-top: 2px solid #e5e7eb; font-size: 12px; color: #6b7280;">
