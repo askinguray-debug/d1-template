@@ -2235,6 +2235,20 @@ app.post('/api/share/:token/sign', async (req, res) => {
               </p>
             </div>
             
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 25px; border-radius: 10px; text-align: center; margin: 25px 0; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+              <h3 style="color: white; margin: 0 0 10px 0; font-size: 20px;">💰 Need an Invoice?</h3>
+              <p style="color: rgba(255,255,255,0.9); margin: 0 0 20px 0; font-size: 14px;">
+                Click the button below to request an invoice for this agreement
+              </p>
+              <a href="${protocol}://${host}/api/agreements/${agreement.id}/request-invoice" 
+                 style="display: inline-block; padding: 14px 32px; background-color: white; color: #667eea; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+                📄 Request Invoice
+              </a>
+              <p style="color: rgba(255,255,255,0.8); margin: 15px 0 0 0; font-size: 12px;">
+                You'll receive a confirmation email and your invoice within 1-2 hours
+              </p>
+            </div>
+            
             <p style="color: #6b7280; font-size: 14px; margin-top: 20px;">
               This is an automated notification from the Agreement Management System.
             </p>
