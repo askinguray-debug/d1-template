@@ -4326,11 +4326,12 @@ ${agreement.content}
         tax_amount: taxAmount,
         total: total,
         currency: settings.currency,
-        status: 'pending',
+        status: 'pending_approval', // Customer requested, waiting for admin approval
         paid_date: null,
         notes: settings.notes,
         payment_method: null,
         customer_requested: true,
+        requested_at: new Date().toISOString(),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
@@ -4338,27 +4339,77 @@ ${agreement.content}
       db.invoices.push(newInvoice);
       await writeDB(db);
 
-      // Send invoice email to customer
+      // Send confirmation email to customer that request was received
       const customer = db.customers.find(c => c.id === agreement.customer_id);
       const agency = db.agencies.find(a => a.id === agreement.agency_id);
       const emailSettings = db.emailSettings || {};
       
       if (customer?.email && emailSettings.from_email) {
         try {
-          const invoiceHTML = generateInvoiceHTML(newInvoice, customer, agreement, agency, settings);
+          const confirmationHTML = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Invoice Request Received</title>
+            </head>
+            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+              
+              <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+                <h1 style="margin: 0; font-size: 28px;">🎉 Invoice Request Received!</h1>
+                <p style="margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">Reference: ${newInvoice.invoice_number}</p>
+              </div>
+              
+              <div style="background: white; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 10px 10px;">
+                
+                <p style="font-size: 16px; margin-bottom: 20px;">Dear <strong>${customer.name}</strong>,</p>
+                
+                <p style="margin-bottom: 20px;">Thank you for requesting an invoice! We have received your request and our team is now preparing your invoice.</p>
+                
+                <div style="background: #f0f9ff; border-left: 4px solid #3b82f6; padding: 20px; margin: 25px 0; border-radius: 6px;">
+                  <h3 style="margin: 0 0 15px 0; color: #1e40af;">📋 Request Details:</h3>
+                  <p style="margin: 5px 0;"><strong>Invoice Number:</strong> ${newInvoice.invoice_number}</p>
+                  <p style="margin: 5px 0;"><strong>Agreement:</strong> ${agreement.agreement_number || agreement.title}</p>
+                  <p style="margin: 5px 0;"><strong>Total Amount:</strong> ${new Intl.NumberFormat('en-US', { style: 'currency', currency: settings.currency }).format(newInvoice.total)}</p>
+                  <p style="margin: 5px 0;"><strong>Status:</strong> <span style="background: #fbbf24; color: #78350f; padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: bold;">⏳ PENDING APPROVAL</span></p>
+                </div>
+                
+                <h3 style="color: #667eea; margin: 25px 0 15px 0;">What happens next?</h3>
+                <ol style="line-height: 2; padding-left: 20px;">
+                  <li>Our admin team will review your invoice request</li>
+                  <li>Once approved, you'll receive the detailed invoice via email</li>
+                  <li>You can proceed with payment using the instructions in the invoice</li>
+                </ol>
+                
+                <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 25px 0; border-radius: 4px;">
+                  <p style="margin: 0; color: #92400e;"><strong>⏰ Estimated Processing Time:</strong></p>
+                  <p style="margin: 10px 0 0 0; color: #92400e;">Your invoice will typically be approved and sent within 1-2 business hours.</p>
+                </div>
+                
+                <p style="margin-top: 30px;">If you have any questions, please don't hesitate to contact us.</p>
+                
+                <div style="text-align: center; padding-top: 25px; border-top: 2px solid #e5e7eb; margin-top: 30px; color: #6b7280; font-size: 14px;">
+                  <p style="margin: 0;"><strong>${agency?.name || 'Agency Name'}</strong></p>
+                  <p style="margin: 5px 0;">${agency?.email || ''}</p>
+                  <p style="margin: 15px 0 0 0; font-size: 12px; opacity: 0.8;">This is an automated notification. Please do not reply to this email.</p>
+                </div>
+                
+              </div>
+              
+            </body>
+            </html>
+          `;
           
           await sendEmail(emailSettings, {
             from: emailSettings.from_email,
             to: customer.email,
-            subject: `Invoice ${newInvoice.invoice_number} from ${agency?.name || 'Agency'}`,
-            html: invoiceHTML
+            subject: `✅ Invoice Request Received - ${newInvoice.invoice_number}`,
+            html: confirmationHTML
           });
           
-          newInvoice.email_sent = true;
-          newInvoice.email_sent_at = new Date().toISOString();
-          await writeDB(db);
         } catch (emailError) {
-          console.error('Failed to send invoice email:', emailError);
+          console.error('Failed to send confirmation email:', emailError);
         }
       }
       
@@ -4509,6 +4560,100 @@ ${agreement.content}
       res.json({ success: true, message: 'Invoice sent successfully' });
     } catch (error) {
       console.error('Error sending invoice:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Approve invoice and send to customer
+  app.post('/api/invoices/:id/approve', requireAuth, async (req, res) => {
+    try {
+      const db = await readDB();
+      const invoice = db.invoices.find(i => i.id === parseInt(req.params.id));
+      
+      if (!invoice) {
+        return res.status(404).json({ error: 'Invoice not found' });
+      }
+      
+      if (invoice.status !== 'pending_approval') {
+        return res.status(400).json({ error: 'Invoice is not pending approval' });
+      }
+      
+      const customer = db.customers.find(c => c.id === invoice.customer_id);
+      const agreement = db.agreements.find(a => a.id === invoice.agreement_id);
+      const agency = db.agencies.find(a => a.id === agreement?.agency_id);
+      const emailSettings = db.emailSettings || {};
+      
+      if (!customer?.email) {
+        return res.status(400).json({ error: 'Customer email not found' });
+      }
+      
+      // Update invoice status
+      invoice.status = 'pending'; // Approved and sent, now pending payment
+      invoice.approved_at = new Date().toISOString();
+      invoice.updated_at = new Date().toISOString();
+      
+      // Generate invoice HTML with payment reminder
+      const invoiceHTML = generateInvoiceHTML(invoice, customer, agreement, agency, db.invoiceSettings);
+      
+      // Create payment reminder email with invoice
+      const paymentReminderHTML = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Invoice ${invoice.invoice_number} - Payment Required</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+          
+          <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 25px; border-radius: 10px 10px 0 0; text-align: center;">
+              <h1 style="margin: 0; font-size: 26px;">✅ Invoice Approved!</h1>
+              <p style="margin: 10px 0 0 0; font-size: 18px; opacity: 0.95;">${invoice.invoice_number}</p>
+            </div>
+            
+            <div style="background: white; padding: 30px; border: 1px solid #e5e7eb; border-top: none;">
+              
+              <p style="font-size: 16px; margin-bottom: 20px;">Dear <strong>${customer.name}</strong>,</p>
+              
+              <p style="margin-bottom: 20px;">Your invoice has been approved and is ready for payment.</p>
+              
+              <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 20px; margin: 25px 0; border-radius: 6px;">
+                <h3 style="margin: 0 0 15px 0; color: #92400e;">⚠️ Payment Required:</h3>
+                <p style="margin: 5px 0; color: #92400e;"><strong>Amount Due:</strong> ${new Intl.NumberFormat('en-US', { style: 'currency', currency: invoice.currency }).format(invoice.total)}</p>
+                <p style="margin: 5px 0; color: #92400e;"><strong>Due Date:</strong> ${invoice.due_date}</p>
+                <p style="margin: 15px 0 0 0; color: #92400e; font-size: 14px;">Please proceed with payment as soon as possible to avoid any service interruptions.</p>
+              </div>
+              
+              <div style="text-align: center; padding-top: 20px; border-top: 2px solid #e5e7eb; margin-top: 30px;">
+                <p style="margin: 0 0 15px 0; font-size: 14px; color: #6b7280;">Your detailed invoice is included below:</p>
+              </div>
+              
+            </div>
+          </div>
+          
+          ${invoiceHTML}
+          
+        </body>
+        </html>
+      `;
+      
+      // Send email
+      await sendEmail(emailSettings, {
+        from: emailSettings.from_email,
+        to: customer.email,
+        subject: `💰 Invoice ${invoice.invoice_number} - Payment Required`,
+        html: paymentReminderHTML
+      });
+      
+      invoice.email_sent = true;
+      invoice.email_sent_at = new Date().toISOString();
+      
+      await writeDB(db);
+      
+      res.json({ success: true, message: 'Invoice approved and sent to customer', invoice });
+    } catch (error) {
+      console.error('Error approving invoice:', error);
       res.status(500).json({ error: error.message });
     }
   });

@@ -284,7 +284,11 @@
                                             <button onclick="viewInvoice(${inv.id})" class="text-blue-600 hover:text-blue-800" title="View">
                                                 <i class="fas fa-eye"></i>
                                             </button>
-                                            ${inv.status !== 'paid' ? `
+                                            ${inv.status === 'pending_approval' ? `
+                                                <button onclick="approveInvoice(${inv.id})" class="text-green-600 hover:text-green-800" title="Approve & Send">
+                                                    <i class="fas fa-check-double"></i>
+                                                </button>
+                                            ` : inv.status !== 'paid' ? `
                                                 <button onclick="sendInvoiceEmail(${inv.id})" class="text-green-600 hover:text-green-800" title="Send Email">
                                                     <i class="fas fa-envelope"></i>
                                                 </button>
@@ -318,17 +322,25 @@
             const today = new Date().toISOString().split('T')[0];
             let status = invoice.status;
             let color = 'gray';
+            let icon = '';
 
             if (status === 'paid') {
                 color = 'green';
+                icon = '✅';
+            } else if (status === 'pending_approval') {
+                status = 'NEEDS APPROVAL';
+                color = 'red';
+                icon = '⚠️';
             } else if (status === 'pending' && invoice.due_date < today) {
                 status = 'overdue';
                 color = 'red';
+                icon = '🔴';
             } else if (status === 'pending') {
                 color = 'yellow';
+                icon = '⏳';
             }
 
-            return `<span class="px-3 py-1 text-xs font-semibold rounded-full bg-${color}-100 text-${color}-800">${status.toUpperCase()}</span>`;
+            return `<span class="px-3 py-1 text-xs font-semibold rounded-full bg-${color}-100 text-${color}-800">${icon} ${status.toUpperCase()}</span>`;
         }
 
         function formatCurrency(amount, currency = 'USD') {
@@ -482,7 +494,11 @@
 
                         <!-- Actions -->
                         <div class="flex justify-end gap-3 pt-4 border-t border-gray-200">
-                            ${inv.status !== 'paid' ? `
+                            ${inv.status === 'pending_approval' ? `
+                                <button onclick="approveInvoice(${inv.id})" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 animate-pulse">
+                                    <i class="fas fa-check-double mr-2"></i>Approve & Send to Customer
+                                </button>
+                            ` : inv.status !== 'paid' ? `
                                 <button onclick="sendInvoiceEmail(${inv.id})" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
                                     <i class="fas fa-envelope mr-2"></i>Send Email
                                 </button>
@@ -511,6 +527,32 @@
         }
 
         // Send invoice email
+        // Approve invoice and send to customer
+        async function approveInvoice(id) {
+            if (!confirm('Approve this invoice and send it to the customer?\n\nThe customer will receive:\n- Invoice details\n- Payment reminder\n- Payment instructions')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/invoices/${id}/approve`, {
+                    method: 'POST',
+                    headers: API_HEADERS
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert('✅ Invoice approved and sent to customer!\n\nThe customer has been notified to proceed with payment.');
+                    loadInvoices();
+                    closeInvoiceDetailsModal();
+                } else {
+                    alert(`❌ Error: ${result.error}`);
+                }
+            } catch (error) {
+                alert(`❌ Error: ${error.message}`);
+            }
+        }
+
         async function sendInvoiceEmail(id) {
             if (!confirm('Send this invoice via email to the customer?')) {
                 return;

@@ -3908,11 +3908,7 @@ async function generateInvoiceFromAgreement(agreementId) {
     }
 
     try {
-        const response = await axios.post(`/api/agreements/${agreementId}/generate-invoice`, {}, {
-            headers: {
-                'Authorization': `Bearer ${API_TOKEN}`
-            }
-        });
+        const response = await axios.post(`/api/agreements/${agreementId}/generate-invoice`, {});
 
         if (response.data) {
             showNotification(`✅ Invoice ${response.data.invoice_number} generated successfully!`);
