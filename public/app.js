@@ -199,10 +199,13 @@ function loadAgreements() {
                     </div>
                 </div>
                 <div class="flex gap-2">
-                    <button onclick="viewAgreement(${agreement.id})" class="text-blue-600 hover:text-blue-800 px-3 py-1 rounded">
+                    <button onclick="viewAgreement(${agreement.id})" class="text-blue-600 hover:text-blue-800 px-3 py-1 rounded" title="View Agreement">
                         <i class="fas fa-eye"></i>
                     </button>
-                    <button onclick="deleteAgreement(${agreement.id})" class="text-red-600 hover:text-red-800 px-3 py-1 rounded">
+                    <button onclick="generateInvoiceFromAgreement(${agreement.id})" class="text-purple-600 hover:text-purple-800 px-3 py-1 rounded" title="Generate Invoice">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                    </button>
+                    <button onclick="deleteAgreement(${agreement.id})" class="text-red-600 hover:text-red-800 px-3 py-1 rounded" title="Delete Agreement">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
@@ -3895,5 +3898,29 @@ function toggleMobileMenu() {
         mobileNav.classList.add('hidden');
         menuIcon.classList.remove('fa-times');
         menuIcon.classList.add('fa-bars');
+    }
+}
+
+// Generate Invoice from Agreement
+async function generateInvoiceFromAgreement(agreementId) {
+    if (!confirm('Generate invoice for this agreement? This will create an invoice based on the agreement services.')) {
+        return;
+    }
+
+    try {
+        const response = await axios.post(`/api/agreements/${agreementId}/generate-invoice`, {}, {
+            headers: {
+                'Authorization': `Bearer ${API_TOKEN}`
+            }
+        });
+
+        if (response.data) {
+            showNotification(`✅ Invoice ${response.data.invoice_number} generated successfully!`);
+            // Switch to invoices tab
+            showTab('invoices');
+        }
+    } catch (error) {
+        console.error('Error generating invoice:', error);
+        showNotification(`❌ Failed to generate invoice: ${error.response?.data?.error || error.message}`, 'error');
     }
 }
