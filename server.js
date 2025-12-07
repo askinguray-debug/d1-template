@@ -2249,9 +2249,17 @@ app.post('/api/share/:token/sign', async (req, res) => {
               </p>
             </div>
             
-            <p style="color: #6b7280; font-size: 14px; margin-top: 20px;">
-              This is an automated notification from the Agreement Management System.
-            </p>
+            <div style="text-align: center; padding-top: 30px; margin-top: 30px; border-top: 2px solid #e5e7eb;">
+              <p style="color: #6b7280; font-size: 14px; margin: 0;">
+                This is an automated notification from the Agreement Management System.
+              </p>
+              <p style="color: #9ca3af; font-size: 12px; margin: 15px 0 5px 0;">
+                Created by <strong style="color: #667eea;">Recluma Creative</strong>
+              </p>
+              <p style="color: #d1d5db; font-size: 11px; margin: 0;">
+                Professional Agreement & Invoice Management Solutions
+              </p>
+            </div>
           </div>
         `;
         
