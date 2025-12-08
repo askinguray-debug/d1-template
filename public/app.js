@@ -202,9 +202,6 @@ function loadAgreements() {
                     <button onclick="viewAgreement(${agreement.id})" class="text-blue-600 hover:text-blue-800 px-3 py-1 rounded" title="View Agreement">
                         <i class="fas fa-eye"></i>
                     </button>
-                    <button onclick="generateInvoiceFromAgreement(${agreement.id})" class="text-purple-600 hover:text-purple-800 px-3 py-1 rounded" title="Generate Invoice">
-                        <i class="fas fa-file-invoice-dollar"></i>
-                    </button>
                     <button onclick="deleteAgreement(${agreement.id})" class="text-red-600 hover:text-red-800 px-3 py-1 rounded" title="Delete Agreement">
                         <i class="fas fa-trash"></i>
                     </button>
