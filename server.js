@@ -4864,8 +4864,8 @@ ${agreement.content}
     const itemsHTML = invoice.items.map(item => `
       <tr>
         <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">
-          <strong>${item.description}</strong>
-          ${item.details ? `<br><span style="font-size: 14px; color: #6b7280;">${item.details}</span>` : ''}
+          <strong>${item.description || ''}</strong>
+          ${item.details && item.details !== 'undefined' ? `<br><span style="font-size: 14px; color: #6b7280;">${item.details}</span>` : ''}
         </td>
         <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: center;">${item.quantity}</td>
         <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right;">${formatCurrency(item.unit_price)}</td>
@@ -4922,7 +4922,6 @@ ${agreement.content}
               </div>
               <div style="text-align: right;">
                 <p style="margin: 0 0 10px 0;"><strong>Agreement:</strong> ${agreement?.agreement_number || 'N/A'}</p>
-                <p style="margin: 0;"><strong>Status:</strong> <span style="background: ${invoice.status === 'paid' ? '#10b981' : '#f59e0b'}; color: white; padding: 4px 12px; border-radius: 4px; font-size: 12px; text-transform: uppercase;">${invoice.status}</span></p>
               </div>
             </div>
           </div>
