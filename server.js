@@ -3817,6 +3817,17 @@ initDB().then(() => {
   // Initialize admin account
   ensureAdminExists();
   
+  // Auth middleware (moved inside .then() for invoice APIs)
+  function requireAuth(req, res, next) {
+    const authHeader = req.headers.authorization;
+    const token = authHeader && authHeader.split(' ')[1];
+    
+    if (!token || !activeSessions.has(token)) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+    next();
+  }
+  
   // ===============================
   // WHATSAPP API
   // ===============================
