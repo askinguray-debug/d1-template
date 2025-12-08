@@ -107,30 +107,42 @@ function showTab(tabName) {
     if (tabName === 'new-project-agreement') loadNewProjectAgreementForm();
 }
 
-// Load all data
+// Load all data - OPTIMIZED for faster initial load
 async function loadAllData() {
     try {
-        const [agenciesRes, customersRes, templatesRes, agreementsRes, modelAgreementsRes, projectAgreementsRes, remindersRes, serviceLibraryRes, categoriesRes] = await Promise.all([
+        // Phase 1: Load CRITICAL data first (what user sees immediately)
+        const [agenciesRes, customersRes, agreementsRes] = await Promise.all([
             axios.get('/api/agencies'),
             axios.get('/api/customers'),
+            axios.get('/api/agreements')
+        ]);
+        
+        agencies = agenciesRes.data;
+        customers = customersRes.data;
+        agreements = agreementsRes.data;
+        
+        // Show initial content immediately
+        loadAgreements();
+        
+        // Phase 2: Load remaining data in background (non-blocking)
+        Promise.all([
             axios.get('/api/templates'),
-            axios.get('/api/agreements'),
             axios.get('/api/model-agreements'),
             axios.get('/api/project-agreements'),
             axios.get('/api/reminders/pending'),
             axios.get('/api/service-library'),
             axios.get('/api/categories')
-        ]);
+        ]).then(([templatesRes, modelAgreementsRes, projectAgreementsRes, remindersRes, serviceLibraryRes, categoriesRes]) => {
+            templates = templatesRes.data;
+            modelAgreements = modelAgreementsRes.data;
+            projectAgreements = projectAgreementsRes.data;
+            reminders = remindersRes.data;
+            serviceLibrary = serviceLibraryRes.data;
+            categories = categoriesRes.data;
+        }).catch(error => {
+            console.error('Error loading background data:', error);
+        });
         
-        agencies = agenciesRes.data;
-        customers = customersRes.data;
-        templates = templatesRes.data;
-        agreements = agreementsRes.data;
-        modelAgreements = modelAgreementsRes.data;
-        projectAgreements = projectAgreementsRes.data;
-        reminders = remindersRes.data;
-        serviceLibrary = serviceLibraryRes.data;
-        categories = categoriesRes.data;
     } catch (error) {
         console.error('Error loading data:', error);
         showNotification('Error loading data', 'error');
