@@ -198,10 +198,11 @@ const activeSessions = new Map();
 // - /api/admin/ (login endpoints)
 // - /api/share/ (public agreement signing links)
 app.use('/api/', (req, res, next) => {
-  // Skip authentication for these public endpoints
+  // Skip authentication for these public endpoints (signing pages, invoice requests, etc.)
   if (req.path.startsWith('/admin/') || 
       req.path.startsWith('/share/') ||
-      req.path.includes('/request-invoice')) {
+      req.path.includes('/request-invoice') ||
+      req.path.match(/\/(model-agreements|project-agreements|agreements)\/\d+$/)) {  // Allow GET single agreement for signing
     return next();
   }
   
