@@ -98,6 +98,7 @@ function showTab(tabName) {
     if (tabName === 'templates') {
         loadTemplates();
         loadModelTemplatesData().then(() => loadModelTemplates());
+        loadCancellationTemplatesData().then(() => loadCancellationTemplates());
     }
     if (tabName === 'reminders') loadReminders();
     if (tabName === 'services') loadServices();
@@ -487,7 +488,12 @@ ${agreement.content}
                             <button onclick="showModelEmailDialog(${id})" class="bg-purple-600 text-white px-3 py-2 rounded-lg hover:bg-purple-700 text-sm">
                                 <i class="fas fa-envelope mr-1"></i>Send Email
                             </button>
-                            <button onclick="closeModal('model-agreement-modal')" class="bg-gray-200 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-300 text-sm">
+                            ${agreement.agency_signed && agreement.customer_signed && agreement.status !== 'cancelled' ? `
+                            <button onclick="showCancelAgreementDialog(${id}, 'model')" class="bg-red-600 text-white px-3 py-2 rounded-lg hover:bg-red-700 text-sm col-span-2">
+                                <i class="fas fa-ban mr-1"></i>Cancel Agreement
+                            </button>
+                            ` : ''}
+                            <button onclick="closeModal('model-agreement-modal')" class="bg-gray-200 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-300 text-sm ${agreement.agency_signed && agreement.customer_signed && agreement.status !== 'cancelled' ? '' : 'col-span-2'}">
                                 Close
                             </button>
                         </div>
@@ -948,7 +954,12 @@ ${agreement.content}
                     <button onclick="showProjectEmailDialog(${id}); closeModal('project-agreement-modal')" class="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
                         <i class="fas fa-envelope mr-1"></i>Send Email
                     </button>
-                    <button onclick="closeModal('project-agreement-modal')" class="px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 text-sm">
+                    ${agreement.agency_signed && agreement.customer_signed && agreement.status !== 'cancelled' ? `
+                    <button onclick="showCancelAgreementDialog(${id}, 'project')" class="px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm col-span-2">
+                        <i class="fas fa-ban mr-1"></i>Cancel Agreement
+                    </button>
+                    ` : ''}
+                    <button onclick="closeModal('project-agreement-modal')" class="px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 text-sm ${agreement.agency_signed && agreement.customer_signed && agreement.status !== 'cancelled' ? '' : 'col-span-2'}">
                         Close
                     </button>
                 </div>
@@ -2328,6 +2339,11 @@ async function viewAgreement(id) {
                         <button onclick="showEmailDialog(${id})" class="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm">
                             <i class="fas fa-envelope mr-1"></i>Send Email
                         </button>
+                        ${agreement.agency_signed && agreement.customer_signed && agreement.status !== 'cancelled' ? `
+                        <button onclick="showCancelAgreementDialog(${id}, 'regular')" class="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm">
+                            <i class="fas fa-ban mr-1"></i>Cancel Agreement
+                        </button>
+                        ` : ''}
                     </div>
                 </div>
             </div>
@@ -4091,3 +4107,251 @@ async function generateInvoiceFromAgreement(agreementId) {
         showNotification(`❌ Failed to generate invoice: ${error.response?.data?.error || error.message}`, 'error');
     }
 }
+
+// ========================================
+// CANCELLATION TEMPLATES FUNCTIONS
+// ========================================
+let cancellationTemplates = [];
+
+async function loadCancellationTemplatesData() {
+    try {
+        const response = await axios.get('/api/cancellation-templates');
+        cancellationTemplates = response.data;
+    } catch (error) {
+        console.error('Error loading cancellation templates:', error);
+    }
+}
+
+function loadCancellationTemplates() {
+    const templatesHtml = cancellationTemplates.map(template => `
+        <div class="border border-red-200 rounded-lg p-4 bg-red-50">
+            <div class="flex justify-between items-start">
+                <div class="flex-1">
+                    <div class="flex items-center gap-2 mb-2">
+                        <h3 class="font-semibold text-gray-900">${template.name}</h3>
+                        <span class="px-2 py-1 text-xs rounded-full ${
+                            template.type === 'model' ? 'bg-purple-100 text-purple-800' :
+                            template.type === 'project' ? 'bg-green-100 text-green-800' :
+                            template.type === 'service' ? 'bg-blue-100 text-blue-800' :
+                            'bg-gray-100 text-gray-800'
+                        }">${template.type}</span>
+                    </div>
+                    <p class="text-sm text-gray-600"><strong>Subject:</strong> ${template.subject}</p>
+                    <p class="text-xs text-gray-500 mt-2">
+                        <i class="fas fa-align-left mr-1"></i>
+                        ${template.content.length} characters
+                    </p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="viewCancellationTemplate(${template.id})" class="text-blue-600 hover:text-blue-800 px-3 py-1 rounded" title="View">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <button onclick="editCancellationTemplate(${template.id})" class="text-purple-600 hover:text-purple-800 px-3 py-1 rounded" title="Edit">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button onclick="deleteCancellationTemplate(${template.id})" class="text-red-600 hover:text-red-800 px-3 py-1 rounded" title="Delete">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `).join('');
+    
+    document.getElementById('cancellation-templates-list').innerHTML = templatesHtml || '<p class="text-gray-500">No cancellation templates yet</p>';
+}
+
+function showCancellationTemplateForm() {
+    document.getElementById('cancellation-template-form-modal').classList.remove('hidden');
+    document.getElementById('cancellation-template-form').reset();
+    document.getElementById('cancellation-template-id').value = '';
+}
+
+function closeCancellationTemplateForm() {
+    document.getElementById('cancellation-template-form-modal').classList.add('hidden');
+    document.getElementById('cancellation-template-form').reset();
+}
+
+async function handleCancellationTemplateSave(e) {
+    e.preventDefault();
+    
+    const id = document.getElementById('cancellation-template-id').value;
+    const data = {
+        name: document.getElementById('cancellation-template-name').value,
+        type: document.getElementById('cancellation-template-type').value,
+        subject: document.getElementById('cancellation-template-subject').value,
+        content: document.getElementById('cancellation-template-content').value
+    };
+    
+    try {
+        if (id) {
+            await axios.put(`/api/cancellation-templates/${id}`, data);
+            showNotification('Cancellation template updated successfully');
+        } else {
+            await axios.post('/api/cancellation-templates', data);
+            showNotification('Cancellation template created successfully');
+        }
+        closeCancellationTemplateForm();
+        await loadCancellationTemplatesData();
+        loadCancellationTemplates();
+    } catch (error) {
+        console.error('Error saving cancellation template:', error);
+        showNotification('Error saving cancellation template', 'error');
+    }
+}
+
+function viewCancellationTemplate(id) {
+    const template = cancellationTemplates.find(t => t.id == id);
+    if (!template) return;
+    
+    alert(`Name: ${template.name}\nType: ${template.type}\nSubject: ${template.subject}\n\nContent:\n${template.content}`);
+}
+
+function editCancellationTemplate(id) {
+    const template = cancellationTemplates.find(t => t.id == id);
+    if (!template) return;
+    
+    document.getElementById('cancellation-template-id').value = template.id;
+    document.getElementById('cancellation-template-name').value = template.name;
+    document.getElementById('cancellation-template-type').value = template.type;
+    document.getElementById('cancellation-template-subject').value = template.subject;
+    document.getElementById('cancellation-template-content').value = template.content;
+    
+    showCancellationTemplateForm();
+}
+
+async function deleteCancellationTemplate(id) {
+    if (!confirm('Are you sure you want to delete this cancellation template?')) return;
+    
+    try {
+        await axios.delete(`/api/cancellation-templates/${id}`);
+        showNotification('Cancellation template deleted successfully');
+        await loadCancellationTemplatesData();
+        loadCancellationTemplates();
+    } catch (error) {
+        console.error('Error deleting cancellation template:', error);
+        showNotification('Error deleting cancellation template', 'error');
+    }
+}
+
+// ========================================
+// CANCEL AGREEMENT FUNCTIONS
+// ========================================
+async function showCancelAgreementDialog(agreementId, agreementType) {
+    try {
+        // Load cancellation templates if not loaded
+        if (cancellationTemplates.length === 0) {
+            await loadCancellationTemplatesData();
+        }
+        
+        // Filter templates by type
+        const typeMap = {
+            'regular': 'service',
+            'model': 'model',
+            'project': 'project'
+        };
+        const templateType = typeMap[agreementType] || 'customer';
+        const relevantTemplates = cancellationTemplates.filter(t => t.type === templateType || t.type === 'customer');
+        
+        if (relevantTemplates.length === 0) {
+            alert('No cancellation templates found. Please create a cancellation template first in the Templates tab.');
+            return;
+        }
+        
+        const templateOptions = relevantTemplates.map(t => 
+            `<option value="${t.id}">${t.name}</option>`
+        ).join('');
+        
+        const modalHtml = `
+            <div id="cancel-agreement-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div class="bg-white rounded-lg p-6 max-w-md w-full">
+                    <h3 class="text-xl font-bold mb-4 text-red-600">
+                        <i class="fas fa-ban mr-2"></i>Cancel Agreement
+                    </h3>
+                    <p class="text-gray-600 mb-4">
+                        This will mark the agreement as cancelled and send a cancellation email to the other party.
+                    </p>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Select Cancellation Email Template:
+                        </label>
+                        <select id="cancel-template-select" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                            <option value="">-- Select Template --</option>
+                            ${templateOptions}
+                        </select>
+                    </div>
+                    <div class="flex gap-3 justify-end">
+                        <button onclick="closeCancelAgreementDialog()" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+                            Cancel
+                        </button>
+                        <button onclick="confirmCancelAgreement(${agreementId}, '${agreementType}')" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+                            <i class="fas fa-ban mr-2"></i>Confirm Cancellation
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+    } catch (error) {
+        console.error('Error showing cancel dialog:', error);
+        showNotification('Error loading cancellation templates', 'error');
+    }
+}
+
+function closeCancelAgreementDialog() {
+    const modal = document.getElementById('cancel-agreement-modal');
+    if (modal) modal.remove();
+}
+
+async function confirmCancelAgreement(agreementId, agreementType) {
+    const templateId = document.getElementById('cancel-template-select').value;
+    
+    if (!templateId) {
+        alert('Please select a cancellation email template');
+        return;
+    }
+    
+    if (!confirm('Are you absolutely sure you want to cancel this agreement? This action cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        const endpoint = agreementType === 'model' 
+            ? `/api/model-agreements/${agreementId}/cancel`
+            : agreementType === 'project'
+            ? `/api/project-agreements/${agreementId}/cancel`
+            : `/api/agreements/${agreementId}/cancel`;
+        
+        const response = await axios.post(endpoint, { templateId: parseInt(templateId) });
+        
+        if (response.data.success) {
+            showNotification('✅ Agreement cancelled and email sent successfully');
+            closeCancelAgreementDialog();
+            
+            // Close agreement modal
+            const agreementModal = document.getElementById('agreement-modal') || 
+                                 document.getElementById('model-agreement-modal') || 
+                                 document.getElementById('project-agreement-modal');
+            if (agreementModal) agreementModal.remove();
+            
+            // Reload data
+            await loadAllData();
+            if (agreementType === 'model') {
+                loadModelAgreements();
+            } else if (agreementType === 'project') {
+                loadProjectAgreements();
+            } else {
+                loadAgreements();
+            }
+            updateDashboard();
+        }
+    } catch (error) {
+        console.error('Error cancelling agreement:', error);
+        showNotification('❌ Failed to cancel agreement: ' + (error.response?.data?.error || error.message), 'error');
+    }
+}
+
+// ========================================
+// FORM HANDLERS
+// ========================================
+document.getElementById('cancellation-template-form')?.addEventListener('submit', handleCancellationTemplateSave);
