@@ -282,10 +282,10 @@ function loadModelAgreements() {
 
 async function loadNewModelAgreementForm() {
     const agencyOptions = agencies.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
-    const customerOptions = customers.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    const modelOptions = models.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
     
     document.getElementById('model-agreement-agency').innerHTML = '<option value="">Select Agency...</option>' + agencyOptions;
-    document.getElementById('model-agreement-customer').innerHTML = '<option value="">Select Model...</option>' + customerOptions;
+    document.getElementById('model-agreement-customer').innerHTML = '<option value="">Select Model...</option>' + modelOptions;
     
     // Load model templates
     try {
@@ -316,13 +316,13 @@ async function handleModelAgreementSave(e) {
     e.preventDefault();
     
     const agencyId = parseInt(document.getElementById('model-agreement-agency').value);
-    const customerId = parseInt(document.getElementById('model-agreement-customer').value);
+    const modelId = parseInt(document.getElementById('model-agreement-customer').value);
     const title = document.getElementById('model-agreement-title').value;
     const startDate = document.getElementById('model-agreement-start').value;
     const endDate = document.getElementById('model-agreement-end').value;
     const content = document.getElementById('model-agreement-content').value;
     
-    if (!agencyId || !customerId || !title || !startDate || !endDate || !content) {
+    if (!agencyId || !modelId || !title || !startDate || !endDate || !content) {
         alert('Please fill all required fields');
         return;
     }
@@ -330,7 +330,7 @@ async function handleModelAgreementSave(e) {
     try {
         const response = await axios.post('/api/model-agreements', {
             agency_id: agencyId,
-            customer_id: customerId,
+            model_id: modelId,
             title: title,
             content: content,
             start_date: startDate,
@@ -352,7 +352,7 @@ async function handleModelAgreementSave(e) {
             showNotification('📧 Sending email to model...');
             try {
                 // Get model email
-                const model = customers.find(c => c.id === newAgreement.customer_id);
+                const model = models.find(m => m.id === newAgreement.model_id);
                 if (model && model.email) {
                     // Send email directly to model with signature link
                     await axios.post(`/api/model-agreements/${newAgreement.id}/send-email`, {

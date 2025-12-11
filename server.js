@@ -1259,7 +1259,9 @@ app.post('/api/model-agreements/:id/send-email', async (req, res) => {
     }
     
     const agency = db.agencies.find(a => a.id === agreement.agency_id);
-    const customer = db.customers.find(c => c.id === agreement.customer_id);
+    // For model agreements, get from models table, not customers
+    const model = agreement.model_id ? db.models.find(m => m.id === agreement.model_id) : db.customers.find(c => c.id === agreement.customer_id);
+    const customer = model; // Keep variable name for compatibility with rest of code
     let { recipients, cc } = req.body;
     
     const emailSettings = db.emailSettings || {};
