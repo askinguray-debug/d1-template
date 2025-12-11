@@ -905,6 +905,249 @@ app.delete('/api/model-templates/:id', async (req, res) => {
 });
 
 // ======================
+// CANCELLATION TEMPLATES API
+// ======================
+app.get('/api/cancellation-templates', async (req, res) => {
+  const db = await readDB();
+  if (!db.cancellationTemplates) db.cancellationTemplates = [];
+  res.json(db.cancellationTemplates.sort((a, b) => a.name.localeCompare(b.name)));
+});
+
+app.get('/api/cancellation-templates/:id', async (req, res) => {
+  const db = await readDB();
+  if (!db.cancellationTemplates) db.cancellationTemplates = [];
+  const template = db.cancellationTemplates.find(t => t.id === parseInt(req.params.id));
+  res.json(template || {});
+});
+
+app.post('/api/cancellation-templates', async (req, res) => {
+  const db = await readDB();
+  if (!db.cancellationTemplates) db.cancellationTemplates = [];
+  const newTemplate = {
+    id: getNextId(db.cancellationTemplates),
+    ...req.body,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+  db.cancellationTemplates.push(newTemplate);
+  await writeDB(db);
+  res.json(newTemplate);
+});
+
+app.put('/api/cancellation-templates/:id', async (req, res) => {
+  const db = await readDB();
+  if (!db.cancellationTemplates) db.cancellationTemplates = [];
+  const index = db.cancellationTemplates.findIndex(t => t.id === parseInt(req.params.id));
+  if (index !== -1) {
+    db.cancellationTemplates[index] = {
+      ...db.cancellationTemplates[index],
+      ...req.body,
+      id: parseInt(req.params.id),
+      updated_at: new Date().toISOString()
+    };
+    await writeDB(db);
+    res.json(db.cancellationTemplates[index]);
+  } else {
+    res.status(404).json({ error: 'Cancellation template not found' });
+  }
+});
+
+app.delete('/api/cancellation-templates/:id', async (req, res) => {
+  const db = await readDB();
+  if (!db.cancellationTemplates) db.cancellationTemplates = [];
+  db.cancellationTemplates = db.cancellationTemplates.filter(t => t.id !== parseInt(req.params.id));
+  await writeDB(db);
+  res.json({ success: true });
+});
+
+// ======================
+// CANCEL AGREEMENT ENDPOINTS
+// ======================
+app.post('/api/agreements/:id/cancel', async (req, res) => {
+  try {
+    const db = await readDB();
+    const agreement = db.agreements.find(a => a.id === parseInt(req.params.id));
+    
+    if (!agreement) {
+      return res.status(404).json({ error: 'Agreement not found' });
+    }
+    
+    // Update agreement status to cancelled
+    const agreementIndex = db.agreements.findIndex(a => a.id === parseInt(req.params.id));
+    db.agreements[agreementIndex].status = 'cancelled';
+    db.agreements[agreementIndex].cancelled_at = new Date().toISOString();
+    db.agreements[agreementIndex].updated_at = new Date().toISOString();
+    
+    await writeDB(db);
+    
+    // Send cancellation email if template ID provided
+    if (req.body.templateId) {
+      const template = db.cancellationTemplates.find(t => t.id === parseInt(req.body.templateId));
+      if (template) {
+        const agency = db.agencies.find(a => a.id === agreement.agency_id);
+        const customer = db.customers.find(c => c.id === agreement.customer_id);
+        const emailSettings = db.emailSettings || {};
+        
+        // Replace template variables
+        let emailContent = template.content
+          .replace(/{{agreement_number}}/g, agreement.agreement_number)
+          .replace(/{{agreement_title}}/g, agreement.title)
+          .replace(/{{customer_name}}/g, customer?.name || '')
+          .replace(/{{customer_company}}/g, customer?.company || '')
+          .replace(/{{agency_name}}/g, agency?.name || '')
+          .replace(/{{agency_email}}/g, agency?.email || '')
+          .replace(/{{agency_phone}}/g, agency?.phone || '')
+          .replace(/{{start_date}}/g, new Date(agreement.start_date).toLocaleDateString())
+          .replace(/{{end_date}}/g, new Date(agreement.end_date).toLocaleDateString())
+          .replace(/{{cancellation_date}}/g, new Date().toLocaleDateString());
+        
+        let emailSubject = template.subject
+          .replace(/{{agreement_number}}/g, agreement.agreement_number)
+          .replace(/{{agreement_title}}/g, agreement.title);
+        
+        // Send email
+        if (customer?.email && emailSettings.provider) {
+          await sendEmail(emailSettings, {
+            from: emailSettings.from_email || 'onboarding@resend.dev',
+            to: [customer.email],
+            subject: emailSubject,
+            html: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; white-space: pre-line;">${emailContent}</div>`
+          });
+        }
+      }
+    }
+    
+    res.json({ success: true, agreement: db.agreements[agreementIndex] });
+  } catch (error) {
+    console.error('Error cancelling agreement:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/model-agreements/:id/cancel', async (req, res) => {
+  try {
+    const db = await readDB();
+    if (!db.modelAgreements) db.modelAgreements = [];
+    const agreement = db.modelAgreements.find(a => a.id === parseInt(req.params.id));
+    
+    if (!agreement) {
+      return res.status(404).json({ error: 'Model agreement not found' });
+    }
+    
+    // Update agreement status to cancelled
+    const agreementIndex = db.modelAgreements.findIndex(a => a.id === parseInt(req.params.id));
+    db.modelAgreements[agreementIndex].status = 'cancelled';
+    db.modelAgreements[agreementIndex].cancelled_at = new Date().toISOString();
+    db.modelAgreements[agreementIndex].updated_at = new Date().toISOString();
+    
+    await writeDB(db);
+    
+    // Send cancellation email if template ID provided
+    if (req.body.templateId) {
+      const template = db.cancellationTemplates.find(t => t.id === parseInt(req.body.templateId));
+      if (template) {
+        const agency = db.agencies.find(a => a.id === agreement.agency_id);
+        const model = agreement.model_id ? db.models.find(m => m.id === agreement.model_id) : db.customers.find(c => c.id === agreement.customer_id);
+        const emailSettings = db.emailSettings || {};
+        
+        // Replace template variables
+        let emailContent = template.content
+          .replace(/{{agreement_number}}/g, agreement.agreement_number)
+          .replace(/{{agreement_title}}/g, agreement.title)
+          .replace(/{{model_name}}/g, model?.name || '')
+          .replace(/{{agency_name}}/g, agency?.name || '')
+          .replace(/{{agency_email}}/g, agency?.email || '')
+          .replace(/{{agency_phone}}/g, agency?.phone || '')
+          .replace(/{{start_date}}/g, new Date(agreement.start_date).toLocaleDateString())
+          .replace(/{{end_date}}/g, new Date(agreement.end_date).toLocaleDateString())
+          .replace(/{{cancellation_date}}/g, new Date().toLocaleDateString());
+        
+        let emailSubject = template.subject
+          .replace(/{{agreement_number}}/g, agreement.agreement_number)
+          .replace(/{{agreement_title}}/g, agreement.title);
+        
+        // Send email
+        if (model?.email && emailSettings.provider) {
+          await sendEmail(emailSettings, {
+            from: emailSettings.from_email || 'onboarding@resend.dev',
+            to: [model.email],
+            subject: emailSubject,
+            html: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; white-space: pre-line;">${emailContent}</div>`
+          });
+        }
+      }
+    }
+    
+    res.json({ success: true, agreement: db.modelAgreements[agreementIndex] });
+  } catch (error) {
+    console.error('Error cancelling model agreement:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/project-agreements/:id/cancel', async (req, res) => {
+  try {
+    const db = await readDB();
+    if (!db.projectAgreements) db.projectAgreements = [];
+    const agreement = db.projectAgreements.find(a => a.id === parseInt(req.params.id));
+    
+    if (!agreement) {
+      return res.status(404).json({ error: 'Project agreement not found' });
+    }
+    
+    // Update agreement status to cancelled
+    const agreementIndex = db.projectAgreements.findIndex(a => a.id === parseInt(req.params.id));
+    db.projectAgreements[agreementIndex].status = 'cancelled';
+    db.projectAgreements[agreementIndex].cancelled_at = new Date().toISOString();
+    db.projectAgreements[agreementIndex].updated_at = new Date().toISOString();
+    
+    await writeDB(db);
+    
+    // Send cancellation email if template ID provided
+    if (req.body.templateId) {
+      const template = db.cancellationTemplates.find(t => t.id === parseInt(req.body.templateId));
+      if (template) {
+        const agency = db.agencies.find(a => a.id === agreement.agency_id);
+        const model = db.models.find(m => m.id === agreement.model_id);
+        const emailSettings = db.emailSettings || {};
+        
+        // Replace template variables
+        let emailContent = template.content
+          .replace(/{{agreement_number}}/g, agreement.agreement_number)
+          .replace(/{{project_name}}/g, agreement.project_name || '')
+          .replace(/{{company_name}}/g, agreement.company_name || '')
+          .replace(/{{model_name}}/g, model?.name || '')
+          .replace(/{{agency_name}}/g, agency?.name || '')
+          .replace(/{{agency_email}}/g, agency?.email || '')
+          .replace(/{{agency_phone}}/g, agency?.phone || '')
+          .replace(/{{start_date}}/g, new Date(agreement.start_date).toLocaleDateString())
+          .replace(/{{end_date}}/g, new Date(agreement.end_date).toLocaleDateString())
+          .replace(/{{cancellation_date}}/g, new Date().toLocaleDateString());
+        
+        let emailSubject = template.subject
+          .replace(/{{agreement_number}}/g, agreement.agreement_number)
+          .replace(/{{project_name}}/g, agreement.project_name || '');
+        
+        // Send email
+        if (model?.email && emailSettings.provider) {
+          await sendEmail(emailSettings, {
+            from: emailSettings.from_email || 'onboarding@resend.dev',
+            to: [model.email],
+            subject: emailSubject,
+            html: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; white-space: pre-line;">${emailContent}</div>`
+          });
+        }
+      }
+    }
+    
+    res.json({ success: true, agreement: db.projectAgreements[agreementIndex] });
+  } catch (error) {
+    console.error('Error cancelling project agreement:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ======================
 // AGREEMENTS API
 // ======================
 app.get('/api/agreements', async (req, res) => {
