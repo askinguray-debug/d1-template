@@ -1374,14 +1374,18 @@ app.post('/api/project-agreements/:id/generate-link', async (req, res) => {
 app.get('/api/model-agreements', async (req, res) => {
   const db = await readDB();
   if (!db.modelAgreements) db.modelAgreements = [];
+  if (!db.models) db.models = [];
   const agreementsWithDetails = db.modelAgreements.map(agreement => {
     const agency = db.agencies.find(a => a.id === agreement.agency_id);
-    const customer = db.customers.find(c => c.id === agreement.customer_id);
+    // Check model_id first (new), then customer_id (old/backwards compatibility)
+    const model = agreement.model_id 
+      ? db.models.find(m => m.id === agreement.model_id)
+      : db.customers.find(c => c.id === agreement.customer_id);
     return {
       ...agreement,
       agency_name: agency?.name || '',
-      customer_name: customer?.name || '',
-      customer_email: customer?.email || ''
+      customer_name: model?.name || '',
+      customer_email: model?.email || ''
     };
   }).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   res.json(agreementsWithDetails);
@@ -1390,20 +1394,24 @@ app.get('/api/model-agreements', async (req, res) => {
 app.get('/api/model-agreements/:id', async (req, res) => {
   const db = await readDB();
   if (!db.modelAgreements) db.modelAgreements = [];
+  if (!db.models) db.models = [];
   const agreement = db.modelAgreements.find(a => a.id === parseInt(req.params.id));
   if (!agreement) {
     return res.json({});
   }
   const agency = db.agencies.find(a => a.id === agreement.agency_id);
-  const customer = db.customers.find(c => c.id === agreement.customer_id);
+  // Check model_id first (new), then customer_id (old/backwards compatibility)
+  const model = agreement.model_id 
+    ? db.models.find(m => m.id === agreement.model_id)
+    : db.customers.find(c => c.id === agreement.customer_id);
   res.json({
     ...agreement,
     agency_name: agency?.name || '',
     agency_email: agency?.email || '',
     agency_address: agency?.address || '',
-    customer_name: customer?.name || '',
-    customer_email: customer?.email || '',
-    customer_company: customer?.company || ''
+    customer_name: model?.name || '',
+    customer_email: model?.email || '',
+    customer_company: model?.company || ''
   });
 });
 
