@@ -2547,6 +2547,7 @@ app.post('/api/share/:token/sign', async (req, res) => {
               </p>
             </div>
             
+            ${agreementType === 'regular' ? `
             <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 25px; border-radius: 10px; text-align: center; margin: 25px 0; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
               <h3 style="color: white; margin: 0 0 10px 0; font-size: 20px;">💰 Need an Invoice?</h3>
               <p style="color: rgba(255,255,255,0.9); margin: 0 0 20px 0; font-size: 14px;">
@@ -2560,6 +2561,7 @@ app.post('/api/share/:token/sign', async (req, res) => {
                 You will receive a confirmation email shortly
               </p>
             </div>
+            ` : ''}
             
             <div style="text-align: center; padding-top: 30px; margin-top: 30px; border-top: 2px solid #e5e7eb;">
               <p style="color: #6b7280; font-size: 14px; margin: 0;">
@@ -4507,7 +4509,7 @@ ${agreement.content}
     <h3>📥 Download Options</h3>
     <p><strong>Print as PDF:</strong> Use your browser's print function (Ctrl+P / Cmd+P) and select "Save as PDF"</p>
     <button onclick="window.print()" class="download-btn">🖨️ Print / Save as PDF</button>
-    ${agreement.agency_signed && agreement.customer_signed ? `
+    ${agreement.agency_signed && agreement.customer_signed && downloadToken.agreementType === 'regular' ? `
     <button onclick="requestInvoice()" class="download-btn" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); margin-left: 10px;">
       💰 Request Invoice
     </button>
