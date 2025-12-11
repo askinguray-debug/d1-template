@@ -742,6 +742,62 @@ app.delete('/api/customers/:id', async (req, res) => {
 });
 
 // ======================
+// MODELS API
+// ======================
+app.get('/api/models', async (req, res) => {
+  const db = await readDB();
+  if (!db.models) db.models = [];
+  res.json(db.models.sort((a, b) => a.name.localeCompare(b.name)));
+});
+
+app.get('/api/models/:id', async (req, res) => {
+  const db = await readDB();
+  if (!db.models) db.models = [];
+  const model = db.models.find(m => m.id === parseInt(req.params.id));
+  res.json(model || {});
+});
+
+app.post('/api/models', async (req, res) => {
+  const db = await readDB();
+  if (!db.models) db.models = [];
+  const newModel = {
+    id: getNextId(db.models),
+    ...req.body,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+  db.models.push(newModel);
+  await writeDB(db);
+  res.json(newModel);
+});
+
+app.put('/api/models/:id', async (req, res) => {
+  const db = await readDB();
+  if (!db.models) db.models = [];
+  const index = db.models.findIndex(m => m.id === parseInt(req.params.id));
+  if (index !== -1) {
+    db.models[index] = {
+      ...db.models[index],
+      ...req.body,
+      id: parseInt(req.params.id),
+      updated_at: new Date().toISOString()
+    };
+    await writeDB(db);
+    res.json(db.models[index]);
+  } else {
+    res.status(404).json({ error: 'Model not found' });
+  }
+});
+
+app.delete('/api/models/:id', async (req, res) => {
+  const db = await readDB();
+  if (!db.models) db.models = [];
+  db.models = db.models.filter(m => m.id !== parseInt(req.params.id));
+  await writeDB(db);
+  res.json({ success: true });
+});
+
+// ======================
 // TEMPLATES API
 // ======================
 app.get('/api/templates', async (req, res) => {

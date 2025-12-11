@@ -94,6 +94,7 @@ function showTab(tabName) {
     if (tabName === 'model-agreements') loadModelAgreements();
     if (tabName === 'project-agreements') loadProjectAgreements();
     if (tabName === 'customers') loadCustomers();
+    if (tabName === 'models') loadModels();
     if (tabName === 'templates') {
         loadTemplates();
         loadModelTemplatesData().then(() => loadModelTemplates());
@@ -111,14 +112,16 @@ function showTab(tabName) {
 async function loadAllData() {
     try {
         // Phase 1: Load CRITICAL data first (what user sees immediately)
-        const [agenciesRes, customersRes, agreementsRes] = await Promise.all([
+        const [agenciesRes, customersRes, modelsRes, agreementsRes] = await Promise.all([
             axios.get('/api/agencies'),
             axios.get('/api/customers'),
+            axios.get('/api/models'),
             axios.get('/api/agreements')
         ]);
         
         agencies = agenciesRes.data;
         customers = customersRes.data;
+        models = modelsRes.data;
         agreements = agreementsRes.data;
         
         // Show initial content immediately
@@ -158,7 +161,7 @@ function updateDashboard() {
     
     document.getElementById('stat-active').textContent = activeAgreements;
     document.getElementById('stat-customers').textContent = customers.length;
-    document.getElementById('stat-reminders').textContent = reminders.length;
+    document.getElementById('stat-models').textContent = models.length;
     document.getElementById('stat-revenue').textContent = '$' + totalRevenue.toFixed(2);
     
     // Recent agreements
@@ -1514,6 +1517,165 @@ async function deleteCustomer(id) {
         showNotification('Error deleting customer', 'error');
     }
 }
+
+// ========================================
+// MODELS FUNCTIONS
+// ========================================
+let models = [];
+
+async function loadModelsData() {
+    try {
+        const response = await axios.get('/api/models');
+        models = response.data;
+    } catch (error) {
+        console.error('Error loading models:', error);
+    }
+}
+
+function loadModels() {
+    const modelsHtml = models.map(model => {
+        const age = model.date_of_birth ? calculateAgeFromDate(model.date_of_birth) : 'N/A';
+        return `
+        <div class="border border-purple-200 rounded-lg p-4 hover:shadow-md transition-shadow bg-purple-50">
+            <div class="flex justify-between items-start">
+                <div class="flex-1">
+                    <div class="flex items-center gap-3">
+                        <h3 class="font-semibold text-gray-900">
+                            <i class="fas fa-user-tie text-purple-600 mr-2"></i>${model.name}
+                        </h3>
+                        ${age !== 'N/A' ? `<span class="px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded-full">${age} years old</span>` : ''}
+                    </div>
+                    <p class="text-sm text-gray-600 mt-1">
+                        <i class="fas fa-envelope mr-1"></i>${model.email}
+                        ${model.phone ? `<span class="ml-3"><i class="fas fa-phone mr-1"></i>${model.phone}</span>` : ''}
+                    </p>
+                    <div class="flex gap-4 mt-2 text-sm text-gray-500">
+                        ${model.height ? `<span><i class="fas fa-ruler-vertical mr-1"></i>${model.height} cm</span>` : ''}
+                        ${model.weight ? `<span><i class="fas fa-weight mr-1"></i>${model.weight} kg</span>` : ''}
+                        ${model.eye_color ? `<span><i class="fas fa-eye mr-1"></i>${model.eye_color}</span>` : ''}
+                        ${model.skin_color ? `<span><i class="fas fa-palette mr-1"></i>${model.skin_color}</span>` : ''}
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="editModel(${model.id})" class="text-blue-600 hover:text-blue-800 px-3 py-1 rounded" title="Edit Model">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button onclick="deleteModel(${model.id})" class="text-red-600 hover:text-red-800 px-3 py-1 rounded" title="Delete Model">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `}).join('');
+    
+    document.getElementById('models-list').innerHTML = modelsHtml || '<p class="text-gray-500">No models registered yet</p>';
+}
+
+function calculateAgeFromDate(dateOfBirth) {
+    const today = new Date();
+    const birthDate = new Date(dateOfBirth);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+    }
+    
+    return age;
+}
+
+function calculateAge() {
+    const dobInput = document.getElementById('model-dob');
+    const ageInput = document.getElementById('model-age');
+    
+    if (dobInput && dobInput.value && ageInput) {
+        const age = calculateAgeFromDate(dobInput.value);
+        ageInput.value = age + ' years';
+    }
+}
+
+function showModelRegistrationForm(id = null) {
+    document.getElementById('model-registration-modal').classList.remove('hidden');
+    if (id) {
+        const model = models.find(m => m.id == id);
+        if (model) {
+            document.getElementById('model-id').value = model.id;
+            document.getElementById('model-name').value = model.name;
+            document.getElementById('model-email').value = model.email;
+            document.getElementById('model-phone').value = model.phone || '';
+            document.getElementById('model-dob').value = model.date_of_birth || '';
+            document.getElementById('model-height').value = model.height || '';
+            document.getElementById('model-weight').value = model.weight || '';
+            document.getElementById('model-eye-color').value = model.eye_color || '';
+            document.getElementById('model-skin-color').value = model.skin_color || '';
+            document.getElementById('model-address').value = model.address || '';
+            document.getElementById('model-notes').value = model.notes || '';
+            calculateAge();
+        }
+    } else {
+        document.getElementById('model-registration-form').reset();
+        document.getElementById('model-id').value = '';
+    }
+}
+
+function closeModelRegistrationForm() {
+    document.getElementById('model-registration-modal').classList.add('hidden');
+}
+
+async function handleModelSave(e) {
+    e.preventDefault();
+    const id = document.getElementById('model-id').value;
+    const modelData = {
+        name: document.getElementById('model-name').value,
+        email: document.getElementById('model-email').value,
+        phone: document.getElementById('model-phone').value,
+        date_of_birth: document.getElementById('model-dob').value,
+        height: document.getElementById('model-height').value,
+        weight: document.getElementById('model-weight').value,
+        eye_color: document.getElementById('model-eye-color').value,
+        skin_color: document.getElementById('model-skin-color').value,
+        address: document.getElementById('model-address').value,
+        notes: document.getElementById('model-notes').value
+    };
+    
+    try {
+        if (id) {
+            await axios.put(`/api/models/${id}`, modelData);
+            showNotification('Model updated successfully', 'success');
+        } else {
+            await axios.post('/api/models', modelData);
+            showNotification('Model registered successfully', 'success');
+        }
+        closeModelRegistrationForm();
+        await loadAllData();
+        loadModels();
+        updateDashboard();
+    } catch (error) {
+        console.error('Error saving model:', error);
+        showNotification('Error saving model', 'error');
+    }
+}
+
+function editModel(id) {
+    showModelRegistrationForm(id);
+}
+
+async function deleteModel(id) {
+    if (!confirm('Are you sure you want to delete this model?')) return;
+    
+    try {
+        await axios.delete(`/api/models/${id}`);
+        showNotification('Model deleted successfully', 'success');
+        await loadAllData();
+        loadModels();
+        updateDashboard();
+    } catch (error) {
+        console.error('Error deleting model:', error);
+        showNotification('Error deleting model', 'error');
+    }
+}
+
+document.getElementById('model-registration-form')?.addEventListener('submit', handleModelSave);
 
 // Template functions
 function showTemplateForm(id = null) {
